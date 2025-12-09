@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fusion</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { 
+            height: 100%; 
+            overflow: hidden;
+            touch-action: none;
+        }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: #1a1a2e; 
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            color: white; 
+            padding: 10px;
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        h1 { font-size: 1.2em; margin-bottom: 8px; color: #ffd700; }
+        .game-container { background: #ffffff; border-radius: 50%; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+        .game-area { 
+            position: relative; 
+            width: min(85vw, 85vh, 500px); 
+            height: min(85vw, 85vh, 500px); 
+            background: #ffffff; 
+            border-radius: 50%; 
+            overflow: hidden; 
+        }
+        h1 { font-size: 1.4em; margin-bottom: 10px; color: #ffd700; }
+        .game-container { background: #ffffff; border-radius: 50%; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
+        .game-area { position: relative; width: 550px; height: 550px; background: #ffffff; border-radius: 50%; overflow: hidden; }
+        .ray-line { position: absolute; top: 50%; left: 50%; width: 50%; height: 2px; background: linear-gradient(90deg, rgba(255,215,0,0.3) 0%, rgba(255,150,0,0.6) 100%); transform-origin: left center; pointer-events: none; opacity: 0; }
+        .ring { position: absolute; border-radius: 50%; top: 50%; left: 50%; pointer-events: none; border: 2px dashed rgba(80,80,80,0.25); }
+        #triangleCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+        .center-circle { width: 16%; height: 16%; background: linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffa500 100%); border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; justify-content: center; align-items: center; color: #333; box-shadow: 0 0 40px rgba(255,215,0,0.5); pointer-events: none; z-index: 100; border: 3px solid rgba(255,255,255,0.9); }
+        .center-icon { font-size: 1.2em; }
+        .center-remaining { font-size: 1.4em; font-weight: bold; }
+        .center-label { font-size: 0.45em; opacity: 0.7; }
+        .number { position: absolute; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.3); user-select: none; z-index: 10; pointer-events: auto; cursor: grab; }
+        .number.dragging { cursor: grabbing; }
+        .controls { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; justify-content: center; align-items: center; }
+        .control-item { background: rgba(255,255,255,0.1); padding: 4px 6px; border-radius: 6px; display: flex; align-items: center; gap: 4px; font-size: 0.7em; }
+        button { padding: 6px 12px; font-size: 0.8em; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        button.play-btn { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+        button.play-btn.active { background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%); }
+        .toggle-switch { position: relative; width: 32px; height: 18px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; inset: 0; background-color: rgba(255,255,255,0.2); border-radius: 18px; }
+        .toggle-slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: 0.2s; }
+        input:checked + .toggle-slider { background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%); }
+        input:checked + .toggle-slider:before { transform: translateX(14px); }
+        .size-controls { display: none; }
+        .c1-label { color: #4facfe; }
+        .c2-label { color: #a8edea; }
+        .c3-label { color: #ff9a56; }
+    </style>
+</head>
+<body>
+    <h1>🔺 Fusion 🔺</h1>
+    <div class="game-container">
+        <div class="game-area" id="gameArea">
+            <canvas id="triangleCanvas" width="550" height="550"></canvas>
+            <div class="ring" id="ring1"></div>
+            <div class="ring" id="ring2"></div>
+            <div class="center-circle">
+                <div class="center-icon">☀️</div>
+                <div class="center-remaining" id="remaining">35</div>
+                <div class="center-label">chiffres</div>
+            </div>
+        </div>
+    </div>
+    <div class="controls">
+        <button id="playBtn" class="play-btn" onclick="togglePlay()">Play</button>
+        <div class="control-item">
+            <label>Vitesse:</label>
+            <input type="range" id="speedSlider" min="0.02" max="0.2" step="0.02" value="0.06" oninput="updateSpeed()" style="width:50px;">
+        </div>
+        <div class="control-item">
+            <label>Axes:</label>
+            <label class="toggle-switch">
+                <input type="checkbox" id="showAxes" onchange="toggleAxes()">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="control-item">
+            <label>Triangles:</label>
+            <label class="toggle-switch">
+                <input type="checkbox" id="showTriangles" checked onchange="toggleTriangles()">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <button onclick="init()">Reset</button>
+    </div>
+    <div class="size-controls">
+        <div class="size-group">
+            <label class="c1-label">C1 Taille: <span id="sizeC1Val">32</span></label>
+            <input type="range" id="sizeC1" min="20" max="50" value="32" oninput="updateSizes()">
+        </div>
+        <div class="size-group">
+            <label class="c2-label">C2 Taille: <span id="sizeC2Val">32</span></label>
+            <input type="range" id="sizeC2" min="20" max="50" value="32" oninput="updateSizes()">
+        </div>
+        <div class="size-group">
+            <label class="c3-label">C3 Taille: <span id="sizeC3Val">32</span></label>
+            <input type="range" id="sizeC3" min="20" max="50" value="32" oninput="updateSizes()">
+        </div>
+    </div>
+
+    <script>
+        var canvasSize = 550;
+        var scale = 1;
+        var cx = 275, cy = 275;
+        var crowns = [
+            {count: 20, radiusRatio: 0.436, step: 18, offset: 27, sizeRatio: 0.058},
+            {count: 10, radiusRatio: 0.282, step: 36, offset: 18, sizeRatio: 0.058},
+            {count: 5,  radiusRatio: 0.155, step: 72, offset: 0,  sizeRatio: 0.058}
+        ];
+        
+        var ringRadiiRatio = [0.218, 0.36];
+        var rayLines = [];
+        var triangleCanvas, triangleCtx;
+        var data = [[], [], []];
+        var triangles = [];
+        
+        var globalRotation = 0;
+        var offsets = [0, 0, 0];
+        
+        // Mode Play
+        var isPlaying = false;
+        var speed = 0.06;
+        var animationId = null;
+        
+        var colors = {
+            c1bg: "#4facfe", c1txt: "#ffffff",
+            c2bg: "#a8edea", c2txt: "#333333",
+            c3bg: "#ff9a56", c3txt: "#333333"
+        };
+
+        // === AUDIO ===
+        var audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+        function playTick() {
+            if (!audioCtx) return;
+            var osc = audioCtx.createOscillator();
+            var gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.value = 800;
+            osc.type = 'sine';
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.05);
+        }
+
+        // === PLAY MODE ===
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            var btn = document.getElementById("playBtn");
+            btn.textContent = isPlaying ? "Pause" : "Play";
+            btn.classList.toggle("active", isPlaying);
+            if (isPlaying) runAnimation();
+            else if (animationId) { cancelAnimationFrame(animationId); animationId = null; }
+        }
+
+        function runAnimation() {
+            if (!isPlaying) return;
+            globalRotation += speed;
+            updateAllPositions();
+            animationId = requestAnimationFrame(runAnimation);
+        }
+
+        function updateSpeed() {
+            speed = parseFloat(document.getElementById("speedSlider").value);
+        }
+
+        // === RESPONSIVE ===
+        function updateDimensions() {
+            var ga = document.getElementById("gameArea");
+            var rect = ga.getBoundingClientRect();
+            canvasSize = rect.width;
+            cx = canvasSize / 2;
+            cy = canvasSize / 2;
+            scale = canvasSize / 550;
+            
+            triangleCanvas = document.getElementById("triangleCanvas");
+            triangleCanvas.width = canvasSize;
+            triangleCanvas.height = canvasSize;
+            triangleCtx = triangleCanvas.getContext("2d");
+        }
+
+        function getCrownRadius(c) {
+            return crowns[c].radiusRatio * canvasSize;
+        }
+
+        function getCrownSize(c) {
+            return crowns[c].sizeRatio * canvasSize;
+        }
+
+        var dragData = {isDragging: false, crown: -1};
+        var triangleDrag = {active: false};
+        
+        // === MULTITOUCH ===
+        // Stocke les données de chaque doigt par son identifier
+        var activeTouches = {};
+
+        // === GEOMETRIE TRIANGLE ===
+        function lerp(a, b, t) {
+            return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+        }
+
+        function posOnTriangle(tri, t) {
+            var tt = ((t % 1) + 1) % 1;
+            var side = tt * 3;
+            var i = Math.floor(side);
+            if (i >= 3) i = 2;
+            var frac = side - i;
+            return lerp(tri[i], tri[(i + 1) % 3], frac);
+        }
+
+        function nearestParamOnTriangle(tri, x, y) {
+            var bestT = 0, bestDist = Infinity;
+            for (var tt = 0; tt < 1; tt += 0.005) {
+                var p = posOnTriangle(tri, tt);
+                var d = (x - p.x) * (x - p.x) + (y - p.y) * (y - p.y);
+                if (d < bestDist) { bestDist = d; bestT = tt; }
+            }
+            return bestT;
+        }
+
+        function snapToCorner(t) {
+            var tt = ((t % 1) + 1) % 1;
+            var corners = [0, 1/3, 2/3];
+            var best = 0, bestDist = Math.abs(tt - corners[0]);
+            for (var i = 1; i < 3; i++) {
+                var d = Math.abs(tt - corners[i]);
+                // Gérer le wrap-around (0 et 1 sont proches)
+                var dWrap = Math.abs(tt - (corners[i] - 1));
+                if (dWrap < d) d = dWrap;
+                dWrap = Math.abs(tt - (corners[i] + 1));
+                if (dWrap < d) d = dWrap;
+                if (d < bestDist) { bestDist = d; best = corners[i]; }
+            }
+            return best;
+        }
+
+        function getTriangleData(type, index) {
+            var vertices, points;
+            if (type === 'inner') {
+                var baseIndexes = findTwoNeighbors(2, index, 1);
+                vertices = [
+                    {crown: 2, index: index},          // sommet (t=0)
+                    {crown: 1, index: baseIndexes[0]}, // base gauche (t=1/3)
+                    {crown: 1, index: baseIndexes[1]}  // base droite (t=2/3)
+                ];
+            } else {
+                var baseIndexes = findTwoNeighbors(1, index, 0);
+                vertices = [
+                    {crown: 1, index: index},          // sommet (t=0)
+                    {crown: 0, index: baseIndexes[0]}, // base gauche (t=1/3)
+                    {crown: 0, index: baseIndexes[1]}  // base droite (t=2/3)
+                ];
+            }
+            points = vertices.map(function(v) {
+                return getPositionForCrown(v.crown, v.index);
+            });
+            return {vertices: vertices, points: points};
+        }
+
+        function findTriangleForNumber(crown, index) {
+            if (crown === 2) {
+                return {type: 'inner', index: index};
+            } else if (crown === 1) {
+                return {type: 'outer', index: index};
+            } else {
+                // C1 : trouver le triangle où ce chiffre est dans la base
+                for (var i = 0; i < 10; i++) {
+                    var baseIndexes = findTwoNeighbors(1, i, 0);
+                    if (baseIndexes[0] === index || baseIndexes[1] === index) {
+                        return {type: 'outer', index: i};
+                    }
+                }
+            }
+            return null;
+        }
+
+        // 5x chaque chiffre de 1-7 (35 total)
+        var digitPool = [];
+        function initDigitPool() {
+            digitPool = [];
+            for (var d = 1; d <= 7; d++) {
+                for (var i = 0; i < 5; i++) {
+                    digitPool.push(d);
+                }
+            }
+            // Mélanger
+            for (var i = digitPool.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var temp = digitPool[i];
+                digitPool[i] = digitPool[j];
+                digitPool[j] = temp;
+            }
+        }
+        function getNextDigit() {
+            return digitPool.length > 0 ? digitPool.pop() : Math.floor(Math.random() * 5) + 1;
+        }
+        function normalize(a) { while(a < 0) a += 360; while(a >= 360) a -= 360; return a; }
+
+        // === DRAG COURONNES ===
+        function getCrownZones() {
+            return [
+                {outer: canvasSize * 0.5, inner: canvasSize * 0.36},
+                {outer: canvasSize * 0.36, inner: canvasSize * 0.218},
+                {outer: canvasSize * 0.218, inner: canvasSize * 0.08}
+            ];
+        }
+
+        function setupCrownDrag() {
+            var ga = document.getElementById("gameArea");
+            // Mouse events (single touch simulation)
+            ga.addEventListener('mousedown', function(e) {
+                handleTouchStart('mouse', e.clientX, e.clientY, e.target);
+                e.preventDefault();
+            });
+            document.addEventListener('mousemove', function(e) {
+                handleTouchMove('mouse', e.clientX, e.clientY);
+            });
+            document.addEventListener('mouseup', function(e) {
+                handleTouchEnd('mouse');
+            });
+            
+            // Touch events (multitouch)
+            ga.addEventListener('touchstart', function(e) {
+                initAudio();
+                for (var i = 0; i < e.changedTouches.length; i++) {
+                    var touch = e.changedTouches[i];
+                    var target = document.elementFromPoint(touch.clientX, touch.clientY);
+                    handleTouchStart(touch.identifier, touch.clientX, touch.clientY, target);
+                }
+                e.preventDefault();
+            }, {passive: false});
+            
+            document.addEventListener('touchmove', function(e) {
+                for (var i = 0; i < e.changedTouches.length; i++) {
+                    var touch = e.changedTouches[i];
+                    handleTouchMove(touch.identifier, touch.clientX, touch.clientY);
+                }
+                e.preventDefault();
+            }, {passive: false});
+            
+            document.addEventListener('touchend', function(e) {
+                for (var i = 0; i < e.changedTouches.length; i++) {
+                    var touch = e.changedTouches[i];
+                    handleTouchEnd(touch.identifier);
+                }
+            });
+            
+            document.addEventListener('touchcancel', function(e) {
+                for (var i = 0; i < e.changedTouches.length; i++) {
+                    var touch = e.changedTouches[i];
+                    handleTouchEnd(touch.identifier);
+                }
+            });
+        }
+
+        function handleTouchStart(id, clientX, clientY, target) {
+            var ga = document.getElementById("gameArea");
+            var rect = ga.getBoundingClientRect();
+            var x = clientX - rect.left;
+            var y = clientY - rect.top;
+            var relX = x - cx;
+            var relY = y - cy;
+            var dist = Math.sqrt(relX * relX + relY * relY);
+            
+            // Si on touche un chiffre -> triangle drag
+            if (target && target.classList && target.classList.contains('number')) {
+                var crown = parseInt(target.dataset.crown);
+                var index = parseInt(target.dataset.index);
+                
+                activeTouches[id] = {
+                    type: 'triangle',
+                    active: true,
+                    crown: crown,
+                    index: index,
+                    startX: x,
+                    startY: y,
+                    directionDecided: false,
+                    triangleType: null,
+                    triangleIndex: null,
+                    element: target,
+                    currentDelta: 0
+                };
+                target.classList.add('dragging');
+                return;
+            }
+            
+            // Sinon -> crown drag
+            var targetCrown = -1;
+            var crownZones = getCrownZones();
+            for (var c = 0; c < 3; c++) {
+                if (dist <= crownZones[c].outer && dist >= crownZones[c].inner) {
+                    targetCrown = c;
+                    break;
+                }
+            }
+            
+            if (targetCrown >= 0) {
+                activeTouches[id] = {
+                    type: 'crown',
+                    isDragging: true,
+                    crown: targetCrown,
+                    startAngle: Math.atan2(relY, relX) * 180 / Math.PI,
+                    startOffset: offsets[targetCrown]
+                };
+            }
+        }
+
+        function handleTouchMove(id, clientX, clientY) {
+            var touchData = activeTouches[id];
+            if (!touchData) return;
+            
+            var ga = document.getElementById("gameArea");
+            var rect = ga.getBoundingClientRect();
+            var x = clientX - rect.left;
+            var y = clientY - rect.top;
+            
+            if (touchData.type === 'crown') {
+                // Crown drag
+                var relX = x - cx;
+                var relY = y - cy;
+                var angle = Math.atan2(relY, relX) * 180 / Math.PI;
+                
+                var oldOffset = offsets[touchData.crown];
+                var newOffset = touchData.startOffset + (angle - touchData.startAngle);
+                
+                var step = crowns[touchData.crown].step;
+                var oldCran = Math.round(oldOffset / step);
+                var newCran = Math.round(newOffset / step);
+                if (oldCran !== newCran) {
+                    playTick();
+                }
+                
+                offsets[touchData.crown] = newOffset;
+                updateAllPositions();
+                
+            } else if (touchData.type === 'triangle') {
+                // Triangle drag
+                doTriangleDragForTouch(touchData, x, y);
+            }
+        }
+
+        function handleTouchEnd(id) {
+            var touchData = activeTouches[id];
+            if (!touchData) return;
+            
+            if (touchData.type === 'crown') {
+                // Snap to step
+                var c = touchData.crown;
+                var step = crowns[c].step;
+                var targetOffset = Math.round(offsets[c] / step) * step;
+                
+                var startOffset = offsets[c];
+                var startTime = performance.now();
+                function animSnap(t) {
+                    var p = Math.min((t - startTime) / 150, 1);
+                    offsets[c] = startOffset + (targetOffset - startOffset) * (1 - Math.pow(1 - p, 3));
+                    updateAllPositions();
+                    if (p < 1) requestAnimationFrame(animSnap);
+                    else offsets[c] = targetOffset;
+                }
+                requestAnimationFrame(animSnap);
+                
+            } else if (touchData.type === 'triangle') {
+                endTriangleDragForTouch(touchData);
+            }
+            
+            delete activeTouches[id];
+        }
+
+        function doTriangleDragForTouch(touchData, x, y) {
+            if (!touchData.active) return;
+            
+            var dx = x - touchData.startX;
+            var dy = y - touchData.startY;
+            var dist = Math.sqrt(dx*dx + dy*dy);
+            
+            // Décider la direction après un petit mouvement
+            if (!touchData.directionDecided && dist > 10) {
+                var startDist = Math.sqrt(Math.pow(touchData.startX - cx, 2) + Math.pow(touchData.startY - cy, 2));
+                var currentDist = Math.sqrt(Math.pow(x - cx, 2) + Math.pow(y - cy, 2));
+                var goingInward = currentDist < startDist;
+                
+                if (touchData.crown === 2) {
+                    touchData.triangleType = 'inner';
+                    touchData.triangleIndex = touchData.index;
+                } else if (touchData.crown === 0) {
+                    var triInfo = findTriangleForNumber(0, touchData.index);
+                    touchData.triangleType = 'outer';
+                    touchData.triangleIndex = triInfo ? triInfo.index : 0;
+                } else {
+                    if (goingInward) {
+                        for (var i = 0; i < 5; i++) {
+                            var baseIndexes = findTwoNeighbors(2, i, 1);
+                            if (baseIndexes[0] === touchData.index || baseIndexes[1] === touchData.index) {
+                                touchData.triangleType = 'inner';
+                                touchData.triangleIndex = i;
+                                break;
+                            }
+                        }
+                    } else {
+                        touchData.triangleType = 'outer';
+                        touchData.triangleIndex = touchData.index;
+                    }
+                }
+                
+                if (touchData.triangleType) {
+                    touchData.directionDecided = true;
+                    touchData.triData = getTriangleData(touchData.triangleType, touchData.triangleIndex);
+                    touchData.initialTs = [0, 1/3, 2/3];
+                    touchData.startMouseT = nearestParamOnTriangle(touchData.triData.points, touchData.startX, touchData.startY);
+                }
+            }
+            
+            // Si direction décidée, animer le glissement
+            if (touchData.directionDecided && touchData.triData) {
+                var triData = touchData.triData;
+                var newMouseT = nearestParamOnTriangle(triData.points, x, y);
+                var delta = newMouseT - touchData.startMouseT;
+                
+                for (var v = 0; v < 3; v++) {
+                    var t = ((touchData.initialTs[v] + delta) % 1 + 1) % 1;
+                    var vert = triData.vertices[v];
+                    var pos = posOnTriangle(triData.points, t);
+                    var elem = data[vert.crown][vert.index].elem;
+                    var size = getCrownSize(vert.crown);
+                    elem.style.left = (pos.x - size/2) + "px";
+                    elem.style.top = (pos.y - size/2) + "px";
+                }
+                
+                touchData.currentDelta = delta;
+            }
+        }
+
+        function endTriangleDragForTouch(touchData) {
+            if (!touchData.active) return;
+            
+            if (touchData.element) {
+                touchData.element.classList.remove('dragging');
+            }
+            
+            if (touchData.directionDecided && touchData.triData && touchData.currentDelta !== undefined) {
+                var delta = touchData.currentDelta;
+                var triData = touchData.triData;
+                var threshold = 0.05;
+                
+                if (Math.abs(delta) > threshold) {
+                    var shift = delta > 0 ? 1 : -1;
+                    
+                    var oldValues = [];
+                    var oldColors = [];
+                    for (var v = 0; v < 3; v++) {
+                        var vert = triData.vertices[v];
+                        oldValues.push(data[vert.crown][vert.index].value);
+                        oldColors.push(data[vert.crown][vert.index].originColor);
+                    }
+                    
+                    for (var v = 0; v < 3; v++) {
+                        var sourceV = ((v - shift) % 3 + 3) % 3;
+                        var vert = triData.vertices[v];
+                        var newVal = oldValues[sourceV];
+                        var newColor = oldColors[sourceV];
+                        data[vert.crown][vert.index].value = newVal;
+                        data[vert.crown][vert.index].originColor = newColor;
+                        data[vert.crown][vert.index].elem.textContent = newVal;
+                        applyColor(data[vert.crown][vert.index].elem, newColor);
+                    }
+                    
+                    playTick();
+                }
+            }
+            
+            updateAllPositions();
+            touchData.active = false;
+        }
+
+        // === TAILLES ===
+        function updateSizes() {
+            crowns[0].size = parseInt(document.getElementById("sizeC1").value);
+            crowns[1].size = parseInt(document.getElementById("sizeC2").value);
+            crowns[2].size = parseInt(document.getElementById("sizeC3").value);
+            crowns[0].fontSize = Math.round(crowns[0].size * 0.45);
+            crowns[1].fontSize = Math.round(crowns[1].size * 0.45);
+            crowns[2].fontSize = Math.round(crowns[2].size * 0.45);
+            
+            document.getElementById("sizeC1Val").textContent = crowns[0].size;
+            document.getElementById("sizeC2Val").textContent = crowns[1].size;
+            document.getElementById("sizeC3Val").textContent = crowns[2].size;
+            
+            // Mettre à jour les éléments
+            for (var c = 0; c < 3; c++) {
+                for (var i = 0; i < data[c].length; i++) {
+                    var elem = data[c][i].elem;
+                    if (elem) {
+                        elem.style.width = crowns[c].size + "px";
+                        elem.style.height = crowns[c].size + "px";
+                        elem.style.fontSize = crowns[c].fontSize + "px";
+                    }
+                }
+            }
+            updateAllPositions();
+        }
+
+        // === TRIANGLES ===
+        function findTwoNeighbors(sommetCrown, sommetIndex, baseCrown) {
+            var sommetAngle = normalize(sommetIndex * crowns[sommetCrown].step + crowns[sommetCrown].offset + globalRotation + offsets[sommetCrown]);
+            var neighbors = [];
+            for (var i = 0; i < crowns[baseCrown].count; i++) {
+                var baseAngle = normalize(i * crowns[baseCrown].step + crowns[baseCrown].offset + globalRotation + offsets[baseCrown]);
+                var diff = Math.abs(sommetAngle - baseAngle);
+                if (diff > 180) diff = 360 - diff;
+                neighbors.push({index: i, diff: diff});
+            }
+            neighbors.sort(function(a, b) { return a.diff - b.diff; });
+            return [neighbors[0].index, neighbors[1].index];
+        }
+
+        function getPositionForCrown(crown, index) {
+            var angle = (index * crowns[crown].step + crowns[crown].offset + globalRotation + offsets[crown]) * Math.PI / 180;
+            var radius = getCrownRadius(crown);
+            return {
+                x: cx + radius * Math.cos(angle),
+                y: cy + radius * Math.sin(angle)
+            };
+        }
+
+        function initTriangleCanvas() {
+            triangleCanvas = document.getElementById("triangleCanvas");
+            triangleCtx = triangleCanvas.getContext("2d");
+        }
+
+        function drawTriangles() {
+            if (!triangleCtx) return;
+            var show = document.getElementById("showTriangles").checked;
+            triangleCtx.clearRect(0, 0, canvasSize, canvasSize);
+            if (!show) return;
+
+            // 5 triangles internes (bleu) : sommet C3, base C2
+            for (var i = 0; i < 5; i++) {
+                var sommet = getPositionForCrown(2, i);
+                var baseIndexes = findTwoNeighbors(2, i, 1);
+                var base1 = getPositionForCrown(1, baseIndexes[0]);
+                var base2 = getPositionForCrown(1, baseIndexes[1]);
+
+                triangleCtx.beginPath();
+                triangleCtx.moveTo(base1.x, base1.y);
+                triangleCtx.lineTo(sommet.x, sommet.y);
+                triangleCtx.lineTo(base2.x, base2.y);
+                triangleCtx.closePath();
+                triangleCtx.fillStyle = "rgba(100, 200, 255, 0.2)";
+                triangleCtx.fill();
+                triangleCtx.strokeStyle = "rgba(50, 150, 255, 0.6)";
+                triangleCtx.lineWidth = 2;
+                triangleCtx.stroke();
+            }
+
+            // 10 triangles externes (orange) : sommet C2, base C1
+            for (var i = 0; i < 10; i++) {
+                var sommet = getPositionForCrown(1, i);
+                var baseIndexes = findTwoNeighbors(1, i, 0);
+                var base1 = getPositionForCrown(0, baseIndexes[0]);
+                var base2 = getPositionForCrown(0, baseIndexes[1]);
+
+                triangleCtx.beginPath();
+                triangleCtx.moveTo(base1.x, base1.y);
+                triangleCtx.lineTo(sommet.x, sommet.y);
+                triangleCtx.lineTo(base2.x, base2.y);
+                triangleCtx.closePath();
+                triangleCtx.fillStyle = "rgba(255, 200, 100, 0.15)";
+                triangleCtx.fill();
+                triangleCtx.strokeStyle = "rgba(255, 180, 50, 0.6)";
+                triangleCtx.lineWidth = 2;
+                triangleCtx.stroke();
+            }
+        }
+
+        // === AXES ===
+        function createRayLines() {
+            document.querySelectorAll(".ray-line").forEach(function(l) { l.remove(); });
+            rayLines = [];
+            var ga = document.getElementById("gameArea");
+            for (var i = 0; i < 10; i++) {
+                var line = document.createElement("div");
+                line.className = "ray-line";
+                line.dataset.baseAngle = i * 36;
+                ga.appendChild(line);
+                rayLines.push(line);
+            }
+            updateRayLines();
+        }
+
+        function updateRayLines() {
+            rayLines.forEach(function(line) {
+                var angle = parseFloat(line.dataset.baseAngle) + globalRotation + crowns[1].offset + offsets[1];
+                line.style.transform = "rotate(" + angle + "deg)";
+            });
+        }
+
+        function toggleAxes() {
+            var show = document.getElementById("showAxes").checked;
+            rayLines.forEach(function(l) { l.style.opacity = show ? "1" : "0"; });
+        }
+
+        function toggleTriangles() {
+            drawTriangles();
+        }
+
+        // === RINGS ===
+        function updateRings() {
+            var ring1 = document.getElementById("ring1");
+            var ring2 = document.getElementById("ring2");
+            var r1 = ringRadiiRatio[0] * canvasSize;
+            var r2 = ringRadiiRatio[1] * canvasSize;
+            ring1.style.width = (r1 * 2) + "px";
+            ring1.style.height = (r1 * 2) + "px";
+            ring1.style.transform = "translate(-50%, -50%)";
+            ring2.style.width = (r2 * 2) + "px";
+            ring2.style.height = (r2 * 2) + "px";
+            ring2.style.transform = "translate(-50%, -50%)";
+        }
+
+        // === NUMBERS ===
+        function applyColor(elem, colorIndex) {
+            if (colorIndex === 0) { elem.style.background = colors.c1bg; elem.style.color = colors.c1txt; }
+            else if (colorIndex === 1) { elem.style.background = colors.c2bg; elem.style.color = colors.c2txt; }
+            else { elem.style.background = colors.c3bg; elem.style.color = colors.c3txt; }
+        }
+
+        function createNumber(value, crown, index) {
+            var elem = document.createElement("div");
+            elem.className = "number";
+            elem.textContent = value;
+            var size = getCrownSize(crown);
+            elem.style.width = size + "px";
+            elem.style.height = size + "px";
+            elem.style.fontSize = (size * 0.45) + "px";
+            elem.dataset.crown = crown;
+            elem.dataset.index = index;
+            applyColor(elem, crown);
+            document.getElementById("gameArea").appendChild(elem);
+            return elem;
+        }
+
+        function positionNumber(elem, crown, index) {
+            var pos = getPositionForCrown(crown, index);
+            var size = getCrownSize(crown);
+            elem.style.left = (pos.x - size/2) + "px";
+            elem.style.top = (pos.y - size/2) + "px";
+        }
+
+        function updateAllPositions() {
+            for (var c = 0; c < 3; c++) {
+                for (var i = 0; i < data[c].length; i++) {
+                    if (data[c][i].elem) {
+                        positionNumber(data[c][i].elem, c, i);
+                    }
+                }
+            }
+            drawTriangles();
+            updateRayLines();
+        }
+
+        // === INIT ===
+        function init() {
+            var ga = document.getElementById("gameArea");
+            document.querySelectorAll(".number").forEach(function(el) { el.remove(); });
+            
+            // Mettre à jour les dimensions
+            updateDimensions();
+            
+            data = [[], [], []];
+            globalRotation = 0;
+            offsets = [0, 0, 0];
+            
+            // Initialiser le pool de chiffres (5x chaque 1-7)
+            initDigitPool();
+            
+            // Create numbers
+            for (var c = 0; c < 3; c++) {
+                for (var i = 0; i < crowns[c].count; i++) {
+                    var val = getNextDigit();
+                    var elem = createNumber(val, c, i);
+                    data[c].push({ value: val, elem: elem, originColor: c });
+                }
+            }
+            
+            initTriangleCanvas();
+            createRayLines();
+            toggleAxes();
+            updateRings();
+            updateAllPositions();
+            
+            document.getElementById("remaining").textContent = 
+                crowns[0].count + crowns[1].count + crowns[2].count;
+        }
+
+        // Resize handler
+        window.addEventListener('resize', function() {
+            updateDimensions();
+            updateRings();
+            // Mettre à jour les tailles des éléments
+            for (var c = 0; c < 3; c++) {
+                for (var i = 0; i < data[c].length; i++) {
+                    if (data[c][i].elem) {
+                        var size = getCrownSize(c);
+                        data[c][i].elem.style.width = size + "px";
+                        data[c][i].elem.style.height = size + "px";
+                        data[c][i].elem.style.fontSize = (size * 0.45) + "px";
+                    }
+                }
+            }
+            updateAllPositions();
+        });
+
+        setupCrownDrag();
+        init();
+    </script>
+</body>
+</html>
