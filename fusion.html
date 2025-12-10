@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fusion</title>
+    <title>Fusion 2</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { 
@@ -19,57 +19,53 @@
             display: flex; 
             flex-direction: column; 
             align-items: center; 
-            justify-content: space-between; 
+            justify-content: center; 
             color: white; 
-            padding: 8px;
-            padding-top: max(8px, env(safe-area-inset-top));
-            padding-bottom: max(8px, env(safe-area-inset-bottom));
-            overflow: hidden;
+            padding: 5px;
+            gap: 5px;
         }
-        h1 { font-size: 1em; margin: 5px 0; color: #ffd700; flex-shrink: 0; }
-        .game-container { background: #ffffff; border-radius: 50%; box-shadow: 0 10px 40px rgba(0,0,0,0.3); flex-shrink: 0; }
-        .game-area { 
-            position: relative; 
-            width: min(92vw, 55vh, 450px); 
-            height: min(92vw, 55vh, 450px); 
+        h1 { font-size: 1em; color: #ffd700; }
+        .game-container { 
             background: #ffffff; 
             border-radius: 50%; 
-            overflow: hidden; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3); 
         }
-        h1 { font-size: 1.4em; margin-bottom: 10px; color: #ffd700; }
-        .game-container { background: #ffffff; border-radius: 50%; box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
-        .game-area { position: relative; width: 550px; height: 550px; background: #ffffff; border-radius: 50%; overflow: hidden; }
+        .game-area { 
+            position: relative; 
+            width: min(88vw, 50vh);
+            height: min(88vw, 50vh);
+            background: #ffffff; 
+            border-radius: 50%; 
+            overflow: visible; 
+        }
         .ray-line { position: absolute; top: 50%; left: 50%; width: 50%; height: 2px; background: linear-gradient(90deg, rgba(255,215,0,0.3) 0%, rgba(255,150,0,0.6) 100%); transform-origin: left center; pointer-events: none; opacity: 0; }
         .ring { position: absolute; border-radius: 50%; top: 50%; left: 50%; pointer-events: none; border: 2px dashed rgba(80,80,80,0.25); }
         #triangleCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
         .center-circle { width: 16%; height: 16%; background: linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffa500 100%); border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; justify-content: center; align-items: center; color: #333; box-shadow: 0 0 40px rgba(255,215,0,0.5); pointer-events: none; z-index: 100; border: 3px solid rgba(255,255,255,0.9); }
-        .center-icon { font-size: 1.2em; }
-        .center-remaining { font-size: 1.4em; font-weight: bold; }
-        .center-label { font-size: 0.45em; opacity: 0.7; }
+        .center-icon { font-size: 1em; }
+        .center-remaining { font-size: 1.2em; font-weight: bold; }
+        .center-label { font-size: 0.4em; opacity: 0.7; }
         .number { position: absolute; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; box-shadow: 0 2px 6px rgba(0,0,0,0.3); user-select: none; z-index: 10; pointer-events: auto; cursor: grab; }
         .number.dragging { cursor: grabbing; }
-        .controls { display: flex; gap: 5px; margin: 5px 0; flex-wrap: wrap; justify-content: center; align-items: center; flex-shrink: 0; }
-        .control-item { background: rgba(255,255,255,0.1); padding: 3px 5px; border-radius: 6px; display: flex; align-items: center; gap: 3px; font-size: 0.65em; }
-        button { padding: 5px 10px; font-size: 0.75em; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .controls { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; align-items: center; }
+        .control-item { background: rgba(255,255,255,0.1); padding: 3px 5px; border-radius: 6px; display: flex; align-items: center; gap: 3px; font-size: 0.6em; }
+        button { padding: 5px 10px; font-size: 0.7em; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
         button.play-btn { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
         button.play-btn.active { background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%); }
-        .toggle-switch { position: relative; width: 32px; height: 18px; }
+        .toggle-switch { position: relative; width: 28px; height: 16px; }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
-        .toggle-slider { position: absolute; cursor: pointer; inset: 0; background-color: rgba(255,255,255,0.2); border-radius: 18px; }
-        .toggle-slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: 0.2s; }
+        .toggle-slider { position: absolute; cursor: pointer; inset: 0; background-color: rgba(255,255,255,0.2); border-radius: 16px; }
+        .toggle-slider:before { position: absolute; content: ""; height: 10px; width: 10px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: 0.2s; }
         input:checked + .toggle-slider { background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%); }
-        input:checked + .toggle-slider:before { transform: translateX(14px); }
+        input:checked + .toggle-slider:before { transform: translateX(12px); }
         .size-controls { display: none; }
-        .c1-label { color: #4facfe; }
-        .c2-label { color: #a8edea; }
-        .c3-label { color: #ff9a56; }
     </style>
 </head>
 <body>
-    <h1>🔺 Fusion 🔺</h1>
+    <h1>🔺 Fusion 2 🔺</h1>
     <div class="game-container">
         <div class="game-area" id="gameArea">
-            <canvas id="triangleCanvas" width="550" height="550"></canvas>
+            <canvas id="triangleCanvas"></canvas>
             <div class="ring" id="ring1"></div>
             <div class="ring" id="ring2"></div>
             <div class="center-circle">
