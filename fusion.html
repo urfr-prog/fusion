@@ -62,13 +62,13 @@
     </style>
 </head>
 <body>
-    <h1>🔺 Fusion 2 🔺</h1>
+    <h1>🔺 Fusion 3 🔺</h1>
     <div class="game-container">
         <div class="game-area" id="gameArea">
             <canvas id="triangleCanvas"></canvas>
             <div class="ring" id="ring1"></div>
             <div class="ring" id="ring2"></div>
-            <div class="center-circle">
+            <div class="center-circle" id="centerCircle">
                 <div class="center-icon">☀️</div>
                 <div class="center-remaining" id="remaining">35</div>
                 <div class="center-label">chiffres</div>
@@ -79,7 +79,14 @@
         <button id="playBtn" class="play-btn" onclick="togglePlay()">Play</button>
         <div class="control-item">
             <label>Vitesse:</label>
-            <input type="range" id="speedSlider" min="0.02" max="0.2" step="0.02" value="0.06" oninput="updateSpeed()" style="width:50px;">
+            <input type="range" id="speedSlider" min="0.02" max="0.2" step="0.02" value="0.06" oninput="updateSpeed()" style="width:40px;">
+        </div>
+        <div class="control-item">
+            <label>Soleil:</label>
+            <label class="toggle-switch">
+                <input type="checkbox" id="showSun" checked onchange="toggleSun()">
+                <span class="toggle-slider"></span>
+            </label>
         </div>
         <div class="control-item">
             <label>Axes:</label>
@@ -96,6 +103,16 @@
             </label>
         </div>
         <button onclick="init()">Reset</button>
+    </div>
+    <div class="controls">
+        <div class="control-item">
+            <label>Taille:</label>
+            <input type="range" id="sizeSlider" min="0.04" max="0.09" step="0.005" value="0.058" oninput="updateSize()" style="width:50px;">
+        </div>
+        <div class="control-item">
+            <label>Opacité:</label>
+            <input type="range" id="opacitySlider" min="0.1" max="1" step="0.1" value="0.5" oninput="updateOpacity()" style="width:50px;">
+        </div>
     </div>
     <div class="size-controls">
         <div class="size-group">
@@ -116,6 +133,8 @@
         var canvasSize = 550;
         var scale = 1;
         var cx = 275, cy = 275;
+        var globalSizeRatio = 0.058;
+        var globalOpacity = 0.5;
         var crowns = [
             {count: 20, radiusRatio: 0.436, step: 18, offset: 27, sizeRatio: 0.058},
             {count: 10, radiusRatio: 0.282, step: 36, offset: 18, sizeRatio: 0.058},
@@ -182,6 +201,37 @@
 
         function updateSpeed() {
             speed = parseFloat(document.getElementById("speedSlider").value);
+        }
+
+        // === SIZE & OPACITY ===
+        function updateSize() {
+            globalSizeRatio = parseFloat(document.getElementById("sizeSlider").value);
+            crowns[0].sizeRatio = globalSizeRatio;
+            crowns[1].sizeRatio = globalSizeRatio;
+            crowns[2].sizeRatio = globalSizeRatio;
+            // Mettre à jour les tailles des éléments
+            for (var c = 0; c < 3; c++) {
+                for (var i = 0; i < data[c].length; i++) {
+                    if (data[c][i].elem) {
+                        var size = getCrownSize(c);
+                        data[c][i].elem.style.width = size + "px";
+                        data[c][i].elem.style.height = size + "px";
+                        data[c][i].elem.style.fontSize = (size * 0.45) + "px";
+                    }
+                }
+            }
+            updateAllPositions();
+        }
+
+        function updateOpacity() {
+            globalOpacity = parseFloat(document.getElementById("opacitySlider").value);
+            drawTriangles();
+            toggleAxes();
+        }
+
+        function toggleSun() {
+            var show = document.getElementById("showSun").checked;
+            document.getElementById("centerCircle").style.display = show ? "flex" : "none";
         }
 
         // === RESPONSIVE ===
@@ -654,6 +704,9 @@
             triangleCtx.clearRect(0, 0, canvasSize, canvasSize);
             if (!show) return;
 
+            var fillOpacity = globalOpacity * 0.4;
+            var strokeOpacity = globalOpacity;
+
             // 5 triangles internes (bleu) : sommet C3, base C2
             for (var i = 0; i < 5; i++) {
                 var sommet = getPositionForCrown(2, i);
@@ -666,9 +719,9 @@
                 triangleCtx.lineTo(sommet.x, sommet.y);
                 triangleCtx.lineTo(base2.x, base2.y);
                 triangleCtx.closePath();
-                triangleCtx.fillStyle = "rgba(100, 200, 255, 0.2)";
+                triangleCtx.fillStyle = "rgba(100, 200, 255, " + fillOpacity + ")";
                 triangleCtx.fill();
-                triangleCtx.strokeStyle = "rgba(50, 150, 255, 0.6)";
+                triangleCtx.strokeStyle = "rgba(50, 150, 255, " + strokeOpacity + ")";
                 triangleCtx.lineWidth = 2;
                 triangleCtx.stroke();
             }
@@ -685,9 +738,9 @@
                 triangleCtx.lineTo(sommet.x, sommet.y);
                 triangleCtx.lineTo(base2.x, base2.y);
                 triangleCtx.closePath();
-                triangleCtx.fillStyle = "rgba(255, 200, 100, 0.15)";
+                triangleCtx.fillStyle = "rgba(255, 200, 100, " + (fillOpacity * 0.75) + ")";
                 triangleCtx.fill();
-                triangleCtx.strokeStyle = "rgba(255, 180, 50, 0.6)";
+                triangleCtx.strokeStyle = "rgba(255, 180, 50, " + strokeOpacity + ")";
                 triangleCtx.lineWidth = 2;
                 triangleCtx.stroke();
             }
@@ -717,7 +770,7 @@
 
         function toggleAxes() {
             var show = document.getElementById("showAxes").checked;
-            rayLines.forEach(function(l) { l.style.opacity = show ? "1" : "0"; });
+            rayLines.forEach(function(l) { l.style.opacity = show ? globalOpacity : "0"; });
         }
 
         function toggleTriangles() {
@@ -732,10 +785,11 @@
             var r2 = ringRadiiRatio[1] * canvasSize;
             ring1.style.width = (r1 * 2) + "px";
             ring1.style.height = (r1 * 2) + "px";
-            ring1.style.transform = "translate(-50%, -50%)";
+            // Rotation inverse par rapport à globalRotation
+            ring1.style.transform = "translate(-50%, -50%) rotate(" + (-globalRotation) + "deg)";
             ring2.style.width = (r2 * 2) + "px";
             ring2.style.height = (r2 * 2) + "px";
-            ring2.style.transform = "translate(-50%, -50%)";
+            ring2.style.transform = "translate(-50%, -50%) rotate(" + (-globalRotation) + "deg)";
         }
 
         // === NUMBERS ===
@@ -777,6 +831,7 @@
             }
             drawTriangles();
             updateRayLines();
+            updateRings();
         }
 
         // === INIT ===
