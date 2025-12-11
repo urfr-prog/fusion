@@ -3,74 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fusion 4</title>
+    <title>Fusion 5</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { height: 100%; overflow: hidden; touch-action: none; }
+        html, body { height: 100%; overflow: hidden; }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
             background: #1a1a2e; 
             min-height: 100vh;
-            display: flex; flex-direction: column; align-items: center; justify-content: space-evenly; 
-            color: white; padding: 5px;
+            min-height: -webkit-fill-available;
+            display: flex;
+            align-items: center; 
+            justify-content: center; 
+            color: white;
+            padding: 5px;
         }
+        
+        /* Container principal - s'adapte à l'orientation */
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-evenly;
+            width: 100%;
+            height: 100%;
+            gap: 10px;
+        }
+        
+        /* Mode paysage */
+        @media (orientation: landscape) {
+            .main-container {
+                flex-direction: row;
+            }
+            .game-area {
+                width: min(42vw, 85vh) !important;
+                height: min(42vw, 85vh) !important;
+            }
+            .menu-panel {
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+        }
+        
+        /* Mode portrait */
+        @media (orientation: portrait) {
+            .game-area {
+                width: min(85vw, 42vh) !important;
+                height: min(85vw, 42vh) !important;
+            }
+        }
+        
+        /* Menu button - touch-action auto pour répondre aux taps */
         .menu-btn {
             position: fixed; 
-            top: max(5px, env(safe-area-inset-top, 5px)); 
-            right: max(5px, env(safe-area-inset-right, 5px));
-            width: 40px; height: 40px;
-            background: rgba(255,255,255,0.2); border: none; border-radius: 10px;
-            cursor: pointer; z-index: 1000;
+            top: max(8px, env(safe-area-inset-top)); 
+            right: max(8px, env(safe-area-inset-right));
+            width: 44px; height: 44px;
+            background: rgba(255,215,0,0.9);
+            border: none; border-radius: 12px;
+            cursor: pointer; z-index: 1001;
             display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
-        .menu-btn span { display: block; width: 22px; height: 3px; background: #ffd700; transition: 0.3s; border-radius: 2px; }
-        .menu-btn.open span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+        .menu-btn span { 
+            display: block; width: 24px; height: 3px; 
+            background: #1a1a2e; 
+            transition: 0.3s; border-radius: 2px;
+            pointer-events: none;
+        }
+        .menu-btn.open { background: rgba(255,100,100,0.9); }
+        .menu-btn.open span:nth-child(1) { transform: rotate(45deg) translate(5px, 6px); }
         .menu-btn.open span:nth-child(2) { opacity: 0; }
-        .menu-btn.open span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+        .menu-btn.open span:nth-child(3) { transform: rotate(-45deg) translate(5px, -6px); }
+        
+        /* Menu panel */
         .menu-panel {
             position: fixed; 
-            top: calc(max(5px, env(safe-area-inset-top, 5px)) + 45px); 
-            right: max(5px, env(safe-area-inset-right, 5px));
-            background: rgba(30, 30, 60, 0.97); border-radius: 14px; padding: 18px;
-            z-index: 999; display: none; flex-direction: column; gap: 12px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.6);
-            min-width: 220px;
+            top: calc(max(8px, env(safe-area-inset-top)) + 50px); 
+            right: max(8px, env(safe-area-inset-right));
+            background: rgba(20, 20, 40, 0.98); 
+            border-radius: 16px; 
+            padding: 20px;
+            z-index: 1000; 
+            display: none; 
+            flex-direction: column; 
+            gap: 14px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+            min-width: 240px;
+            touch-action: manipulation;
+            border: 1px solid rgba(255,215,0,0.3);
         }
         .menu-panel.open { display: flex; }
-        .menu-panel h3 { color: #ffd700; font-size: 0.9em; margin-bottom: 2px; }
-        .menu-row { display: flex; align-items: center; gap: 10px; }
-        .menu-row label { font-size: 0.75em; min-width: 60px; }
+        .menu-panel h3 { color: #ffd700; font-size: 0.95em; margin-bottom: 4px; }
+        .menu-row { display: flex; align-items: center; gap: 12px; min-height: 36px; }
+        .menu-row label { font-size: 0.8em; min-width: 65px; }
+        
+        /* Sliders optimisés touch */
         .menu-row input[type="range"] { 
-            width: 120px; 
-            height: 28px;
+            width: 130px; 
+            height: 36px;
             -webkit-appearance: none;
             background: transparent;
+            touch-action: manipulation;
         }
         .menu-row input[type="range"]::-webkit-slider-runnable-track {
-            height: 8px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 4px;
+            height: 10px;
+            background: rgba(255,255,255,0.25);
+            border-radius: 5px;
         }
         .menu-row input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 24px;
-            height: 24px;
+            width: 28px;
+            height: 28px;
             background: linear-gradient(135deg, #ffd700, #ffa500);
             border-radius: 50%;
-            margin-top: -8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            margin-top: -9px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
         }
-        .toggle-switch { position: relative; width: 44px; height: 26px; }
+        
+        /* Toggles optimisés touch */
+        .toggle-switch { 
+            position: relative; width: 50px; height: 30px; 
+            touch-action: manipulation;
+        }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
-        .toggle-slider { position: absolute; cursor: pointer; inset: 0; background-color: rgba(255,255,255,0.25); border-radius: 26px; }
-        .toggle-slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .toggle-slider { 
+            position: absolute; cursor: pointer; inset: 0; 
+            background-color: rgba(255,255,255,0.25); border-radius: 30px; 
+        }
+        .toggle-slider:before { 
+            position: absolute; content: ""; 
+            height: 24px; width: 24px; left: 3px; bottom: 3px; 
+            background-color: white; border-radius: 50%; 
+            transition: 0.2s; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3); 
+        }
         input:checked + .toggle-slider { background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%); }
-        input:checked + .toggle-slider:before { transform: translateX(18px); }
-        .menu-btn-action { padding: 10px 14px; font-size: 0.8em; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        input:checked + .toggle-slider:before { transform: translateX(20px); }
+        
+        /* Boutons action */
+        .menu-btn-action { 
+            padding: 12px 18px; font-size: 0.85em; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; border: none; border-radius: 10px; 
+            cursor: pointer; font-weight: bold; 
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
         .menu-btn-action.play-btn { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
         .menu-btn-action.play-btn.active { background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%); }
-        .game-container { background: #ffffff; border-radius: 50%; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
-        .game-area { position: relative; width: min(85vw, 40vh); height: min(85vw, 40vh); background: #ffffff; border-radius: 50%; overflow: visible; }
+        
+        /* Game containers */
+        .game-container { 
+            background: #ffffff; border-radius: 50%; 
+            box-shadow: 0 5px 25px rgba(0,0,0,0.4);
+            touch-action: none;
+        }
+        .game-area { 
+            position: relative; 
+            background: #ffffff; border-radius: 50%; 
+            overflow: visible;
+            touch-action: none;
+        }
         .ray-line { position: absolute; top: 50%; left: 50%; width: 50%; height: 2px; background: linear-gradient(90deg, rgba(255,215,0,0.3) 0%, rgba(255,150,0,0.6) 100%); transform-origin: left center; pointer-events: none; opacity: 0; }
         .ring { position: absolute; border-radius: 50%; top: 50%; left: 50%; pointer-events: none; border: 2px dashed rgba(80,80,80,0.25); }
         .triangle-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
@@ -84,24 +179,75 @@
     </style>
 </head>
 <body>
-    <button class="menu-btn" id="menuBtn" onclick="toggleMenu()"><span></span><span></span><span></span></button>
+    <!-- Menu Button -->
+    <button class="menu-btn" id="menuBtn">
+        <span></span><span></span><span></span>
+    </button>
+    
+    <!-- Menu Panel -->
     <div class="menu-panel" id="menuPanel">
         <h3>⚙️ Contrôles</h3>
         <div class="menu-row">
-            <button id="playBtn" class="menu-btn-action play-btn" onclick="togglePlay()">Play</button>
-            <button class="menu-btn-action" onclick="resetAll()">Reset</button>
+            <button id="playBtn" class="menu-btn-action play-btn">Play</button>
+            <button id="resetBtn" class="menu-btn-action">Reset</button>
         </div>
-        <div class="menu-row"><label>Vitesse:</label><input type="range" id="speedSlider" min="0.02" max="0.2" step="0.02" value="0.06" oninput="updateSpeed()"></div>
-        <div class="menu-row"><label>Taille:</label><input type="range" id="sizeSlider" min="0.04" max="0.09" step="0.005" value="0.058" oninput="updateSize()"></div>
-        <div class="menu-row"><label>Opacité:</label><input type="range" id="opacitySlider" min="0.1" max="1" step="0.1" value="0.5" oninput="updateOpacity()"></div>
+        <div class="menu-row">
+            <label>Vitesse:</label>
+            <input type="range" id="speedSlider" min="0.02" max="0.2" step="0.01" value="0.06">
+        </div>
+        <div class="menu-row">
+            <label>Taille:</label>
+            <input type="range" id="sizeSlider" min="0.04" max="0.09" step="0.005" value="0.058">
+        </div>
+        <div class="menu-row">
+            <label>Opacité:</label>
+            <input type="range" id="opacitySlider" min="0.1" max="1" step="0.1" value="0.5">
+        </div>
         <h3>👁️ Affichage</h3>
-        <div class="menu-row"><label>Soleil:</label><label class="toggle-switch"><input type="checkbox" id="showSun" checked onchange="toggleSun()"><span class="toggle-slider"></span></label></div>
-        <div class="menu-row"><label>Axes:</label><label class="toggle-switch"><input type="checkbox" id="showAxes" onchange="toggleAxes()"><span class="toggle-slider"></span></label></div>
-        <div class="menu-row"><label>Triangles:</label><label class="toggle-switch"><input type="checkbox" id="showTriangles" checked onchange="toggleTriangles()"><span class="toggle-slider"></span></label></div>
+        <div class="menu-row">
+            <label>Soleil:</label>
+            <label class="toggle-switch"><input type="checkbox" id="showSun" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div class="menu-row">
+            <label>Axes:</label>
+            <label class="toggle-switch"><input type="checkbox" id="showAxes"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="menu-row">
+            <label>Triangles:</label>
+            <label class="toggle-switch"><input type="checkbox" id="showTriangles" checked><span class="toggle-slider"></span></label>
+        </div>
     </div>
-    <div class="game-container"><div class="game-area" id="gameArea1"><canvas class="triangle-canvas" id="triangleCanvas1"></canvas><div class="ring" id="ring1_1"></div><div class="ring" id="ring1_2"></div><div class="center-circle" id="centerCircle1"><div class="center-icon">☀️</div><div class="center-remaining" id="remaining1">35</div><div class="center-label">chiffres</div></div></div></div>
-    <div class="game-container"><div class="game-area" id="gameArea2"><canvas class="triangle-canvas" id="triangleCanvas2"></canvas><div class="ring" id="ring2_1"></div><div class="ring" id="ring2_2"></div><div class="center-circle moon" id="centerCircle2"><div class="center-icon">🌙</div><div class="center-remaining" id="remaining2">35</div><div class="center-label">chiffres</div></div></div></div>
+
+    <!-- Main container adaptatif -->
+    <div class="main-container" id="mainContainer">
+        <div class="game-container">
+            <div class="game-area" id="gameArea1">
+                <canvas class="triangle-canvas" id="triangleCanvas1"></canvas>
+                <div class="ring" id="ring1_1"></div>
+                <div class="ring" id="ring1_2"></div>
+                <div class="center-circle" id="centerCircle1">
+                    <div class="center-icon">☀️</div>
+                    <div class="center-remaining" id="remaining1">35</div>
+                    <div class="center-label">chiffres</div>
+                </div>
+            </div>
+        </div>
+        <div class="game-container">
+            <div class="game-area" id="gameArea2">
+                <canvas class="triangle-canvas" id="triangleCanvas2"></canvas>
+                <div class="ring" id="ring2_1"></div>
+                <div class="ring" id="ring2_2"></div>
+                <div class="center-circle moon" id="centerCircle2">
+                    <div class="center-icon">🌙</div>
+                    <div class="center-remaining" id="remaining2">35</div>
+                    <div class="center-label">chiffres</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // === CONFIG ===
         var globalSizeRatio = 0.058, globalOpacity = 0.5, isPlaying = false, speed = 0.06, animationId = null;
         var crownsConfig = [{count:20,radiusRatio:0.436,step:18,offset:27},{count:10,radiusRatio:0.282,step:36,offset:18},{count:5,radiusRatio:0.155,step:72,offset:0}];
         var ringRadiiRatio = [0.218, 0.36];
@@ -109,11 +255,43 @@
         var matrices = [{id:1,canvasSize:550,cx:275,cy:275,globalRotation:0,offsets:[0,0,0],data:[[],[],[]],rayLines:[],triangleCtx:null},{id:2,canvasSize:550,cx:275,cy:275,globalRotation:0,offsets:[0,0,0],data:[[],[],[]],rayLines:[],triangleCtx:null}];
         var activeTouches = {};
         var audioCtx = null;
+
+        // === MENU - Event listeners séparés pour iOS ===
+        document.getElementById('menuBtn').addEventListener('click', toggleMenu);
+        document.getElementById('menuBtn').addEventListener('touchend', function(e) {
+            e.preventDefault();
+            toggleMenu();
+        });
         
-        function toggleMenu() { document.getElementById("menuBtn").classList.toggle("open"); document.getElementById("menuPanel").classList.toggle("open"); }
+        document.getElementById('playBtn').addEventListener('click', togglePlay);
+        document.getElementById('playBtn').addEventListener('touchend', function(e) { e.preventDefault(); togglePlay(); });
+        
+        document.getElementById('resetBtn').addEventListener('click', resetAll);
+        document.getElementById('resetBtn').addEventListener('touchend', function(e) { e.preventDefault(); resetAll(); });
+        
+        document.getElementById('speedSlider').addEventListener('input', updateSpeed);
+        document.getElementById('sizeSlider').addEventListener('input', updateSize);
+        document.getElementById('opacitySlider').addEventListener('input', updateOpacity);
+        document.getElementById('showSun').addEventListener('change', toggleSun);
+        document.getElementById('showAxes').addEventListener('change', toggleAxes);
+        document.getElementById('showTriangles').addEventListener('change', toggleTriangles);
+
+        function toggleMenu() { 
+            document.getElementById("menuBtn").classList.toggle("open"); 
+            document.getElementById("menuPanel").classList.toggle("open"); 
+        }
+        
         function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
         function playTick() { if (!audioCtx) return; var o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.value = 800; o.type = 'sine'; g.gain.setValueAtTime(0.3, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime + 0.05); }
-        function togglePlay() { isPlaying = !isPlaying; var btn = document.getElementById("playBtn"); btn.textContent = isPlaying ? "Pause" : "Play"; btn.classList.toggle("active", isPlaying); if (isPlaying) runAnimation(); else if (animationId) { cancelAnimationFrame(animationId); animationId = null; } }
+        
+        function togglePlay() { 
+            isPlaying = !isPlaying; 
+            var btn = document.getElementById("playBtn"); 
+            btn.textContent = isPlaying ? "Pause" : "Play"; 
+            btn.classList.toggle("active", isPlaying); 
+            if (isPlaying) runAnimation(); 
+            else if (animationId) { cancelAnimationFrame(animationId); animationId = null; } 
+        }
         function runAnimation() { if (!isPlaying) return; matrices[0].globalRotation += speed; matrices[1].globalRotation -= speed; updateAllPositions(0); updateAllPositions(1); animationId = requestAnimationFrame(runAnimation); }
         function updateSpeed() { speed = parseFloat(document.getElementById("speedSlider").value); }
         function updateSize() { globalSizeRatio = parseFloat(document.getElementById("sizeSlider").value); for (var m = 0; m < 2; m++) { for (var c = 0; c < 3; c++) { for (var i = 0; i < matrices[m].data[c].length; i++) { if (matrices[m].data[c][i].elem) { var size = globalSizeRatio * matrices[m].canvasSize; matrices[m].data[c][i].elem.style.width = size + "px"; matrices[m].data[c][i].elem.style.height = size + "px"; matrices[m].data[c][i].elem.style.fontSize = (size * 0.45) + "px"; } } } updateAllPositions(m); } }
@@ -121,7 +299,18 @@
         function toggleSun() { var show = document.getElementById("showSun").checked; document.getElementById("centerCircle1").style.display = show ? "flex" : "none"; document.getElementById("centerCircle2").style.display = show ? "flex" : "none"; }
         function toggleAxes() { var show = document.getElementById("showAxes").checked; for (var m = 0; m < 2; m++) matrices[m].rayLines.forEach(function(l) { l.style.opacity = show ? globalOpacity : "0"; }); }
         function toggleTriangles() { drawTriangles(0); drawTriangles(1); }
-        function updateDimensions(m) { var ga = document.getElementById("gameArea" + (m + 1)); var rect = ga.getBoundingClientRect(); matrices[m].canvasSize = rect.width; matrices[m].cx = rect.width / 2; matrices[m].cy = rect.width / 2; var canvas = document.getElementById("triangleCanvas" + (m + 1)); canvas.width = rect.width; canvas.height = rect.width; matrices[m].triangleCtx = canvas.getContext("2d"); }
+        
+        function updateDimensions(m) { 
+            var ga = document.getElementById("gameArea" + (m + 1)); 
+            var rect = ga.getBoundingClientRect(); 
+            matrices[m].canvasSize = rect.width; 
+            matrices[m].cx = rect.width / 2; 
+            matrices[m].cy = rect.width / 2; 
+            var canvas = document.getElementById("triangleCanvas" + (m + 1)); 
+            canvas.width = rect.width; 
+            canvas.height = rect.width; 
+            matrices[m].triangleCtx = canvas.getContext("2d"); 
+        }
         function getCrownRadius(m, c) { return crownsConfig[c].radiusRatio * matrices[m].canvasSize; }
         function getCrownSize(m) { return globalSizeRatio * matrices[m].canvasSize; }
         function normalize(a) { while(a < 0) a += 360; while(a >= 360) a -= 360; return a; }
@@ -138,15 +327,52 @@
         function createDigitPool() { var pool = []; for (var d = 1; d <= 7; d++) for (var i = 0; i < 5; i++) pool.push(d); for (var i = pool.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var temp = pool[i]; pool[i] = pool[j]; pool[j] = temp; } return pool; }
         function initMatrix(m) { var ga = document.getElementById("gameArea" + (m + 1)); ga.querySelectorAll(".number").forEach(function(el) { el.remove(); }); updateDimensions(m); matrices[m].data = [[], [], []]; matrices[m].globalRotation = 0; matrices[m].offsets = [0, 0, 0]; var digitPool = createDigitPool(); for (var c = 0; c < 3; c++) { for (var i = 0; i < crownsConfig[c].count; i++) { var val = digitPool.pop(); var elem = createNumber(m, val, c, i); matrices[m].data[c].push({ value: val, elem: elem, originColor: c }); } } createRayLines(m); updateRings(m); updateAllPositions(m); document.getElementById("remaining" + (m + 1)).textContent = 35; }
         function resetAll() { initMatrix(0); initMatrix(1); }
-        function setupMultitouch() {
-            document.addEventListener('touchstart', function(e) { initAudio(); for (var i = 0; i < e.changedTouches.length; i++) { var touch = e.changedTouches[i]; var target = document.elementFromPoint(touch.clientX, touch.clientY); handleTouchStart(touch.identifier, touch.clientX, touch.clientY, target); } e.preventDefault(); }, {passive: false});
-            document.addEventListener('touchmove', function(e) { for (var i = 0; i < e.changedTouches.length; i++) { var touch = e.changedTouches[i]; handleTouchMove(touch.identifier, touch.clientX, touch.clientY); } e.preventDefault(); }, {passive: false});
-            document.addEventListener('touchend', function(e) { for (var i = 0; i < e.changedTouches.length; i++) handleTouchEnd(e.changedTouches[i].identifier); });
-            document.addEventListener('touchcancel', function(e) { for (var i = 0; i < e.changedTouches.length; i++) handleTouchEnd(e.changedTouches[i].identifier); });
-            document.addEventListener('mousedown', function(e) { handleTouchStart('mouse', e.clientX, e.clientY, e.target); });
-            document.addEventListener('mousemove', function(e) { handleTouchMove('mouse', e.clientX, e.clientY); });
-            document.addEventListener('mouseup', function() { handleTouchEnd('mouse'); });
+        
+        // === MULTITOUCH pour les game areas seulement ===
+        function setupGameTouch() {
+            var gameAreas = document.querySelectorAll('.game-area');
+            gameAreas.forEach(function(ga) {
+                ga.addEventListener('touchstart', handleGameTouchStart, {passive: false});
+            });
+            document.addEventListener('touchmove', handleGameTouchMove, {passive: false});
+            document.addEventListener('touchend', handleGameTouchEnd);
+            document.addEventListener('touchcancel', handleGameTouchEnd);
+            
+            // Mouse
+            gameAreas.forEach(function(ga) {
+                ga.addEventListener('mousedown', handleMouseDown);
+            });
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
         }
+        
+        function handleGameTouchStart(e) {
+            initAudio();
+            for (var i = 0; i < e.changedTouches.length; i++) {
+                var touch = e.changedTouches[i];
+                var target = document.elementFromPoint(touch.clientX, touch.clientY);
+                handleTouchStart(touch.identifier, touch.clientX, touch.clientY, target);
+            }
+            e.preventDefault();
+        }
+        function handleGameTouchMove(e) {
+            for (var i = 0; i < e.changedTouches.length; i++) {
+                var touch = e.changedTouches[i];
+                if (activeTouches[touch.identifier]) {
+                    handleTouchMove(touch.identifier, touch.clientX, touch.clientY);
+                    e.preventDefault();
+                }
+            }
+        }
+        function handleGameTouchEnd(e) {
+            for (var i = 0; i < e.changedTouches.length; i++) {
+                handleTouchEnd(e.changedTouches[i].identifier);
+            }
+        }
+        function handleMouseDown(e) { handleTouchStart('mouse', e.clientX, e.clientY, e.target); }
+        function handleMouseMove(e) { if (activeTouches['mouse']) handleTouchMove('mouse', e.clientX, e.clientY); }
+        function handleMouseUp() { handleTouchEnd('mouse'); }
+
         function findMatrixFromPoint(x, y) { for (var m = 0; m < 2; m++) { var ga = document.getElementById("gameArea" + (m + 1)); var rect = ga.getBoundingClientRect(); if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) return m; } return -1; }
         function getCrownZones(m) { var size = matrices[m].canvasSize; return [{outer: size * 0.5, inner: size * 0.36},{outer: size * 0.36, inner: size * 0.218},{outer: size * 0.218, inner: size * 0.08}]; }
         function handleTouchStart(id, clientX, clientY, target) { var m = findMatrixFromPoint(clientX, clientY); if (m < 0) return; var ga = document.getElementById("gameArea" + (m + 1)); var rect = ga.getBoundingClientRect(); var x = clientX - rect.left; var y = clientY - rect.top; var mat = matrices[m]; var relX = x - mat.cx; var relY = y - mat.cy; var dist = Math.sqrt(relX * relX + relY * relY); if (target && target.classList && target.classList.contains('number')) { var crown = parseInt(target.dataset.crown); var index = parseInt(target.dataset.index); var matrix = parseInt(target.dataset.matrix); activeTouches[id] = { type: 'triangle', matrix: matrix, active: true, crown: crown, index: index, startX: x, startY: y, directionDecided: false, element: target, currentDelta: 0 }; target.classList.add('dragging'); return; } var targetCrown = -1; var crownZones = getCrownZones(m); for (var c = 0; c < 3; c++) { if (dist <= crownZones[c].outer && dist >= crownZones[c].inner) { targetCrown = c; break; } } if (targetCrown >= 0) { activeTouches[id] = { type: 'crown', matrix: m, isDragging: true, crown: targetCrown, startAngle: Math.atan2(relY, relX) * 180 / Math.PI, startOffset: mat.offsets[targetCrown] }; } }
@@ -158,8 +384,33 @@
         function getTriangleData(m, type, index) { var vertices, points; if (type === 'inner') { var baseIndexes = findTwoNeighbors(m, 2, index, 1); vertices = [{crown: 2, index: index},{crown: 1, index: baseIndexes[0]},{crown: 1, index: baseIndexes[1]}]; } else { var baseIndexes = findTwoNeighbors(m, 1, index, 0); vertices = [{crown: 1, index: index},{crown: 0, index: baseIndexes[0]},{crown: 0, index: baseIndexes[1]}]; } points = vertices.map(function(v) { return getPositionForCrown(m, v.crown, v.index); }); return {vertices: vertices, points: points}; }
         function doTriangleDrag(touchData, x, y, m) { if (!touchData.active) return; var mat = matrices[m]; var dx = x - touchData.startX; var dy = y - touchData.startY; var dist = Math.sqrt(dx*dx + dy*dy); if (!touchData.directionDecided && dist > 10) { var startDist = Math.sqrt(Math.pow(touchData.startX - mat.cx, 2) + Math.pow(touchData.startY - mat.cy, 2)); var currentDist = Math.sqrt(Math.pow(x - mat.cx, 2) + Math.pow(y - mat.cy, 2)); var goingInward = currentDist < startDist; if (touchData.crown === 2) { touchData.triangleType = 'inner'; touchData.triangleIndex = touchData.index; } else if (touchData.crown === 0) { touchData.triangleType = 'outer'; for (var i = 0; i < 10; i++) { var baseIndexes = findTwoNeighbors(m, 1, i, 0); if (baseIndexes[0] === touchData.index || baseIndexes[1] === touchData.index) { touchData.triangleIndex = i; break; } } } else { if (goingInward) { for (var i = 0; i < 5; i++) { var baseIndexes = findTwoNeighbors(m, 2, i, 1); if (baseIndexes[0] === touchData.index || baseIndexes[1] === touchData.index) { touchData.triangleType = 'inner'; touchData.triangleIndex = i; break; } } } else { touchData.triangleType = 'outer'; touchData.triangleIndex = touchData.index; } } if (touchData.triangleType) { touchData.directionDecided = true; touchData.triData = getTriangleData(m, touchData.triangleType, touchData.triangleIndex); touchData.initialTs = [0, 1/3, 2/3]; touchData.startMouseT = nearestParamOnTriangle(touchData.triData.points, touchData.startX, touchData.startY); } } if (touchData.directionDecided && touchData.triData) { var triData = touchData.triData; var newMouseT = nearestParamOnTriangle(triData.points, x, y); var delta = newMouseT - touchData.startMouseT; for (var v = 0; v < 3; v++) { var t = ((touchData.initialTs[v] + delta) % 1 + 1) % 1; var vert = triData.vertices[v]; var pos = posOnTriangle(triData.points, t); var elem = mat.data[vert.crown][vert.index].elem; var size = getCrownSize(m); elem.style.left = (pos.x - size/2) + "px"; elem.style.top = (pos.y - size/2) + "px"; } touchData.currentDelta = delta; } }
         function endTriangleDrag(touchData, m) { if (!touchData.active) return; var mat = matrices[m]; if (touchData.element) touchData.element.classList.remove('dragging'); if (touchData.directionDecided && touchData.triData && touchData.currentDelta !== undefined) { var delta = touchData.currentDelta; var triData = touchData.triData; if (Math.abs(delta) > 0.05) { var shift = delta > 0 ? 1 : -1; var oldValues = [], oldColors = []; for (var v = 0; v < 3; v++) { var vert = triData.vertices[v]; oldValues.push(mat.data[vert.crown][vert.index].value); oldColors.push(mat.data[vert.crown][vert.index].originColor); } for (var v = 0; v < 3; v++) { var sourceV = ((v - shift) % 3 + 3) % 3; var vert = triData.vertices[v]; mat.data[vert.crown][vert.index].value = oldValues[sourceV]; mat.data[vert.crown][vert.index].originColor = oldColors[sourceV]; mat.data[vert.crown][vert.index].elem.textContent = oldValues[sourceV]; applyColor(mat.data[vert.crown][vert.index].elem, oldColors[sourceV]); } playTick(); } } updateAllPositions(m); touchData.active = false; }
-        window.addEventListener('resize', function() { for (var m = 0; m < 2; m++) { updateDimensions(m); for (var c = 0; c < 3; c++) for (var i = 0; i < matrices[m].data[c].length; i++) if (matrices[m].data[c][i].elem) { var size = getCrownSize(m); matrices[m].data[c][i].elem.style.width = size + "px"; matrices[m].data[c][i].elem.style.height = size + "px"; matrices[m].data[c][i].elem.style.fontSize = (size * 0.45) + "px"; } updateAllPositions(m); } });
-        setupMultitouch(); initMatrix(0); initMatrix(1);
+        
+        // === ORIENTATION CHANGE ===
+        function handleResize() {
+            for (var m = 0; m < 2; m++) {
+                updateDimensions(m);
+                for (var c = 0; c < 3; c++) {
+                    for (var i = 0; i < matrices[m].data[c].length; i++) {
+                        if (matrices[m].data[c][i].elem) {
+                            var size = getCrownSize(m);
+                            matrices[m].data[c][i].elem.style.width = size + "px";
+                            matrices[m].data[c][i].elem.style.height = size + "px";
+                            matrices[m].data[c][i].elem.style.fontSize = (size * 0.45) + "px";
+                        }
+                    }
+                }
+                updateAllPositions(m);
+            }
+        }
+        window.addEventListener('resize', handleResize);
+        window.addEventListener('orientationchange', function() {
+            setTimeout(handleResize, 100);
+        });
+        
+        // === START ===
+        setupGameTouch();
+        initMatrix(0);
+        initMatrix(1);
     </script>
 </body>
 </html>
