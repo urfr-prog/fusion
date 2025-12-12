@@ -71,37 +71,37 @@
             top: calc(max(8px, env(safe-area-inset-top)) + 50px); 
             right: max(8px, env(safe-area-inset-right));
             background: rgba(20, 20, 40, 0.98); 
-            border-radius: 16px; padding: 15px;
-            z-index: 1000; display: none; flex-direction: column; gap: 8px;
+            border-radius: 16px; padding: 12px;
+            z-index: 1000; display: none; flex-direction: column; gap: 5px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.7);
-            min-width: 260px;
-            max-height: 85vh;
+            min-width: 280px;
+            max-height: 90vh;
             overflow-y: auto;
             touch-action: manipulation;
             border: 1px solid rgba(255,215,0,0.3);
         }
         .menu-panel.open { display: flex; }
-        .menu-panel h3 { color: #ffd700; font-size: 0.85em; margin: 5px 0 2px 0; }
-        .menu-row { display: flex; align-items: center; gap: 8px; min-height: 32px; }
-        .menu-row label { font-size: 0.7em; min-width: 70px; }
-        .menu-row .value { font-size: 0.7em; min-width: 35px; color: #ffd700; }
+        .menu-panel h3 { color: #ffd700; font-size: 0.8em; margin: 8px 0 4px 0; border-bottom: 1px solid rgba(255,215,0,0.2); padding-bottom: 3px; }
+        .menu-row { display: flex; align-items: center; gap: 6px; min-height: 28px; }
+        .menu-row label { font-size: 0.65em; min-width: 75px; color: #ccc; }
+        .menu-row .value { font-size: 0.65em; min-width: 40px; color: #ffd700; text-align: right; font-family: monospace; }
         
         .menu-row input[type="range"] { 
-            flex: 1; height: 28px;
+            flex: 1; height: 24px;
             -webkit-appearance: none; background: transparent;
             touch-action: manipulation;
         }
-        .menu-row input[type="range"]::-webkit-slider-runnable-track { height: 8px; background: rgba(255,255,255,0.25); border-radius: 4px; }
-        .menu-row input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; background: linear-gradient(135deg, #ffd700, #ffa500); border-radius: 50%; margin-top: -8px; box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
+        .menu-row input[type="range"]::-webkit-slider-runnable-track { height: 6px; background: rgba(255,255,255,0.2); border-radius: 3px; }
+        .menu-row input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: linear-gradient(135deg, #ffd700, #ffa500); border-radius: 50%; margin-top: -7px; box-shadow: 0 2px 4px rgba(0,0,0,0.4); }
         
-        .toggle-switch { position: relative; width: 44px; height: 26px; touch-action: manipulation; }
+        .toggle-switch { position: relative; width: 40px; height: 22px; touch-action: manipulation; }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
-        .toggle-slider { position: absolute; cursor: pointer; inset: 0; background-color: rgba(255,255,255,0.25); border-radius: 26px; }
-        .toggle-slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        .toggle-slider { position: absolute; cursor: pointer; inset: 0; background-color: rgba(255,255,255,0.25); border-radius: 22px; }
+        .toggle-slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
         input:checked + .toggle-slider { background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%); }
         input:checked + .toggle-slider:before { transform: translateX(18px); }
         
-        .menu-btn-action { padding: 10px 14px; font-size: 0.75em; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+        .menu-btn-action { padding: 8px 12px; font-size: 0.7em; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
         .menu-btn-action.play-btn { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
         .menu-btn-action.play-btn.active { background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%); }
         
@@ -109,9 +109,8 @@
         .game-container.dark { background: #2a2a3e; }
         .game-area { position: relative; background: #ffffff; border-radius: 50%; overflow: visible; touch-action: none; }
         .game-area.dark { background: #2a2a3e; }
-        .ray-line { position: absolute; top: 50%; left: 50%; width: 50%; height: 2px; background: linear-gradient(90deg, rgba(255,215,0,0.3) 0%, rgba(255,150,0,0.6) 100%); transform-origin: left center; pointer-events: none; opacity: 0; }
-        .ring { position: absolute; border-radius: 50%; top: 50%; left: 50%; pointer-events: none; border: 2px dashed rgba(80,80,80,0.25); }
-        .dark .ring { border-color: rgba(200,200,200,0.2); }
+        .ring { position: absolute; border-radius: 50%; top: 50%; left: 50%; pointer-events: none; border-style: dashed; border-color: rgba(80,80,80,0.4); }
+        .dark .ring { border-color: rgba(200,200,200,0.3); }
         .triangle-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
         
         .sun-reactor {
@@ -194,55 +193,78 @@
             <button id="resetBtn" class="menu-btn-action">Reset</button>
         </div>
         
-        <h3>📐 Proportions CSS</h3>
+        <h3>☀️ Soleil</h3>
         <div class="menu-row">
-            <label>Soleil:</label>
+            <label>Afficher:</label>
             <label class="toggle-switch"><input type="checkbox" id="showSun"><span class="toggle-slider"></span></label>
         </div>
         <div class="menu-row">
-            <label>Ø Soleil:</label>
-            <input type="range" id="sunSize" min="10" max="50" value="30">
-            <span class="value" id="sunSizeVal">30%</span>
-        </div>
-        <div class="menu-row">
-            <label>Rayon C1:</label>
-            <input type="range" id="radiusC1" min="30" max="48" value="44">
-            <span class="value" id="radiusC1Val">44%</span>
-        </div>
-        <div class="menu-row">
-            <label>Rayon C2:</label>
-            <input type="range" id="radiusC2" min="15" max="40" value="28">
-            <span class="value" id="radiusC2Val">28%</span>
-        </div>
-        <div class="menu-row">
-            <label>Offset C1:</label>
-            <input type="range" id="offsetC1" min="-10" max="10" value="0">
-            <span class="value" id="offsetC1Val">0%</span>
-        </div>
-        <div class="menu-row">
-            <label>Offset C2:</label>
-            <input type="range" id="offsetC2" min="-10" max="10" value="0">
-            <span class="value" id="offsetC2Val">0%</span>
-        </div>
-        <div class="menu-row">
-            <label>Taille chiffres:</label>
-            <input type="range" id="numberSize" min="4" max="12" value="6">
-            <span class="value" id="numberSizeVal">6%</span>
+            <label>Diamètre:</label>
+            <input type="range" id="sunSize" min="5" max="40" step="0.5" value="31">
+            <span class="value" id="sunSizeVal">31.0%</span>
         </div>
         
-        <h3>👁️ Affichage</h3>
+        <h3>🔵 Couronne C1 (20)</h3>
         <div class="menu-row">
-            <label>Triangles:</label>
-            <label class="toggle-switch"><input type="checkbox" id="showTriangles" checked><span class="toggle-slider"></span></label>
+            <label>Limite ext:</label>
+            <input type="range" id="limitC1Ext" min="40" max="50" step="0.5" value="50">
+            <span class="value" id="limitC1ExtVal">50.0%</span>
         </div>
         <div class="menu-row">
-            <label>Anneaux:</label>
+            <label>Limite int:</label>
+            <input type="range" id="limitC1Int" min="25" max="45" step="0.5" value="34.5">
+            <span class="value" id="limitC1IntVal">34.5%</span>
+        </div>
+        <div class="menu-row">
+            <label>Position:</label>
+            <input type="range" id="posC1" min="-100" max="100" step="1" value="-48">
+            <span class="value" id="posC1Val">-48%</span>
+        </div>
+        
+        <h3>🟢 Couronne C2 (10)</h3>
+        <div class="menu-row">
+            <label>Limite ext:</label>
+            <input type="range" id="limitC2Ext" min="20" max="40" step="0.5" value="36.5">
+            <span class="value" id="limitC2ExtVal">36.5%</span>
+        </div>
+        <div class="menu-row">
+            <label>Limite int:</label>
+            <input type="range" id="limitC2Int" min="10" max="35" step="0.5" value="18.5">
+            <span class="value" id="limitC2IntVal">18.5%</span>
+        </div>
+        <div class="menu-row">
+            <label>Position:</label>
+            <input type="range" id="posC2" min="-100" max="100" step="1" value="-60">
+            <span class="value" id="posC2Val">-60%</span>
+        </div>
+        
+        <h3>⭕ Anneaux</h3>
+        <div class="menu-row">
+            <label>Afficher:</label>
             <label class="toggle-switch"><input type="checkbox" id="showRings" checked><span class="toggle-slider"></span></label>
         </div>
         <div class="menu-row">
+            <label>Épaisseur:</label>
+            <input type="range" id="ringWidth" min="1" max="8" step="0.5" value="8">
+            <span class="value" id="ringWidthVal">8.0px</span>
+        </div>
+        
+        <h3>🔢 Chiffres</h3>
+        <div class="menu-row">
+            <label>Taille:</label>
+            <input type="range" id="numberSize" min="3" max="12" step="0.25" value="8">
+            <span class="value" id="numberSizeVal">8.00%</span>
+        </div>
+        
+        <h3>🎨 Triangles</h3>
+        <div class="menu-row">
+            <label>Afficher:</label>
+            <label class="toggle-switch"><input type="checkbox" id="showTriangles" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div class="menu-row">
             <label>Opacité:</label>
-            <input type="range" id="opacitySlider" min="10" max="100" value="50">
-            <span class="value" id="opacityVal">50%</span>
+            <input type="range" id="opacitySlider" min="5" max="100" step="1" value="20">
+            <span class="value" id="opacityVal">20%</span>
         </div>
     </div>
 
@@ -268,13 +290,16 @@
     <script>
         // === CONFIG CSS DYNAMIQUE ===
         var cssConfig = {
-            sunSize: 0.30,       // Diamètre soleil (% du cercle)
-            radiusC1: 0.44,     // Rayon couronne 1
-            radiusC2: 0.28,     // Rayon couronne 2
-            offsetC1: 0,        // Décalage radial C1 vers centre
-            offsetC2: 0,        // Décalage radial C2 vers centre
-            numberSize: 0.06,   // Taille des chiffres
-            opacity: 0.5        // Opacité triangles
+            sunSize: 0.31,        // Diamètre soleil
+            limitC1Ext: 0.50,     // Limite externe C1
+            limitC1Int: 0.345,    // Limite interne C1
+            posC1: -0.48,         // Position dans zone C1 (-1 à +1)
+            limitC2Ext: 0.365,    // Limite externe C2
+            limitC2Int: 0.185,    // Limite interne C2
+            posC2: -0.60,         // Position dans zone C2 (-1 à +1)
+            ringWidth: 8,         // Épaisseur anneaux en px
+            numberSize: 0.08,     // Taille des chiffres
+            opacity: 0.20         // Opacité triangles
         };
         
         var isPlaying = false, speed = 0.06, animationId = null;
@@ -285,8 +310,8 @@
         ];
         var colors = {c1bg:"#4facfe",c1txt:"#ffffff",c2bg:"#a8edea",c2txt:"#333333",c3bg:"#ff9a56",c3txt:"#333333"};
         var matrices = [
-            {id:1,canvasSize:550,cx:275,cy:275,globalRotation:0,offsets:[0,0,0],data:[[],[],[]],rayLines:[],triangleCtx:null,hiddenInSun:[]},
-            {id:2,canvasSize:550,cx:275,cy:275,globalRotation:0,offsets:[0,0,0],data:[[],[],[]],rayLines:[],triangleCtx:null,hiddenInSun:[]}
+            {id:1,canvasSize:550,cx:275,cy:275,globalRotation:0,offsets:[0,0,0],data:[[],[],[]],triangleCtx:null,hiddenInSun:[]},
+            {id:2,canvasSize:550,cx:275,cy:275,globalRotation:0,offsets:[0,0,0],data:[[],[],[]],triangleCtx:null,hiddenInSun:[]}
         ];
         var activeTouches = {};
         var audioCtx = null;
@@ -302,36 +327,44 @@
         // CSS Sliders
         document.getElementById('showSun').addEventListener('change', updateSunVisibility);
         document.getElementById('sunSize').addEventListener('input', updateCSSConfig);
-        document.getElementById('radiusC1').addEventListener('input', updateCSSConfig);
-        document.getElementById('radiusC2').addEventListener('input', updateCSSConfig);
-        document.getElementById('offsetC1').addEventListener('input', updateCSSConfig);
-        document.getElementById('offsetC2').addEventListener('input', updateCSSConfig);
+        document.getElementById('limitC1Ext').addEventListener('input', updateCSSConfig);
+        document.getElementById('limitC1Int').addEventListener('input', updateCSSConfig);
+        document.getElementById('posC1').addEventListener('input', updateCSSConfig);
+        document.getElementById('limitC2Ext').addEventListener('input', updateCSSConfig);
+        document.getElementById('limitC2Int').addEventListener('input', updateCSSConfig);
+        document.getElementById('posC2').addEventListener('input', updateCSSConfig);
+        document.getElementById('showRings').addEventListener('change', updateRingsVisibility);
+        document.getElementById('ringWidth').addEventListener('input', updateCSSConfig);
         document.getElementById('numberSize').addEventListener('input', updateCSSConfig);
         document.getElementById('showTriangles').addEventListener('change', function() { drawTriangles(0); drawTriangles(1); });
-        document.getElementById('showRings').addEventListener('change', updateRingsVisibility);
         document.getElementById('opacitySlider').addEventListener('input', updateCSSConfig);
 
         function toggleMenu() { document.getElementById("menuBtn").classList.toggle("open"); document.getElementById("menuPanel").classList.toggle("open"); }
         
         function updateCSSConfig() {
-            cssConfig.sunSize = parseInt(document.getElementById('sunSize').value) / 100;
-            cssConfig.radiusC1 = parseInt(document.getElementById('radiusC1').value) / 100;
-            cssConfig.radiusC2 = parseInt(document.getElementById('radiusC2').value) / 100;
-            cssConfig.offsetC1 = parseInt(document.getElementById('offsetC1').value) / 100;
-            cssConfig.offsetC2 = parseInt(document.getElementById('offsetC2').value) / 100;
-            cssConfig.numberSize = parseInt(document.getElementById('numberSize').value) / 100;
+            cssConfig.sunSize = parseFloat(document.getElementById('sunSize').value) / 100;
+            cssConfig.limitC1Ext = parseFloat(document.getElementById('limitC1Ext').value) / 100;
+            cssConfig.limitC1Int = parseFloat(document.getElementById('limitC1Int').value) / 100;
+            cssConfig.posC1 = parseInt(document.getElementById('posC1').value) / 100;
+            cssConfig.limitC2Ext = parseFloat(document.getElementById('limitC2Ext').value) / 100;
+            cssConfig.limitC2Int = parseFloat(document.getElementById('limitC2Int').value) / 100;
+            cssConfig.posC2 = parseInt(document.getElementById('posC2').value) / 100;
+            cssConfig.ringWidth = parseFloat(document.getElementById('ringWidth').value);
+            cssConfig.numberSize = parseFloat(document.getElementById('numberSize').value) / 100;
             cssConfig.opacity = parseInt(document.getElementById('opacitySlider').value) / 100;
             
             // Update display values
-            document.getElementById('sunSizeVal').textContent = Math.round(cssConfig.sunSize * 100) + '%';
-            document.getElementById('radiusC1Val').textContent = Math.round(cssConfig.radiusC1 * 100) + '%';
-            document.getElementById('radiusC2Val').textContent = Math.round(cssConfig.radiusC2 * 100) + '%';
-            document.getElementById('offsetC1Val').textContent = Math.round(cssConfig.offsetC1 * 100) + '%';
-            document.getElementById('offsetC2Val').textContent = Math.round(cssConfig.offsetC2 * 100) + '%';
-            document.getElementById('numberSizeVal').textContent = Math.round(cssConfig.numberSize * 100) + '%';
+            document.getElementById('sunSizeVal').textContent = (cssConfig.sunSize * 100).toFixed(1) + '%';
+            document.getElementById('limitC1ExtVal').textContent = (cssConfig.limitC1Ext * 100).toFixed(1) + '%';
+            document.getElementById('limitC1IntVal').textContent = (cssConfig.limitC1Int * 100).toFixed(1) + '%';
+            document.getElementById('posC1Val').textContent = Math.round(cssConfig.posC1 * 100) + '%';
+            document.getElementById('limitC2ExtVal').textContent = (cssConfig.limitC2Ext * 100).toFixed(1) + '%';
+            document.getElementById('limitC2IntVal').textContent = (cssConfig.limitC2Int * 100).toFixed(1) + '%';
+            document.getElementById('posC2Val').textContent = Math.round(cssConfig.posC2 * 100) + '%';
+            document.getElementById('ringWidthVal').textContent = cssConfig.ringWidth.toFixed(1) + 'px';
+            document.getElementById('numberSizeVal').textContent = (cssConfig.numberSize * 100).toFixed(2) + '%';
             document.getElementById('opacityVal').textContent = Math.round(cssConfig.opacity * 100) + '%';
             
-            // Apply changes
             applyAllCSS();
         }
         
@@ -343,7 +376,7 @@
                 sun.style.width = sunDiameter + '%';
                 sun.style.height = sunDiameter + '%';
                 
-                // Update rings positions
+                // Update rings
                 updateRings(m);
                 
                 // Update number sizes
@@ -358,7 +391,6 @@
                     }
                 }
                 
-                // Update positions
                 updateAllPositions(m);
             }
         }
@@ -395,13 +427,30 @@
             matrices[m].triangleCtx = canvas.getContext("2d"); 
         }
         
-        // Rayon avec offset appliqué
+        // Calcul du rayon avec position dans la zone
         function getCrownRadius(m, c) { 
-            var baseRadius;
-            if (c === 0) baseRadius = cssConfig.radiusC1 + cssConfig.offsetC1;
-            else if (c === 1) baseRadius = cssConfig.radiusC2 + cssConfig.offsetC2;
-            else baseRadius = cssConfig.sunSize / 2; // C3 au bord du soleil
-            return baseRadius * matrices[m].canvasSize; 
+            var limitExt, limitInt, pos;
+            if (c === 0) {
+                limitExt = cssConfig.limitC1Ext;
+                limitInt = cssConfig.limitC1Int;
+                pos = cssConfig.posC1;
+            } else if (c === 1) {
+                limitExt = cssConfig.limitC2Ext;
+                limitInt = cssConfig.limitC2Int;
+                pos = cssConfig.posC2;
+            } else {
+                // C3 au centre du soleil
+                return (cssConfig.sunSize / 2) * 0.5 * matrices[m].canvasSize;
+            }
+            
+            // Centre de la zone
+            var center = (limitExt + limitInt) / 2;
+            // Demi-épaisseur de la zone
+            var halfWidth = (limitExt - limitInt) / 2;
+            // Position finale : centre + offset (pos va de -1 à +1)
+            var radius = center + (pos * halfWidth * 0.8); // 0.8 pour ne pas toucher les bords
+            
+            return radius * matrices[m].canvasSize; 
         }
         
         function getCrownSize(m) { return cssConfig.numberSize * matrices[m].canvasSize; }
@@ -479,16 +528,19 @@
             var ring2 = document.getElementById("ring" + (m + 1) + "_2"); 
             var mat = matrices[m]; 
             
-            // Ring 1 entre C1 et C2
-            var r1 = ((cssConfig.radiusC1 + cssConfig.offsetC1 + cssConfig.radiusC2 + cssConfig.offsetC2) / 2) * mat.canvasSize;
-            // Ring 2 entre C2 et soleil
-            var r2 = ((cssConfig.radiusC2 + cssConfig.offsetC2 + cssConfig.sunSize / 2) / 2) * mat.canvasSize;
+            // Ring 1 = limite entre C1 et C2 (= limitC1Int = limitC2Ext normalement)
+            var r1 = cssConfig.limitC1Int * mat.canvasSize;
+            // Ring 2 = limite entre C2 et soleil (= limitC2Int)
+            var r2 = cssConfig.limitC2Int * mat.canvasSize;
             
             ring1.style.width = (r1 * 2) + "px"; 
             ring1.style.height = (r1 * 2) + "px"; 
+            ring1.style.borderWidth = cssConfig.ringWidth + "px";
             ring1.style.transform = "translate(-50%, -50%) rotate(" + (-mat.globalRotation) + "deg)"; 
+            
             ring2.style.width = (r2 * 2) + "px"; 
             ring2.style.height = (r2 * 2) + "px"; 
+            ring2.style.borderWidth = cssConfig.ringWidth + "px";
             ring2.style.transform = "translate(-50%, -50%) rotate(" + (-mat.globalRotation) + "deg)"; 
         }
         
@@ -632,12 +684,9 @@
         
         function getCrownZones(m) { 
             var size = matrices[m].canvasSize; 
-            var r1 = (cssConfig.radiusC1 + cssConfig.offsetC1) * size;
-            var r2 = (cssConfig.radiusC2 + cssConfig.offsetC2) * size;
-            var rSun = (cssConfig.sunSize / 2) * size;
             return [
-                {outer: size * 0.5, inner: (r1 + r2) / 2},
-                {outer: (r1 + r2) / 2, inner: (r2 + rSun) / 2}
+                {outer: cssConfig.limitC1Ext * size, inner: cssConfig.limitC1Int * size},
+                {outer: cssConfig.limitC2Ext * size, inner: cssConfig.limitC2Int * size}
             ]; 
         }
         
@@ -878,6 +927,7 @@
         setupGameTouch();
         initMatrix(0);
         initMatrix(1);
+        updateCSSConfig(); // Initialize display values
         applyAllCSS();
     </script>
 </body>
