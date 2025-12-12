@@ -683,10 +683,20 @@
         function findMatrixFromPoint(x, y) { for (var m = 0; m < 2; m++) { var ga = document.getElementById("gameArea" + (m + 1)); var rect = ga.getBoundingClientRect(); if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) return m; } return -1; }
         
         function getCrownZones(m) { 
-            var size = matrices[m].canvasSize; 
+            var size = matrices[m].canvasSize;
+            // Zone C1 : entre le bord du cercle (50%) et la position des chiffres C1
+            var c1ChiffresRadius = getCrownRadius(m, 0);
+            var c1GrabOuter = size * 0.5;
+            var c1GrabInner = c1ChiffresRadius + (cssConfig.numberSize * size / 2);
+            
+            // Zone C2 : entre l'anneau 1 (limitC1Int) et la position des chiffres C2
+            var c2ChiffresRadius = getCrownRadius(m, 1);
+            var c2GrabOuter = cssConfig.limitC1Int * size;
+            var c2GrabInner = c2ChiffresRadius + (cssConfig.numberSize * size / 2);
+            
             return [
-                {outer: cssConfig.limitC1Ext * size, inner: cssConfig.limitC1Int * size},
-                {outer: cssConfig.limitC2Ext * size, inner: cssConfig.limitC2Int * size}
+                {outer: c1GrabOuter, inner: c1GrabInner},
+                {outer: c2GrabOuter, inner: c2GrabInner}
             ]; 
         }
         
