@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-title" content="Fusion">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#1a1a2e">
-    <title>Fusion 6</title>
+    <title>Fusion 7 - Design</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { 
@@ -71,34 +71,37 @@
             top: calc(max(8px, env(safe-area-inset-top)) + 50px); 
             right: max(8px, env(safe-area-inset-right));
             background: rgba(20, 20, 40, 0.98); 
-            border-radius: 16px; padding: 20px;
-            z-index: 1000; display: none; flex-direction: column; gap: 14px;
+            border-radius: 16px; padding: 15px;
+            z-index: 1000; display: none; flex-direction: column; gap: 8px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.7);
-            min-width: 240px;
+            min-width: 260px;
+            max-height: 85vh;
+            overflow-y: auto;
             touch-action: manipulation;
             border: 1px solid rgba(255,215,0,0.3);
         }
         .menu-panel.open { display: flex; }
-        .menu-panel h3 { color: #ffd700; font-size: 0.95em; margin-bottom: 4px; }
-        .menu-row { display: flex; align-items: center; gap: 12px; min-height: 36px; }
-        .menu-row label { font-size: 0.8em; min-width: 65px; }
+        .menu-panel h3 { color: #ffd700; font-size: 0.85em; margin: 5px 0 2px 0; }
+        .menu-row { display: flex; align-items: center; gap: 8px; min-height: 32px; }
+        .menu-row label { font-size: 0.7em; min-width: 70px; }
+        .menu-row .value { font-size: 0.7em; min-width: 35px; color: #ffd700; }
         
         .menu-row input[type="range"] { 
-            width: 130px; height: 36px;
+            flex: 1; height: 28px;
             -webkit-appearance: none; background: transparent;
             touch-action: manipulation;
         }
-        .menu-row input[type="range"]::-webkit-slider-runnable-track { height: 10px; background: rgba(255,255,255,0.25); border-radius: 5px; }
-        .menu-row input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; background: linear-gradient(135deg, #ffd700, #ffa500); border-radius: 50%; margin-top: -9px; box-shadow: 0 3px 8px rgba(0,0,0,0.4); }
+        .menu-row input[type="range"]::-webkit-slider-runnable-track { height: 8px; background: rgba(255,255,255,0.25); border-radius: 4px; }
+        .menu-row input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; background: linear-gradient(135deg, #ffd700, #ffa500); border-radius: 50%; margin-top: -8px; box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
         
-        .toggle-switch { position: relative; width: 50px; height: 30px; touch-action: manipulation; }
+        .toggle-switch { position: relative; width: 44px; height: 26px; touch-action: manipulation; }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
-        .toggle-slider { position: absolute; cursor: pointer; inset: 0; background-color: rgba(255,255,255,0.25); border-radius: 30px; }
-        .toggle-slider:before { position: absolute; content: ""; height: 24px; width: 24px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        .toggle-slider { position: absolute; cursor: pointer; inset: 0; background-color: rgba(255,255,255,0.25); border-radius: 26px; }
+        .toggle-slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
         input:checked + .toggle-slider { background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%); }
-        input:checked + .toggle-slider:before { transform: translateX(20px); }
+        input:checked + .toggle-slider:before { transform: translateX(18px); }
         
-        .menu-btn-action { padding: 12px 18px; font-size: 0.85em; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+        .menu-btn-action { padding: 10px 14px; font-size: 0.75em; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
         .menu-btn-action.play-btn { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
         .menu-btn-action.play-btn.active { background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%); }
         
@@ -111,12 +114,10 @@
         .dark .ring { border-color: rgba(200,200,200,0.2); }
         .triangle-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
         
-        /* SOLEIL REACTEUR */
         .sun-reactor {
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            width: 44%; height: 44%;
             border-radius: 50%;
             background: radial-gradient(circle at 30% 30%, #fff8e0 0%, #ffd700 30%, #ff8c00 70%, #ff4500 100%);
             box-shadow: 
@@ -126,7 +127,9 @@
             z-index: 50;
             pointer-events: none;
             overflow: hidden;
+            display: none;
         }
+        .sun-reactor.visible { display: block; }
         .sun-reactor::before {
             content: '';
             position: absolute;
@@ -135,18 +138,12 @@
             background: radial-gradient(circle, transparent 30%, rgba(255,200,0,0.3) 70%);
             animation: sunPulse 3s ease-in-out infinite;
         }
-        .sun-reactor::after {
-            content: '';
-            position: absolute;
-            width: 100%; height: 100%;
-            border-radius: 50%;
-            background: radial-gradient(circle at 40% 40%, rgba(255,255,255,0.5) 0%, transparent 40%);
+        @keyframes sunPulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.05); opacity: 0.8; }
         }
         
-        /* Animation de vague quand échange */
-        .sun-reactor.wave {
-            animation: sunWave 0.5s ease-out;
-        }
+        .sun-reactor.wave { animation: sunWave 0.5s ease-out; }
         @keyframes sunWave {
             0% { transform: translate(-50%, -50%) scale(1); }
             30% { transform: translate(-50%, -50%) scale(1.15); }
@@ -154,12 +151,6 @@
             100% { transform: translate(-50%, -50%) scale(1); }
         }
         
-        @keyframes sunPulse {
-            0%, 100% { transform: scale(1); opacity: 0.5; }
-            50% { transform: scale(1.05); opacity: 0.8; }
-        }
-        
-        /* LUNE REACTEUR */
         .moon-reactor {
             background: radial-gradient(circle at 30% 30%, #e8f0ff 0%, #a8c0ff 30%, #6080c0 70%, #304080 100%);
             box-shadow: 
@@ -169,9 +160,6 @@
         }
         .moon-reactor::before {
             background: radial-gradient(circle, transparent 30%, rgba(150,180,255,0.3) 70%);
-        }
-        .moon-reactor::after {
-            background: radial-gradient(circle at 40% 40%, rgba(255,255,255,0.4) 0%, transparent 40%);
         }
         
         .number { 
@@ -190,7 +178,7 @@
         }
         .number.dragging { cursor: grabbing; }
         .number.entering-sun { 
-            z-index: 5; /* Passe SOUS le soleil */
+            z-index: 5;
             opacity: 0;
             transition: opacity 0.2s;
         }
@@ -200,22 +188,65 @@
     <button class="menu-btn" id="menuBtn"><span></span><span></span><span></span></button>
     
     <div class="menu-panel" id="menuPanel">
-        <h3>⚙️ Contrôles</h3>
+        <h3>🎮 Jeu</h3>
         <div class="menu-row">
             <button id="playBtn" class="menu-btn-action play-btn">Play</button>
             <button id="resetBtn" class="menu-btn-action">Reset</button>
         </div>
-        <div class="menu-row"><label>Vitesse:</label><input type="range" id="speedSlider" min="0.02" max="0.2" step="0.01" value="0.06"></div>
-        <div class="menu-row"><label>Taille:</label><input type="range" id="sizeSlider" min="0.04" max="0.09" step="0.005" value="0.058"></div>
-        <div class="menu-row"><label>Opacité:</label><input type="range" id="opacitySlider" min="0.1" max="1" step="0.1" value="0.5"></div>
+        
+        <h3>📐 Proportions CSS</h3>
+        <div class="menu-row">
+            <label>Soleil:</label>
+            <label class="toggle-switch"><input type="checkbox" id="showSun"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="menu-row">
+            <label>Ø Soleil:</label>
+            <input type="range" id="sunSize" min="10" max="50" value="30">
+            <span class="value" id="sunSizeVal">30%</span>
+        </div>
+        <div class="menu-row">
+            <label>Rayon C1:</label>
+            <input type="range" id="radiusC1" min="30" max="48" value="44">
+            <span class="value" id="radiusC1Val">44%</span>
+        </div>
+        <div class="menu-row">
+            <label>Rayon C2:</label>
+            <input type="range" id="radiusC2" min="15" max="40" value="28">
+            <span class="value" id="radiusC2Val">28%</span>
+        </div>
+        <div class="menu-row">
+            <label>Offset C1:</label>
+            <input type="range" id="offsetC1" min="-10" max="10" value="0">
+            <span class="value" id="offsetC1Val">0%</span>
+        </div>
+        <div class="menu-row">
+            <label>Offset C2:</label>
+            <input type="range" id="offsetC2" min="-10" max="10" value="0">
+            <span class="value" id="offsetC2Val">0%</span>
+        </div>
+        <div class="menu-row">
+            <label>Taille chiffres:</label>
+            <input type="range" id="numberSize" min="4" max="12" value="6">
+            <span class="value" id="numberSizeVal">6%</span>
+        </div>
+        
         <h3>👁️ Affichage</h3>
-        <div class="menu-row"><label>Soleil:</label><label class="toggle-switch"><input type="checkbox" id="showSun" checked><span class="toggle-slider"></span></label></div>
-        <div class="menu-row"><label>Axes:</label><label class="toggle-switch"><input type="checkbox" id="showAxes"><span class="toggle-slider"></span></label></div>
-        <div class="menu-row"><label>Triangles:</label><label class="toggle-switch"><input type="checkbox" id="showTriangles" checked><span class="toggle-slider"></span></label></div>
+        <div class="menu-row">
+            <label>Triangles:</label>
+            <label class="toggle-switch"><input type="checkbox" id="showTriangles" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div class="menu-row">
+            <label>Anneaux:</label>
+            <label class="toggle-switch"><input type="checkbox" id="showRings" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div class="menu-row">
+            <label>Opacité:</label>
+            <input type="range" id="opacitySlider" min="10" max="100" value="50">
+            <span class="value" id="opacityVal">50%</span>
+        </div>
     </div>
 
     <div class="main-container" id="mainContainer">
-        <!-- Matrice 1 - Soleil (fond clair) -->
         <div class="game-container">
             <div class="game-area" id="gameArea1">
                 <canvas class="triangle-canvas" id="triangleCanvas1"></canvas>
@@ -224,7 +255,6 @@
                 <div class="sun-reactor" id="sunReactor1"></div>
             </div>
         </div>
-        <!-- Matrice 2 - Lune (fond sombre) -->
         <div class="game-container dark">
             <div class="game-area dark" id="gameArea2">
                 <canvas class="triangle-canvas" id="triangleCanvas2"></canvas>
@@ -236,9 +266,23 @@
     </div>
 
     <script>
-        var globalSizeRatio = 0.058, globalOpacity = 0.5, isPlaying = false, speed = 0.06, animationId = null;
-        var crownsConfig = [{count:20,radiusRatio:0.436,step:18,offset:27},{count:10,radiusRatio:0.282,step:36,offset:18},{count:5,radiusRatio:0.155,step:72,offset:0}];
-        var ringRadiiRatio = [0.218, 0.36];
+        // === CONFIG CSS DYNAMIQUE ===
+        var cssConfig = {
+            sunSize: 0.30,       // Diamètre soleil (% du cercle)
+            radiusC1: 0.44,     // Rayon couronne 1
+            radiusC2: 0.28,     // Rayon couronne 2
+            offsetC1: 0,        // Décalage radial C1 vers centre
+            offsetC2: 0,        // Décalage radial C2 vers centre
+            numberSize: 0.06,   // Taille des chiffres
+            opacity: 0.5        // Opacité triangles
+        };
+        
+        var isPlaying = false, speed = 0.06, animationId = null;
+        var crownsConfig = [
+            {count: 20, step: 18, offset: 27},
+            {count: 10, step: 36, offset: 18},
+            {count: 5, step: 72, offset: 0}
+        ];
         var colors = {c1bg:"#4facfe",c1txt:"#ffffff",c2bg:"#a8edea",c2txt:"#333333",c3bg:"#ff9a56",c3txt:"#333333"};
         var matrices = [
             {id:1,canvasSize:550,cx:275,cy:275,globalRotation:0,offsets:[0,0,0],data:[[],[],[]],rayLines:[],triangleCtx:null,hiddenInSun:[]},
@@ -254,26 +298,90 @@
         document.getElementById('playBtn').addEventListener('touchend', function(e) { e.preventDefault(); togglePlay(); });
         document.getElementById('resetBtn').addEventListener('click', resetAll);
         document.getElementById('resetBtn').addEventListener('touchend', function(e) { e.preventDefault(); resetAll(); });
-        document.getElementById('speedSlider').addEventListener('input', updateSpeed);
-        document.getElementById('sizeSlider').addEventListener('input', updateSize);
-        document.getElementById('opacitySlider').addEventListener('input', updateOpacity);
-        document.getElementById('showSun').addEventListener('change', toggleSun);
-        document.getElementById('showAxes').addEventListener('change', toggleAxes);
-        document.getElementById('showTriangles').addEventListener('change', toggleTriangles);
+        
+        // CSS Sliders
+        document.getElementById('showSun').addEventListener('change', updateSunVisibility);
+        document.getElementById('sunSize').addEventListener('input', updateCSSConfig);
+        document.getElementById('radiusC1').addEventListener('input', updateCSSConfig);
+        document.getElementById('radiusC2').addEventListener('input', updateCSSConfig);
+        document.getElementById('offsetC1').addEventListener('input', updateCSSConfig);
+        document.getElementById('offsetC2').addEventListener('input', updateCSSConfig);
+        document.getElementById('numberSize').addEventListener('input', updateCSSConfig);
+        document.getElementById('showTriangles').addEventListener('change', function() { drawTriangles(0); drawTriangles(1); });
+        document.getElementById('showRings').addEventListener('change', updateRingsVisibility);
+        document.getElementById('opacitySlider').addEventListener('input', updateCSSConfig);
 
         function toggleMenu() { document.getElementById("menuBtn").classList.toggle("open"); document.getElementById("menuPanel").classList.toggle("open"); }
+        
+        function updateCSSConfig() {
+            cssConfig.sunSize = parseInt(document.getElementById('sunSize').value) / 100;
+            cssConfig.radiusC1 = parseInt(document.getElementById('radiusC1').value) / 100;
+            cssConfig.radiusC2 = parseInt(document.getElementById('radiusC2').value) / 100;
+            cssConfig.offsetC1 = parseInt(document.getElementById('offsetC1').value) / 100;
+            cssConfig.offsetC2 = parseInt(document.getElementById('offsetC2').value) / 100;
+            cssConfig.numberSize = parseInt(document.getElementById('numberSize').value) / 100;
+            cssConfig.opacity = parseInt(document.getElementById('opacitySlider').value) / 100;
+            
+            // Update display values
+            document.getElementById('sunSizeVal').textContent = Math.round(cssConfig.sunSize * 100) + '%';
+            document.getElementById('radiusC1Val').textContent = Math.round(cssConfig.radiusC1 * 100) + '%';
+            document.getElementById('radiusC2Val').textContent = Math.round(cssConfig.radiusC2 * 100) + '%';
+            document.getElementById('offsetC1Val').textContent = Math.round(cssConfig.offsetC1 * 100) + '%';
+            document.getElementById('offsetC2Val').textContent = Math.round(cssConfig.offsetC2 * 100) + '%';
+            document.getElementById('numberSizeVal').textContent = Math.round(cssConfig.numberSize * 100) + '%';
+            document.getElementById('opacityVal').textContent = Math.round(cssConfig.opacity * 100) + '%';
+            
+            // Apply changes
+            applyAllCSS();
+        }
+        
+        function applyAllCSS() {
+            for (var m = 0; m < 2; m++) {
+                // Sun size
+                var sun = document.getElementById('sunReactor' + (m + 1));
+                var sunDiameter = cssConfig.sunSize * 100;
+                sun.style.width = sunDiameter + '%';
+                sun.style.height = sunDiameter + '%';
+                
+                // Update rings positions
+                updateRings(m);
+                
+                // Update number sizes
+                for (var c = 0; c < 2; c++) {
+                    for (var i = 0; i < matrices[m].data[c].length; i++) {
+                        if (matrices[m].data[c][i].elem) {
+                            var size = cssConfig.numberSize * matrices[m].canvasSize;
+                            matrices[m].data[c][i].elem.style.width = size + "px";
+                            matrices[m].data[c][i].elem.style.height = size + "px";
+                            matrices[m].data[c][i].elem.style.fontSize = (size * 0.45) + "px";
+                        }
+                    }
+                }
+                
+                // Update positions
+                updateAllPositions(m);
+            }
+        }
+        
+        function updateSunVisibility() {
+            var show = document.getElementById('showSun').checked;
+            document.getElementById('sunReactor1').classList.toggle('visible', show);
+            document.getElementById('sunReactor2').classList.toggle('visible', show);
+        }
+        
+        function updateRingsVisibility() {
+            var show = document.getElementById('showRings').checked;
+            document.querySelectorAll('.ring').forEach(function(r) {
+                r.style.display = show ? 'block' : 'none';
+            });
+        }
+        
         function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
         function playTick() { if (!audioCtx) return; var o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.value = 800; o.type = 'sine'; g.gain.setValueAtTime(0.3, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime + 0.05); }
         function playExchange() { if (!audioCtx) return; var o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.value = 523; o.type = 'triangle'; g.gain.setValueAtTime(0.4, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3); o.start(audioCtx.currentTime); o.stop(audioCtx.currentTime + 0.3); }
         
         function togglePlay() { isPlaying = !isPlaying; var btn = document.getElementById("playBtn"); btn.textContent = isPlaying ? "Pause" : "Play"; btn.classList.toggle("active", isPlaying); if (isPlaying) runAnimation(); else if (animationId) { cancelAnimationFrame(animationId); animationId = null; } }
         function runAnimation() { if (!isPlaying) return; matrices[0].globalRotation += speed; matrices[1].globalRotation -= speed; updateAllPositions(0); updateAllPositions(1); animationId = requestAnimationFrame(runAnimation); }
-        function updateSpeed() { speed = parseFloat(document.getElementById("speedSlider").value); }
-        function updateSize() { globalSizeRatio = parseFloat(document.getElementById("sizeSlider").value); for (var m = 0; m < 2; m++) { for (var c = 0; c < 2; c++) { for (var i = 0; i < matrices[m].data[c].length; i++) { if (matrices[m].data[c][i].elem) { var size = globalSizeRatio * matrices[m].canvasSize; matrices[m].data[c][i].elem.style.width = size + "px"; matrices[m].data[c][i].elem.style.height = size + "px"; matrices[m].data[c][i].elem.style.fontSize = (size * 0.45) + "px"; } } } updateAllPositions(m); } }
-        function updateOpacity() { globalOpacity = parseFloat(document.getElementById("opacitySlider").value); drawTriangles(0); drawTriangles(1); toggleAxes(); }
-        function toggleSun() { var show = document.getElementById("showSun").checked; document.getElementById("sunReactor1").style.display = show ? "block" : "none"; document.getElementById("sunReactor2").style.display = show ? "block" : "none"; }
-        function toggleAxes() { var show = document.getElementById("showAxes").checked; for (var m = 0; m < 2; m++) matrices[m].rayLines.forEach(function(l) { l.style.opacity = show ? globalOpacity : "0"; }); }
-        function toggleTriangles() { drawTriangles(0); drawTriangles(1); }
         
         function updateDimensions(m) { 
             var ga = document.getElementById("gameArea" + (m + 1)); 
@@ -286,11 +394,39 @@
             canvas.height = rect.width; 
             matrices[m].triangleCtx = canvas.getContext("2d"); 
         }
-        function getCrownRadius(m, c) { return crownsConfig[c].radiusRatio * matrices[m].canvasSize; }
-        function getCrownSize(m) { return globalSizeRatio * matrices[m].canvasSize; }
+        
+        // Rayon avec offset appliqué
+        function getCrownRadius(m, c) { 
+            var baseRadius;
+            if (c === 0) baseRadius = cssConfig.radiusC1 + cssConfig.offsetC1;
+            else if (c === 1) baseRadius = cssConfig.radiusC2 + cssConfig.offsetC2;
+            else baseRadius = cssConfig.sunSize / 2; // C3 au bord du soleil
+            return baseRadius * matrices[m].canvasSize; 
+        }
+        
+        function getCrownSize(m) { return cssConfig.numberSize * matrices[m].canvasSize; }
         function normalize(a) { while(a < 0) a += 360; while(a >= 360) a -= 360; return a; }
-        function getPositionForCrown(m, crown, index) { var mat = matrices[m]; var angle = (index * crownsConfig[crown].step + crownsConfig[crown].offset + mat.globalRotation + mat.offsets[crown]) * Math.PI / 180; var radius = getCrownRadius(m, crown); return { x: mat.cx + radius * Math.cos(angle), y: mat.cy + radius * Math.sin(angle) }; }
-        function findTwoNeighbors(m, sommetCrown, sommetIndex, baseCrown) { var mat = matrices[m]; var sommetAngle = normalize(sommetIndex * crownsConfig[sommetCrown].step + crownsConfig[sommetCrown].offset + mat.globalRotation + mat.offsets[sommetCrown]); var neighbors = []; for (var i = 0; i < crownsConfig[baseCrown].count; i++) { var baseAngle = normalize(i * crownsConfig[baseCrown].step + crownsConfig[baseCrown].offset + mat.globalRotation + mat.offsets[baseCrown]); var diff = Math.abs(sommetAngle - baseAngle); if (diff > 180) diff = 360 - diff; neighbors.push({index: i, diff: diff}); } neighbors.sort(function(a, b) { return a.diff - b.diff; }); return [neighbors[0].index, neighbors[1].index]; }
+        
+        function getPositionForCrown(m, crown, index) { 
+            var mat = matrices[m]; 
+            var angle = (index * crownsConfig[crown].step + crownsConfig[crown].offset + mat.globalRotation + mat.offsets[crown]) * Math.PI / 180; 
+            var radius = getCrownRadius(m, crown); 
+            return { x: mat.cx + radius * Math.cos(angle), y: mat.cy + radius * Math.sin(angle) }; 
+        }
+        
+        function findTwoNeighbors(m, sommetCrown, sommetIndex, baseCrown) { 
+            var mat = matrices[m]; 
+            var sommetAngle = normalize(sommetIndex * crownsConfig[sommetCrown].step + crownsConfig[sommetCrown].offset + mat.globalRotation + mat.offsets[sommetCrown]); 
+            var neighbors = []; 
+            for (var i = 0; i < crownsConfig[baseCrown].count; i++) { 
+                var baseAngle = normalize(i * crownsConfig[baseCrown].step + crownsConfig[baseCrown].offset + mat.globalRotation + mat.offsets[baseCrown]); 
+                var diff = Math.abs(sommetAngle - baseAngle); 
+                if (diff > 180) diff = 360 - diff; 
+                neighbors.push({index: i, diff: diff}); 
+            } 
+            neighbors.sort(function(a, b) { return a.diff - b.diff; }); 
+            return [neighbors[0].index, neighbors[1].index]; 
+        }
         
         function drawTriangles(m) { 
             var ctx = matrices[m].triangleCtx; 
@@ -298,10 +434,10 @@
             var show = document.getElementById("showTriangles").checked; 
             ctx.clearRect(0, 0, matrices[m].canvasSize, matrices[m].canvasSize); 
             if (!show) return; 
-            var fillOpacity = globalOpacity * 0.4; 
-            var strokeOpacity = globalOpacity; 
+            var fillOpacity = cssConfig.opacity * 0.4; 
+            var strokeOpacity = cssConfig.opacity; 
             
-            // Triangles internes (masqués par le soleil)
+            // Triangles internes (vers C3/soleil)
             for (var i = 0; i < 5; i++) { 
                 var sommet = getPositionForCrown(m, 2, i); 
                 var baseIndexes = findTwoNeighbors(m, 2, i, 1); 
@@ -338,15 +474,74 @@
             } 
         }
         
-        function createRayLines(m) { var ga = document.getElementById("gameArea" + (m + 1)); ga.querySelectorAll(".ray-line").forEach(function(l) { l.remove(); }); matrices[m].rayLines = []; for (var i = 0; i < 10; i++) { var line = document.createElement("div"); line.className = "ray-line"; line.dataset.baseAngle = i * 36; ga.appendChild(line); matrices[m].rayLines.push(line); } }
-        function updateRayLines(m) { var mat = matrices[m]; mat.rayLines.forEach(function(line) { var angle = parseFloat(line.dataset.baseAngle) + mat.globalRotation + crownsConfig[1].offset + mat.offsets[1]; line.style.transform = "rotate(" + angle + "deg)"; }); }
-        function updateRings(m) { var ring1 = document.getElementById("ring" + (m + 1) + "_1"); var ring2 = document.getElementById("ring" + (m + 1) + "_2"); var mat = matrices[m]; var r1 = ringRadiiRatio[0] * mat.canvasSize; var r2 = ringRadiiRatio[1] * mat.canvasSize; ring1.style.width = (r1 * 2) + "px"; ring1.style.height = (r1 * 2) + "px"; ring1.style.transform = "translate(-50%, -50%) rotate(" + (-mat.globalRotation) + "deg)"; ring2.style.width = (r2 * 2) + "px"; ring2.style.height = (r2 * 2) + "px"; ring2.style.transform = "translate(-50%, -50%) rotate(" + (-mat.globalRotation) + "deg)"; }
-        function applyColor(elem, colorIndex) { if (colorIndex === 0) { elem.style.background = colors.c1bg; elem.style.color = colors.c1txt; } else if (colorIndex === 1) { elem.style.background = colors.c2bg; elem.style.color = colors.c2txt; } else { elem.style.background = colors.c3bg; elem.style.color = colors.c3txt; } }
-        function createNumber(m, value, crown, index) { var elem = document.createElement("div"); elem.className = "number"; elem.textContent = value; var size = getCrownSize(m); elem.style.width = size + "px"; elem.style.height = size + "px"; elem.style.fontSize = (size * 0.45) + "px"; elem.dataset.matrix = m; elem.dataset.crown = crown; elem.dataset.index = index; applyColor(elem, crown); document.getElementById("gameArea" + (m + 1)).appendChild(elem); return elem; }
-        function positionNumber(m, elem, crown, index) { var pos = getPositionForCrown(m, crown, index); var size = getCrownSize(m); elem.style.left = (pos.x - size/2) + "px"; elem.style.top = (pos.y - size/2) + "px"; }
-        function updateAllPositions(m) { var mat = matrices[m]; for (var c = 0; c < 2; c++) { for (var i = 0; i < mat.data[c].length; i++) { if (mat.data[c][i].elem && !mat.data[c][i].elem.classList.contains('entering-sun')) positionNumber(m, mat.data[c][i].elem, c, i); } } drawTriangles(m); updateRayLines(m); updateRings(m); }
+        function updateRings(m) { 
+            var ring1 = document.getElementById("ring" + (m + 1) + "_1"); 
+            var ring2 = document.getElementById("ring" + (m + 1) + "_2"); 
+            var mat = matrices[m]; 
+            
+            // Ring 1 entre C1 et C2
+            var r1 = ((cssConfig.radiusC1 + cssConfig.offsetC1 + cssConfig.radiusC2 + cssConfig.offsetC2) / 2) * mat.canvasSize;
+            // Ring 2 entre C2 et soleil
+            var r2 = ((cssConfig.radiusC2 + cssConfig.offsetC2 + cssConfig.sunSize / 2) / 2) * mat.canvasSize;
+            
+            ring1.style.width = (r1 * 2) + "px"; 
+            ring1.style.height = (r1 * 2) + "px"; 
+            ring1.style.transform = "translate(-50%, -50%) rotate(" + (-mat.globalRotation) + "deg)"; 
+            ring2.style.width = (r2 * 2) + "px"; 
+            ring2.style.height = (r2 * 2) + "px"; 
+            ring2.style.transform = "translate(-50%, -50%) rotate(" + (-mat.globalRotation) + "deg)"; 
+        }
         
-        function createDigitPool() { var pool = []; for (var d = 1; d <= 7; d++) for (var i = 0; i < 5; i++) pool.push(d); for (var i = pool.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var temp = pool[i]; pool[i] = pool[j]; pool[j] = temp; } return pool; }
+        function applyColor(elem, colorIndex) { 
+            if (colorIndex === 0) { elem.style.background = colors.c1bg; elem.style.color = colors.c1txt; } 
+            else if (colorIndex === 1) { elem.style.background = colors.c2bg; elem.style.color = colors.c2txt; } 
+            else { elem.style.background = colors.c3bg; elem.style.color = colors.c3txt; } 
+        }
+        
+        function createNumber(m, value, crown, index) { 
+            var elem = document.createElement("div"); 
+            elem.className = "number"; 
+            elem.textContent = value; 
+            var size = getCrownSize(m); 
+            elem.style.width = size + "px"; 
+            elem.style.height = size + "px"; 
+            elem.style.fontSize = (size * 0.45) + "px"; 
+            elem.dataset.matrix = m; 
+            elem.dataset.crown = crown; 
+            elem.dataset.index = index; 
+            applyColor(elem, crown); 
+            document.getElementById("gameArea" + (m + 1)).appendChild(elem); 
+            return elem; 
+        }
+        
+        function positionNumber(m, elem, crown, index) { 
+            var pos = getPositionForCrown(m, crown, index); 
+            var size = getCrownSize(m); 
+            elem.style.left = (pos.x - size/2) + "px"; 
+            elem.style.top = (pos.y - size/2) + "px"; 
+        }
+        
+        function updateAllPositions(m) { 
+            var mat = matrices[m]; 
+            for (var c = 0; c < 2; c++) { 
+                for (var i = 0; i < mat.data[c].length; i++) { 
+                    if (mat.data[c][i].elem && !mat.data[c][i].elem.classList.contains('entering-sun')) 
+                        positionNumber(m, mat.data[c][i].elem, c, i); 
+                } 
+            } 
+            drawTriangles(m); 
+            updateRings(m); 
+        }
+        
+        function createDigitPool() { 
+            var pool = []; 
+            for (var d = 1; d <= 7; d++) for (var i = 0; i < 5; i++) pool.push(d); 
+            for (var i = pool.length - 1; i > 0; i--) { 
+                var j = Math.floor(Math.random() * (i + 1)); 
+                var temp = pool[i]; pool[i] = pool[j]; pool[j] = temp; 
+            } 
+            return pool; 
+        }
         
         function initMatrix(m) { 
             var ga = document.getElementById("gameArea" + (m + 1)); 
@@ -358,7 +553,6 @@
             matrices[m].offsets = [0, 0, 0]; 
             var digitPool = createDigitPool(); 
             
-            // C1 et C2 visibles
             for (var c = 0; c < 2; c++) { 
                 for (var i = 0; i < crownsConfig[c].count; i++) { 
                     var val = digitPool.pop(); 
@@ -367,60 +561,49 @@
                 } 
             } 
             
-            // C3 : 5 chiffres cachés dans le soleil
             for (var i = 0; i < 5; i++) {
                 var val = digitPool.pop();
                 matrices[m].hiddenInSun.push({ value: val, originColor: 2 });
             }
             
-            createRayLines(m); 
             updateRings(m); 
             updateAllPositions(m); 
         }
-        function resetAll() { initMatrix(0); initMatrix(1); }
         
-        // === ANIMATION VAGUE SUR LE SOLEIL ===
+        function resetAll() { initMatrix(0); initMatrix(1); applyAllCSS(); }
+        
         function triggerSunWave(m) {
             var sun = document.getElementById("sunReactor" + (m + 1));
             sun.classList.remove('wave');
-            void sun.offsetWidth; // Force reflow
+            void sun.offsetWidth;
             sun.classList.add('wave');
             setTimeout(function() { sun.classList.remove('wave'); }, 500);
         }
         
-        // === ECHANGE AVEUGLE ===
         function doBlindExchange(m, c2Index, elem) {
             var mat = matrices[m];
             if (mat.hiddenInSun.length === 0) return;
             
-            // Animation : le chiffre disparaît dans le soleil
             elem.classList.add('entering-sun');
             
-            // Prendre le chiffre de C2
             var c2Data = mat.data[1][c2Index];
             var outValue = c2Data.value;
             var outColor = c2Data.originColor;
             
-            // Choisir un chiffre aléatoire dans le soleil
             var sunIndex = Math.floor(Math.random() * mat.hiddenInSun.length);
             var sunData = mat.hiddenInSun[sunIndex];
             
-            // Déclencher l'animation du soleil
             triggerSunWave(m);
             playExchange();
             
-            // Après un délai, faire l'échange
             setTimeout(function() {
-                // Echanger les valeurs
                 c2Data.value = sunData.value;
                 c2Data.originColor = sunData.originColor;
                 c2Data.elem.textContent = sunData.value;
                 applyColor(c2Data.elem, sunData.originColor);
                 
-                // Mettre l'ancien dans le soleil
                 mat.hiddenInSun[sunIndex] = { value: outValue, originColor: outColor };
                 
-                // Remettre le chiffre visible
                 elem.classList.remove('entering-sun');
                 updateAllPositions(m);
             }, 250);
@@ -446,7 +629,17 @@
         function handleMouseUp() { handleTouchEnd('mouse'); }
 
         function findMatrixFromPoint(x, y) { for (var m = 0; m < 2; m++) { var ga = document.getElementById("gameArea" + (m + 1)); var rect = ga.getBoundingClientRect(); if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) return m; } return -1; }
-        function getCrownZones(m) { var size = matrices[m].canvasSize; return [{outer: size * 0.5, inner: size * 0.36},{outer: size * 0.36, inner: size * 0.218}]; }
+        
+        function getCrownZones(m) { 
+            var size = matrices[m].canvasSize; 
+            var r1 = (cssConfig.radiusC1 + cssConfig.offsetC1) * size;
+            var r2 = (cssConfig.radiusC2 + cssConfig.offsetC2) * size;
+            var rSun = (cssConfig.sunSize / 2) * size;
+            return [
+                {outer: size * 0.5, inner: (r1 + r2) / 2},
+                {outer: (r1 + r2) / 2, inner: (r2 + rSun) / 2}
+            ]; 
+        }
         
         function handleTouchStart(id, clientX, clientY, target) { 
             var m = findMatrixFromPoint(clientX, clientY); 
@@ -561,14 +754,12 @@
                 var currentDist = Math.sqrt(Math.pow(x - mat.cx, 2) + Math.pow(y - mat.cy, 2)); 
                 var goingInward = currentDist < startDist;
                 
-                // Si C2 et on va vers le centre → préparer échange aveugle
                 if (touchData.crown === 1 && goingInward) {
                     touchData.triangleType = 'sunExchange';
                     touchData.directionDecided = true;
                     return;
                 }
                 
-                // Sinon triangle externe
                 if (touchData.crown === 0) { 
                     touchData.triangleType = 'outer'; 
                     for (var i = 0; i < 10; i++) { 
@@ -591,7 +782,6 @@
                 } 
             } 
             
-            // Triangle externe : déplacement visuel
             if (touchData.directionDecided && touchData.triangleType === 'outer' && touchData.triData) { 
                 var triData = touchData.triData; 
                 var newMouseT = nearestParamOnTriangle(triData.points, x, y); 
@@ -608,26 +798,22 @@
                 touchData.currentDelta = delta; 
             }
             
-            // Échange soleil : déplacer le chiffre vers le centre
             if (touchData.triangleType === 'sunExchange') {
                 var elem = touchData.element;
                 var size = getCrownSize(m);
                 var startPos = getPositionForCrown(m, touchData.crown, touchData.index);
                 
-                // Calculer la progression vers le centre
                 var totalDist = Math.sqrt(Math.pow(startPos.x - mat.cx, 2) + Math.pow(startPos.y - mat.cy, 2));
                 var currentDistFromStart = Math.sqrt(Math.pow(x - touchData.startX, 2) + Math.pow(y - touchData.startY, 2));
                 var progress = Math.min(currentDistFromStart / (totalDist * 0.5), 1);
                 
-                // Déplacer vers le centre
                 var newX = startPos.x + (mat.cx - startPos.x) * progress;
                 var newY = startPos.y + (mat.cy - startPos.y) * progress;
                 elem.style.left = (newX - size/2) + "px";
                 elem.style.top = (newY - size/2) + "px";
                 
-                // Quand il entre dans le soleil, le rendre invisible
                 var distFromCenter = Math.sqrt(Math.pow(newX - mat.cx, 2) + Math.pow(newY - mat.cy, 2));
-                var sunRadius = mat.canvasSize * 0.22; // 44% / 2
+                var sunRadius = (cssConfig.sunSize / 2) * mat.canvasSize;
                 if (distFromCenter < sunRadius) {
                     elem.classList.add('entering-sun');
                 } else {
@@ -643,12 +829,10 @@
             var mat = matrices[m]; 
             if (touchData.element) touchData.element.classList.remove('dragging'); 
             
-            // Échange aveugle avec le soleil
             if (touchData.triangleType === 'sunExchange') {
                 if (touchData.exchangeProgress > 0.6) {
                     doBlindExchange(m, touchData.index, touchData.element);
                 } else {
-                    // Annuler - remettre le chiffre en place
                     touchData.element.classList.remove('entering-sun');
                     updateAllPositions(m);
                 }
@@ -656,7 +840,6 @@
                 return;
             }
             
-            // Triangle externe classique
             if (touchData.triangleType === 'outer' && touchData.triData && touchData.currentDelta !== undefined) { 
                 var delta = touchData.currentDelta; 
                 var triData = touchData.triData; 
@@ -683,13 +866,19 @@
             touchData.active = false; 
         }
         
-        function handleResize() { for (var m = 0; m < 2; m++) { updateDimensions(m); for (var c = 0; c < 2; c++) for (var i = 0; i < matrices[m].data[c].length; i++) if (matrices[m].data[c][i].elem) { var size = getCrownSize(m); matrices[m].data[c][i].elem.style.width = size + "px"; matrices[m].data[c][i].elem.style.height = size + "px"; matrices[m].data[c][i].elem.style.fontSize = (size * 0.45) + "px"; } updateAllPositions(m); } }
+        function handleResize() { 
+            for (var m = 0; m < 2; m++) { 
+                updateDimensions(m); 
+                applyAllCSS();
+            } 
+        }
         window.addEventListener('resize', handleResize);
         window.addEventListener('orientationchange', function() { setTimeout(handleResize, 100); });
         
         setupGameTouch();
         initMatrix(0);
         initMatrix(1);
+        applyAllCSS();
     </script>
 </body>
 </html>
