@@ -26,7 +26,7 @@
         }
         
         .game-container { 
-            background: #fefefe; 
+            background: #ffffff; 
             border-radius: 10%; 
             box-shadow: 0 10px 40px rgba(0,0,0,0.3); 
         }
@@ -35,9 +35,44 @@
             position: relative; 
             width: min(92vw, 55vh);
             height: min(92vw, 55vh);
-            background: #fefefe; 
+            background: #ffffff; 
             border-radius: 10%; 
             overflow: hidden; 
+        }
+        
+        /* Zones de drag des couronnes - 3 gris différents */
+        .crown-zone {
+            position: absolute;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        /* Zone C1 (externe) - gris le plus foncé */
+        .crown-zone-c1 {
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #e8e8e8;
+            border-radius: 10%;
+        }
+        
+        /* Zone C2 (milieu) - gris moyen */
+        .crown-zone-c2 {
+            top: 19.2%; left: 19.2%; right: 19.2%; bottom: 19.2%;
+            background: #f0f0f0;
+            border-radius: 2%;
+        }
+        
+        /* Zone C3 (interne) - gris le plus clair */
+        .crown-zone-c3 {
+            top: 32.3%; left: 32.3%; right: 32.3%; bottom: 32.3%;
+            background: #f8f8f8;
+            border-radius: 2%;
+        }
+        
+        /* Zone centrale (soleil) - blanc pur */
+        .crown-zone-center {
+            top: 42%; left: 42%; right: 42%; bottom: 42%;
+            background: #ffffff;
+            border-radius: 2%;
         }
         
         /* Rails carrés - positions en pourcentage */
@@ -227,6 +262,12 @@
 <body>
     <div class="game-container">
         <div class="game-area" id="gameArea">
+            <!-- Zones de drag des couronnes (3 gris) -->
+            <div class="crown-zone crown-zone-c1"></div>
+            <div class="crown-zone crown-zone-c2"></div>
+            <div class="crown-zone crown-zone-c3"></div>
+            <div class="crown-zone crown-zone-center"></div>
+            
             <!-- Rails carrés -->
             <div class="rail rail-c1"></div>
             <div class="rail rail-c2"></div>
@@ -246,6 +287,13 @@
             </label>
         </div>
         <div class="control-item">
+            <label>Pastilles:</label>
+            <label class="toggle-switch">
+                <input type="checkbox" id="showPastilles" checked onchange="togglePastilles()">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+        <div class="control-item">
             <label>Soleil:</label>
             <label class="toggle-switch">
                 <input type="checkbox" id="showSoleil" checked onchange="toggleSoleil()">
@@ -253,6 +301,21 @@
             </label>
         </div>
         <button onclick="init()">Reset</button>
+    </div>
+    
+    <div class="controls">
+        <div class="control-item">
+            <label>Taille:</label>
+            <input type="range" id="sizePastille" min="12" max="35" value="20" step="1" oninput="updateSizes()" style="width:50px;">
+        </div>
+        <div class="control-item">
+            <label>Ancrage:</label>
+            <input type="range" id="sizeAncrage" min="25" max="70" value="45" step="1" oninput="updateSizes()" style="width:50px;">
+        </div>
+        <div class="control-item">
+            <label>Arrondi:</label>
+            <input type="range" id="radiusPastille" min="0" max="50" value="4" step="1" oninput="updateSizes()" style="width:50px;">
+        </div>
     </div>
     
     <div class="legend">
@@ -557,11 +620,40 @@
             }
         }
         
+        // Mise à jour des tailles
+        function updateSizes() {
+            sizePastille = parseInt(document.getElementById('sizePastille').value);
+            sizeAncrage = parseInt(document.getElementById('sizeAncrage').value);
+            radiusPastille = parseInt(document.getElementById('radiusPastille').value);
+            
+            for (let c = 0; c < 3; c++) {
+                for (let i = 0; i < data[c].length; i++) {
+                    const anchor = data[c][i].anchor;
+                    const elem = data[c][i].elem;
+                    if (anchor && elem) {
+                        anchor.style.width = sizeAncrage + 'px';
+                        anchor.style.height = sizeAncrage + 'px';
+                        elem.style.width = sizePastille + 'px';
+                        elem.style.height = sizePastille + 'px';
+                        elem.style.borderRadius = radiusPastille + 'px';
+                    }
+                }
+            }
+            updateAllPositions();
+        }
+        
         // Toggles
         function toggleRails() {
             const show = document.getElementById('showRails').checked;
             document.querySelectorAll('.rail').forEach(r => {
                 r.style.opacity = show ? '1' : '0';
+            });
+        }
+        
+        function togglePastilles() {
+            const show = document.getElementById('showPastilles').checked;
+            document.querySelectorAll('.pastille-anchor').forEach(p => {
+                p.style.display = show ? 'flex' : 'none';
             });
         }
         
@@ -1310,6 +1402,11 @@
             
             // Mettre à jour les dimensions dynamiques
             updateDimensions();
+            
+            // Appliquer les valeurs des sliders (priorité sur les valeurs calculées)
+            sizePastille = parseInt(document.getElementById('sizePastille').value);
+            sizeAncrage = parseInt(document.getElementById('sizeAncrage').value);
+            radiusPastille = parseInt(document.getElementById('radiusPastille').value);
             
             data = [[], [], []];
             offsets = [0, 0, 0];
