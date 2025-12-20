@@ -6,1580 +6,473 @@
     <title>Fusion Square - Mobile</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { 
-            height: 100%; 
-            overflow: hidden;
-            touch-action: none;
-        }
+        html, body { height: 100%; overflow: hidden; touch-action: none; }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-            background: #1a1a2e; 
-            min-height: 100vh;
-            min-height: -webkit-fill-available;
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            color: white; 
-            padding: 5px;
-            gap: 8px;
-        }
-        
-        .game-container { 
             background: #ffffff; 
-            border-radius: 10%; 
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3); 
+            min-height: 100vh; min-height: -webkit-fill-available;
+            display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+            padding: 10px;
         }
-        
+        .top-spacer { flex: 1; }
+        .game-container { background: #ffffff; border-radius: 8%; box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
         .game-area { 
-            position: relative; 
-            width: min(92vw, 55vh);
-            height: min(92vw, 55vh);
-            background: #ffffff; 
-            border-radius: 10%; 
-            overflow: hidden; 
+            position: relative; width: min(92vw, 55vh); height: min(92vw, 55vh);
+            background: #ffffff; border-radius: 8%; overflow: hidden; 
         }
+        /* Zones grises - grille 7x7, chaque cellule = 14.28% */
+        .crown-zone { display: none; }
+        .crown-zone-c1 { display: none; }
+        .crown-zone-c2 { display: none; }
+        .crown-zone-c3 { display: none; }
+        .crown-zone-center { display: none; }
         
-        /* Zones de drag des couronnes - 3 gris différents */
-        .crown-zone {
-            position: absolute;
-            pointer-events: none;
-            z-index: 1;
-        }
+        /* Rails - passent par le CENTRE des cellules (pas les bords!)
+           Grille 7x7 avec padding ~5% de chaque côté
+           Cellule 0: centre à ~5% + (100%-10%)/7 * 0.5 = ~11.4%
+           Cellule 1: centre à ~5% + (100%-10%)/7 * 1.5 = ~24.3%
+           Cellule 2: centre à ~5% + (100%-10%)/7 * 2.5 = ~37.1%
+        */
+        .rail { position: absolute; border: 2px dashed rgba(100,100,100,0.4); pointer-events: none; z-index: 2; }
+        .rail.dragging { border-color: #ffd700; border-style: solid; border-width: 3px; box-shadow: 0 0 15px rgba(255,215,0,0.4); }
+        .rail.snapping { border-color: #00ff88; border-style: solid; border-width: 3px; box-shadow: 0 0 20px rgba(0,255,136,0.5); }
+        /* Ces valeurs seront recalculées en JS pour être exactes */
+        .rail-c1 { top: 11.4%; left: 11.4%; right: 11.4%; bottom: 11.4%; }
+        .rail-c2 { top: 24.3%; left: 24.3%; right: 24.3%; bottom: 24.3%; }
+        .rail-c3 { top: 37.1%; left: 37.1%; right: 37.1%; bottom: 37.1%; }
         
-        /* Zone C1 (externe) - gris le plus foncé */
-        .crown-zone-c1 {
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: #e8e8e8;
-            border-radius: 10%;
-        }
-        
-        /* Zone C2 (milieu) - gris moyen */
-        .crown-zone-c2 {
-            top: 19.2%; left: 19.2%; right: 19.2%; bottom: 19.2%;
-            background: #f0f0f0;
-            border-radius: 2%;
-        }
-        
-        /* Zone C3 (interne) - gris le plus clair */
-        .crown-zone-c3 {
-            top: 32.3%; left: 32.3%; right: 32.3%; bottom: 32.3%;
-            background: #f8f8f8;
-            border-radius: 2%;
-        }
-        
-        /* Zone centrale (soleil) - blanc pur */
-        .crown-zone-center {
-            top: 42%; left: 42%; right: 42%; bottom: 42%;
-            background: #ffffff;
-            border-radius: 2%;
-        }
-        
-        /* Rails carrés - positions en pourcentage */
-        .rail {
-            position: absolute;
-            border: 2px dashed rgba(150,150,150,0.4);
-            border-radius: 1%;
-            pointer-events: none;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-        }
-        
-        .rail.dragging {
-            border-color: #ffd700;
-            border-style: solid;
-            border-width: 3px;
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
-        }
-        
-        .rail.snapping {
-            border-color: #00ff88;
-            border-style: solid;
-            border-width: 3px;
-            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
-        }
-        
-        /* Rails en pourcentage: 58/520 ≈ 11.15%, 125/520 ≈ 24%, 192/520 ≈ 37% */
-        .rail-c1 {
-            top: 11.15%; left: 11.15%; right: 11.15%; bottom: 11.15%;
-        }
-        
-        .rail-c2 {
-            top: 24%; left: 24%; right: 24%; bottom: 24%;
-        }
-        
-        .rail-c3 {
-            top: 37%; left: 37%; right: 37%; bottom: 37%;
-        }
-        
-        /* Soleil central - 60/520 ≈ 11.5% */
         .center-sun { 
-            width: 11.5%; 
-            height: 11.5%; 
+            width: 12%; height: 12%; 
             background: linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffa500 100%); 
-            border-radius: 12%; 
-            position: absolute; 
-            top: 50%; 
-            left: 50%; 
-            transform: translate(-50%, -50%); 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            box-shadow: 0 0 20px rgba(255,215,0,0.5); 
-            cursor: grab;
-            z-index: 100; 
+            border-radius: 15%; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            box-shadow: 0 0 20px rgba(255,215,0,0.5); cursor: grab; z-index: 100; 
             border: 2px solid rgba(255,255,255,0.9);
-            transition: transform 0.1s ease;
         }
-        
-        .center-sun.dragging {
-            cursor: grabbing;
-            transform: translate(-50%, -50%) scale(1.15);
-            box-shadow: 0 0 30px rgba(255,215,0,0.7);
-        }
-        
-        .pastille { 
-            position: absolute;
-            border-radius: 15%; 
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3); 
-            cursor: grab;
-            transition: transform 0.1s ease;
-            z-index: 10;
-        }
-        
-        .pastille.dragging { 
-            cursor: grabbing; 
-            transform: scale(1.2);
-        }
-        
-        .pastille.blocked {
-            animation: shake 0.3s ease-in-out;
-        }
-        
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-        
-        .controls { 
-            display: flex; 
-            gap: 5px; 
-            flex-wrap: wrap; 
-            justify-content: center; 
-            align-items: center; 
-        }
-        
-        .control-item { 
-            background: rgba(255,255,255,0.1); 
-            padding: 4px 8px; 
-            border-radius: 12px; 
-            display: flex; 
-            align-items: center; 
-            gap: 4px; 
-            font-size: 0.7em; 
-        }
-        
-        button { 
-            padding: 6px 12px; 
-            font-size: 0.75em; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-            color: white; 
-            border: none; 
-            border-radius: 12px; 
-            cursor: pointer; 
-            font-weight: bold; 
-        }
-        
-        .toggle-switch { 
-            position: relative; 
-            width: 32px; 
-            height: 18px; 
-        }
-        
-        .toggle-switch input { 
-            opacity: 0; 
-            width: 0; 
-            height: 0; 
-        }
-        
-        .toggle-slider { 
-            position: absolute; 
-            cursor: pointer; 
-            inset: 0; 
-            background-color: rgba(255,255,255,0.2); 
-            border-radius: 18px; 
-        }
-        
-        .toggle-slider:before { 
-            position: absolute; 
-            content: ""; 
-            height: 12px; 
-            width: 12px; 
-            left: 3px; 
-            bottom: 3px; 
-            background-color: white; 
-            border-radius: 50%; 
-            transition: 0.2s; 
-        }
-        
-        input:checked + .toggle-slider { 
-            background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%); 
-        }
-        
-        input:checked + .toggle-slider:before { 
-            transform: translateX(14px); 
-        }
-        
-        .size-controls { 
-            display: none; 
-        }
-        
-        .legend { 
-            display: flex; 
-            gap: 8px; 
-            font-size: 0.65em;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        
-        .legend-item { 
-            display: flex; 
-            align-items: center; 
-            gap: 3px; 
-        }
-        
-        .legend-dot { 
-            width: 14px; 
-            height: 14px; 
-            border-radius: 3px; 
-        }
-        
-        .info-box {
-            display: none;
-        }
+        .center-sun.dragging { transform: translate(-50%, -50%) scale(1.15); box-shadow: 0 0 30px rgba(255,215,0,0.7); }
+        .pastille { position: absolute; border-radius: 15%; box-shadow: 0 2px 6px rgba(0,0,0,0.3); cursor: grab; z-index: 10; }
+        .pastille.blocked { animation: shake 0.3s ease-in-out; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        .bottom-menu { display: flex; flex-direction: column; gap: 6px; padding: 10px; background: #1a1a2e; border-radius: 15px; width: 100%; max-width: min(95vw, 400px); }
+        .controls { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; align-items: center; }
+        .control-item { background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 12px; display: flex; align-items: center; gap: 4px; font-size: 0.7em; color: white; }
+        button { padding: 6px 12px; font-size: 0.75em; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 12px; font-weight: bold; }
+        .toggle-switch { position: relative; width: 32px; height: 18px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; inset: 0; background-color: rgba(255,255,255,0.2); border-radius: 18px; }
+        .toggle-slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: 0.2s; }
+        input:checked + .toggle-slider { background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%); }
+        input:checked + .toggle-slider:before { transform: translateX(14px); }
+        .legend { display: flex; gap: 6px; font-size: 0.6em; flex-wrap: wrap; justify-content: center; color: white; }
+        .legend-item { display: flex; align-items: center; gap: 3px; }
+        .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
     </style>
 </head>
 <body>
+    <div class="top-spacer"></div>
     <div class="game-container">
         <div class="game-area" id="gameArea">
-            <!-- Zones de drag des couronnes (3 gris) -->
             <div class="crown-zone crown-zone-c1"></div>
             <div class="crown-zone crown-zone-c2"></div>
             <div class="crown-zone crown-zone-c3"></div>
             <div class="crown-zone crown-zone-center"></div>
-            
-            <!-- Rails carrés -->
             <div class="rail rail-c1"></div>
             <div class="rail rail-c2"></div>
             <div class="rail rail-c3"></div>
-            
-            <!-- Soleil central interactif -->
             <div class="center-sun" id="centerSun"></div>
         </div>
     </div>
-    
-    <div class="controls">
-        <div class="control-item">
-            <label>Rails:</label>
-            <label class="toggle-switch">
-                <input type="checkbox" id="showRails" checked onchange="toggleRails()">
-                <span class="toggle-slider"></span>
-            </label>
+    <div class="bottom-menu">
+        <div class="controls">
+            <div class="control-item"><label>Rails:</label><label class="toggle-switch"><input type="checkbox" id="showRails" checked onchange="toggleRails()"><span class="toggle-slider"></span></label></div>
+            <div class="control-item"><label>Pastilles:</label><label class="toggle-switch"><input type="checkbox" id="showPastilles" checked onchange="togglePastilles()"><span class="toggle-slider"></span></label></div>
+            <div class="control-item"><label>Soleil:</label><label class="toggle-switch"><input type="checkbox" id="showSoleil" checked onchange="toggleSoleil()"><span class="toggle-slider"></span></label></div>
+            <button onclick="init()">Reset</button>
         </div>
-        <div class="control-item">
-            <label>Pastilles:</label>
-            <label class="toggle-switch">
-                <input type="checkbox" id="showPastilles" checked onchange="togglePastilles()">
-                <span class="toggle-slider"></span>
-            </label>
+        <div class="controls">
+            <div class="control-item"><label>Taille:</label><input type="range" id="sizePastille" min="10" max="50" value="22" oninput="updateSizes()" style="width:50px;"></div>
+            <div class="control-item"><label>Ancrage:</label><input type="range" id="sizeAncrage" min="20" max="80" value="45" oninput="updateSizes()" style="width:50px;"></div>
+            <div class="control-item"><label>Arrondi:</label><input type="range" id="radiusPastille" min="0" max="50" value="15" oninput="updateSizes()" style="width:50px;"></div>
         </div>
-        <div class="control-item">
-            <label>Soleil:</label>
-            <label class="toggle-switch">
-                <input type="checkbox" id="showSoleil" checked onchange="toggleSoleil()">
-                <span class="toggle-slider"></span>
-            </label>
-        </div>
-        <button onclick="init()">Reset</button>
-    </div>
-    
-    <div class="controls">
-        <div class="control-item">
-            <label>Taille:</label>
-            <input type="range" id="sizePastille" min="12" max="35" value="20" step="1" oninput="updateSizes()" style="width:50px;">
-        </div>
-        <div class="control-item">
-            <label>Ancrage:</label>
-            <input type="range" id="sizeAncrage" min="25" max="70" value="45" step="1" oninput="updateSizes()" style="width:50px;">
-        </div>
-        <div class="control-item">
-            <label>Arrondi:</label>
-            <input type="range" id="radiusPastille" min="0" max="50" value="4" step="1" oninput="updateSizes()" style="width:50px;">
+        <div class="legend">
+            <div class="legend-item"><div class="legend-dot" style="background:#3498db;"></div><span>Bleu</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#f1c40f;"></div><span>Jaune</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#e74c3c;"></div><span>Rouge</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#2ecc71;"></div><span>Vert</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#9b59b6;"></div><span>Violet</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#e67e22;"></div><span>Orange</span></div>
         </div>
     </div>
-    
-    <div class="legend">
-        <div class="legend-item"><div class="legend-dot" style="background:#3498db;"></div><span>Bleu</span></div>
-        <div class="legend-item"><div class="legend-dot" style="background:#f1c40f;"></div><span>Jaune</span></div>
-        <div class="legend-item"><div class="legend-dot" style="background:#e74c3c;"></div><span>Rouge</span></div>
-        <div class="legend-item"><div class="legend-dot" style="background:#2ecc71;"></div><span>Vert</span></div>
-        <div class="legend-item"><div class="legend-dot" style="background:#9b59b6;"></div><span>Violet</span></div>
-        <div class="legend-item"><div class="legend-dot" style="background:#e67e22;"></div><span>Orange</span></div>
-    </div>
-
     <script>
-        // Dimensions dynamiques
-        let canvasSize = 520;
-        let cx = 260, cy = 260;
-        const gridSize = 7;
-        let padding = 25;
-        let cellSize = (canvasSize - 2 * padding) / gridSize;
+        let canvasSize=520,cx=260,cy=260,padding,cellSize;
+        const gridSize=7;
         
-        function updateDimensions() {
-            const ga = document.getElementById('gameArea');
-            canvasSize = ga.offsetWidth;
-            cx = canvasSize / 2;
-            cy = canvasSize / 2;
-            padding = canvasSize * 0.048; // ~25/520
-            cellSize = (canvasSize - 2 * padding) / gridSize;
+        function updateDimensions(){
+            const ga=document.getElementById('gameArea');
+            canvasSize=ga.offsetWidth;
+            cx=canvasSize/2;
+            cy=canvasSize/2;
+            padding=canvasSize*0.05;
+            cellSize=(canvasSize-2*padding)/gridSize;
             
-            // Adapter les tailles des pastilles
-            sizePastille = canvasSize * 0.046; // ~24/520
-            sizeAncrage = canvasSize * 0.096;  // ~50/520
-            radiusPastille = canvasSize * 0.008; // ~4/520
+            // Mettre à jour les rails pour qu'ils passent par le CENTRE des cellules
+            updateRailPositions();
         }
         
-        // Positions sur la grille pour chaque couronne
-        const c1Positions = [
-            [0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],
-            [1,6],[2,6],[3,6],[4,6],[5,6],
-            [6,6],[6,5],[6,4],[6,3],[6,2],[6,1],[6,0],
-            [5,0],[4,0],[3,0],[2,0],[1,0]
-        ];
-        
-        const c2Positions = [
-            [1,1],[1,2],[1,3],[1,4],[1,5],
-            [2,5],[3,5],[4,5],
-            [5,5],[5,4],[5,3],[5,2],[5,1],
-            [4,1],[3,1],[2,1]
-        ];
-        
-        const c3Positions = [
-            [2,2],[2,3],[2,4],
-            [3,4],
-            [4,4],[4,3],[4,2],
-            [3,2]
-        ];
-        
-        // Position du centre (soleil)
-        const centerPosition = [3, 3];
-        
-        const crownPositions = [c1Positions, c2Positions, c3Positions];
-        
-        const crowns = [
-            { count: 24 },
-            { count: 16 },
-            { count: 8 }
-        ];
-        
-        let sizePastille = 24;
-        let sizeAncrage = 50;
-        let radiusPastille = 4;
-        
-        let data = [[], [], []];
-        let offsets = [0, 0, 0];
-        
-        // Couleur du soleil central
-        let centerColor = 1; // Jaune par défaut
-        
-        // Couleurs: 0=Bleu, 1=Jaune, 2=Rouge, 3=Vert, 4=Violet, 5=Orange, 6=Gris
-        const pastilleColors = [
-            "#3498db",  // 0: Bleu
-            "#f1c40f",  // 1: Jaune
-            "#e74c3c",  // 2: Rouge
-            "#2ecc71",  // 3: Vert
-            "#9b59b6",  // 4: Violet
-            "#e67e22",  // 5: Orange
-            "#bdc3c7"   // 6: Gris
-        ];
-        
-        // Règles de fusion
-        const fusionRules = {
-            '0-1': 3, '1-0': 3,  // Bleu + Jaune = Vert
-            '0-2': 4, '2-0': 4,  // Bleu + Rouge = Violet
-            '1-2': 5, '2-1': 5   // Jaune + Rouge = Orange
-        };
-        
-        // Règles de fission
-        const fissionRules = {
-            '3-6': [0, 1], '4-6': [0, 2], '5-6': [2, 1],
-            '6-3': [1, 0], '6-4': [2, 0], '6-5': [1, 2]
-        };
-        
-        // Audio
-        let audioCtx = null;
-        function initAudio() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
+        function updateRailPositions(){
+            // Centre de la cellule 0 = padding + cellSize/2
+            // Centre de la cellule 1 = padding + cellSize*1.5
+            // Centre de la cellule 2 = padding + cellSize*2.5
+            const c0 = (padding + cellSize * 0.5) / canvasSize * 100;
+            const c1 = (padding + cellSize * 1.5) / canvasSize * 100;
+            const c2 = (padding + cellSize * 2.5) / canvasSize * 100;
+            
+            const rail1 = document.querySelector('.rail-c1');
+            const rail2 = document.querySelector('.rail-c2');
+            const rail3 = document.querySelector('.rail-c3');
+            
+            if(rail1) { rail1.style.top = c0+'%'; rail1.style.left = c0+'%'; rail1.style.right = c0+'%'; rail1.style.bottom = c0+'%'; }
+            if(rail2) { rail2.style.top = c1+'%'; rail2.style.left = c1+'%'; rail2.style.right = c1+'%'; rail2.style.bottom = c1+'%'; }
+            if(rail3) { rail3.style.top = c2+'%'; rail3.style.left = c2+'%'; rail3.style.right = c2+'%'; rail3.style.bottom = c2+'%'; }
         }
         
-        function playTick() {
-            if (!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.frequency.value = 800;
-            osc.type = 'sine';
-            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
-            osc.start(audioCtx.currentTime);
-            osc.stop(audioCtx.currentTime + 0.05);
+        const c1Positions=[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[1,6],[2,6],[3,6],[4,6],[5,6],[6,6],[6,5],[6,4],[6,3],[6,2],[6,1],[6,0],[5,0],[4,0],[3,0],[2,0],[1,0]];
+        const c2Positions=[[1,1],[1,2],[1,3],[1,4],[1,5],[2,5],[3,5],[4,5],[5,5],[5,4],[5,3],[5,2],[5,1],[4,1],[3,1],[2,1]];
+        const c3Positions=[[2,2],[2,3],[2,4],[3,4],[4,4],[4,3],[4,2],[3,2]];
+        const crownPositions=[c1Positions,c2Positions,c3Positions];
+        const crowns=[{count:24},{count:16},{count:8}];
+        
+        let sizePastille=22,sizeAncrage=45,radiusPastille=15;
+        let data=[[],[],[]],offsets=[0,0,0],centerColor=1;
+        const pastilleColors=["#3498db","#f1c40f","#e74c3c","#2ecc71","#9b59b6","#e67e22","#bdc3c7"];
+        const fusionRules={'0-1':3,'1-0':3,'0-2':4,'2-0':4,'1-2':5,'2-1':5};
+        const fissionRules={'3-6':[0,1],'4-6':[0,2],'5-6':[2,1],'6-3':[1,0],'6-4':[2,0],'6-5':[1,2]};
+        
+        let audioCtx=null;
+        function initAudio(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();}
+        function playTick(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.frequency.value=800;o.type='sine';g.gain.setValueAtTime(0.3,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.05);o.start(audioCtx.currentTime);o.stop(audioCtx.currentTime+0.05);}
+        function playFusionSound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.frequency.value=523.25;o.type='sine';g.gain.setValueAtTime(0.3,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.2);o.start(audioCtx.currentTime);o.stop(audioCtx.currentTime+0.2);}
+        function playFissionSound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.frequency.setValueAtTime(659.25,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(329.63,audioCtx.currentTime+0.2);o.type='sine';g.gain.setValueAtTime(0.3,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.25);o.start(audioCtx.currentTime);o.stop(audioCtx.currentTime+0.25);}
+        function playBlockedSound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.frequency.value=200;o.type='square';g.gain.setValueAtTime(0.2,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.1);o.start(audioCtx.currentTime);o.stop(audioCtx.currentTime+0.1);}
+        function playDiagonalSound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.frequency.value=440;o.type='triangle';g.gain.setValueAtTime(0.25,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.15);o.start(audioCtx.currentTime);o.stop(audioCtx.currentTime+0.15);}
+        
+        function getPositionOnSquare(crown,index){
+            const positions=crownPositions[crown],count=positions.length;
+            const realIndex=((index+offsets[crown])%count+count)%count;
+            const idx1=Math.floor(realIndex),idx2=(idx1+1)%count,t=realIndex-idx1;
+            const[row1,col1]=positions[idx1],[row2,col2]=positions[idx2];
+            const row=row1+(row2-row1)*t,col=col1+(col2-col1)*t;
+            const x=padding+col*cellSize+cellSize/2,y=padding+row*cellSize+cellSize/2;
+            return{x,y};
+        }
+        function getGridPosition(crown,index){
+            const positions=crownPositions[crown],count=positions.length;
+            const offsetIndex=Math.round(offsets[crown]);
+            return positions[((index+offsetIndex)%count+count)%count];
         }
         
-        function playFusionSound() {
-            if (!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.frequency.value = 523.25;
-            osc.type = 'sine';
-            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
-            osc.start(audioCtx.currentTime);
-            osc.stop(audioCtx.currentTime + 0.2);
-            
-            const osc2 = audioCtx.createOscillator();
-            const gain2 = audioCtx.createGain();
-            osc2.connect(gain2);
-            gain2.connect(audioCtx.destination);
-            osc2.frequency.value = 659.25;
-            osc2.type = 'sine';
-            gain2.gain.setValueAtTime(0.2, audioCtx.currentTime + 0.05);
-            gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
-            osc2.start(audioCtx.currentTime + 0.05);
-            osc2.stop(audioCtx.currentTime + 0.25);
-        }
+        let colorPool=[];
+        function initColorPool(){colorPool=[];for(let c=0;c<3;c++)for(let i=0;i<16;i++)colorPool.push(c);for(let i=colorPool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[colorPool[i],colorPool[j]]=[colorPool[j],colorPool[i]];}}
+        function getNextColor(){return colorPool.length>0?colorPool.pop():Math.floor(Math.random()*3);}
         
-        function playFissionSound() {
-            if (!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.frequency.setValueAtTime(659.25, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(329.63, audioCtx.currentTime + 0.2);
-            osc.type = 'sine';
-            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
-            osc.start(audioCtx.currentTime);
-            osc.stop(audioCtx.currentTime + 0.25);
-        }
-        
-        function playBlockedSound() {
-            if (!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.frequency.value = 200;
-            osc.type = 'square';
-            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
-            osc.start(audioCtx.currentTime);
-            osc.stop(audioCtx.currentTime + 0.1);
-        }
-        
-        function playDiagonalSound() {
-            if (!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.frequency.value = 440;
-            osc.type = 'triangle';
-            gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
-            osc.start(audioCtx.currentTime);
-            osc.stop(audioCtx.currentTime + 0.15);
-        }
-        
-        // Calcul de position AVEC INTERPOLATION FLUIDE
-        function getPositionOnSquare(crown, index) {
-            const positions = crownPositions[crown];
-            const count = positions.length;
-            
-            // Calculer l'index réel (avec décimales pour l'interpolation)
-            const realIndex = ((index + offsets[crown]) % count + count) % count;
-            
-            // Indices des deux positions entre lesquelles on interpole
-            const idx1 = Math.floor(realIndex);
-            const idx2 = (idx1 + 1) % count;
-            const t = realIndex - idx1; // Facteur d'interpolation (0 à 1)
-            
-            const [row1, col1] = positions[idx1];
-            const [row2, col2] = positions[idx2];
-            
-            // Interpolation linéaire des positions
-            const row = row1 + (row2 - row1) * t;
-            const col = col1 + (col2 - col1) * t;
-            
-            const x = padding + col * cellSize + cellSize / 2;
-            const y = padding + row * cellSize + cellSize / 2;
-            
-            // Pour les fonctions qui ont besoin des indices entiers
-            const snappedIndex = Math.round(realIndex) % count;
-            const [snapRow, snapCol] = positions[snappedIndex];
-            
-            return { x, y, row: snapRow, col: snapCol };
-        }
-        
-        // Obtenir la position grille d'une pastille (snappée)
-        function getGridPosition(crown, index) {
-            const positions = crownPositions[crown];
-            const count = positions.length;
-            const offsetIndex = Math.round(offsets[crown]);
-            let posIndex = ((index + offsetIndex) % count + count) % count;
-            return positions[posIndex];
-        }
-        
-        // Pool de couleurs
-        let colorPool = [];
-        function initColorPool() {
-            colorPool = [];
-            const totalPastilles = crowns[0].count + crowns[1].count + crowns[2].count;
-            const perColor = Math.floor(totalPastilles / 3);
-            
-            for (let c = 0; c < 3; c++) {
-                for (let i = 0; i < perColor; i++) {
-                    colorPool.push(c);
-                }
-            }
-            for (let i = colorPool.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [colorPool[i], colorPool[j]] = [colorPool[j], colorPool[i]];
-            }
-        }
-        
-        function getNextColor() {
-            return colorPool.length > 0 ? colorPool.pop() : Math.floor(Math.random() * 3);
-        }
-        
-        // Création de pastille
-        function createPastille(colorIdx, crown, index) {
-            const anchor = document.createElement('div');
-            anchor.className = 'pastille-anchor';
-            anchor.style.position = 'absolute';
-            anchor.style.width = sizeAncrage + 'px';
-            anchor.style.height = sizeAncrage + 'px';
-            anchor.style.display = 'flex';
-            anchor.style.justifyContent = 'center';
-            anchor.style.alignItems = 'center';
-            anchor.dataset.crown = crown;
-            anchor.dataset.index = index;
-            
-            const elem = document.createElement('div');
-            elem.className = 'pastille';
-            elem.style.width = sizePastille + 'px';
-            elem.style.height = sizePastille + 'px';
-            elem.style.borderRadius = radiusPastille + 'px';
-            elem.style.background = pastilleColors[colorIdx];
-            elem.style.position = 'relative';
-            
+        function createPastille(colorIdx,crown,index){
+            const anchor=document.createElement('div');
+            anchor.className='pastille-anchor';
+            anchor.style.cssText='position:absolute;width:'+sizeAncrage+'px;height:'+sizeAncrage+'px;display:flex;justify-content:center;align-items:center;';
+            anchor.dataset.crown=crown;anchor.dataset.index=index;
+            const elem=document.createElement('div');
+            elem.className='pastille';
+            elem.style.cssText='width:'+sizePastille+'px;height:'+sizePastille+'px;border-radius:'+radiusPastille+'%;background:'+pastilleColors[colorIdx]+';position:relative;';
             anchor.appendChild(elem);
             document.getElementById('gameArea').appendChild(anchor);
-            return { anchor, elem };
+            return{anchor,elem};
         }
+        function positionPastille(anchor,crown,index){const pos=getPositionOnSquare(crown,index);anchor.style.left=(pos.x-sizeAncrage/2)+'px';anchor.style.top=(pos.y-sizeAncrage/2)+'px';}
+        function updateAllPositions(){for(let c=0;c<3;c++)for(let i=0;i<data[c].length;i++)if(data[c][i] && data[c][i].anchor)positionPastille(data[c][i].anchor,c,i);}
+        function updateCenterSunColor(){const sun=document.getElementById('centerSun');sun.style.background=centerColor===1?'linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffa500 100%)':pastilleColors[centerColor];}
         
-        function positionPastille(anchor, crown, index) {
-            const pos = getPositionOnSquare(crown, index);
-            anchor.style.left = (pos.x - sizeAncrage / 2) + 'px';
-            anchor.style.top = (pos.y - sizeAncrage / 2) + 'px';
-        }
-        
-        function updateAllPositions() {
-            for (let c = 0; c < 3; c++) {
-                for (let i = 0; i < data[c].length; i++) {
-                    if (data[c][i].anchor) {
-                        positionPastille(data[c][i].anchor, c, i);
-                    }
-                }
-            }
-        }
-        
-        function updateCenterSunColor() {
-            const sun = document.getElementById('centerSun');
-            const color = pastilleColors[centerColor];
-            if (centerColor === 1) {
-                // Jaune avec dégradé soleil
-                sun.style.background = 'linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffa500 100%)';
-            } else {
-                sun.style.background = color;
-            }
-        }
-        
-        // Mise à jour des tailles
-        function updateSizes() {
-            sizePastille = parseInt(document.getElementById('sizePastille').value);
-            sizeAncrage = parseInt(document.getElementById('sizeAncrage').value);
-            radiusPastille = parseInt(document.getElementById('radiusPastille').value);
-            
-            for (let c = 0; c < 3; c++) {
-                for (let i = 0; i < data[c].length; i++) {
-                    const anchor = data[c][i].anchor;
-                    const elem = data[c][i].elem;
-                    if (anchor && elem) {
-                        anchor.style.width = sizeAncrage + 'px';
-                        anchor.style.height = sizeAncrage + 'px';
-                        elem.style.width = sizePastille + 'px';
-                        elem.style.height = sizePastille + 'px';
-                        elem.style.borderRadius = radiusPastille + 'px';
-                    }
-                }
+        function updateSizes(){
+            sizePastille=parseInt(document.getElementById('sizePastille').value);
+            sizeAncrage=parseInt(document.getElementById('sizeAncrage').value);
+            radiusPastille=parseInt(document.getElementById('radiusPastille').value);
+            for(let c=0;c<3;c++)for(let i=0;i<data[c].length;i++){
+                if(!data[c][i]) continue;
+                const{anchor,elem}=data[c][i];
+                if(anchor&&elem){anchor.style.width=sizeAncrage+'px';anchor.style.height=sizeAncrage+'px';elem.style.width=sizePastille+'px';elem.style.height=sizePastille+'px';elem.style.borderRadius=radiusPastille+'%';}
             }
             updateAllPositions();
         }
+        function toggleRails(){document.querySelectorAll('.rail').forEach(r=>r.style.opacity=document.getElementById('showRails').checked?'1':'0');}
+        function togglePastilles(){document.querySelectorAll('.pastille-anchor').forEach(p=>p.style.display=document.getElementById('showPastilles').checked?'flex':'none');}
+        function toggleSoleil(){document.getElementById('centerSun').style.display=document.getElementById('showSoleil').checked?'flex':'none';}
         
-        // Toggles
-        function toggleRails() {
-            const show = document.getElementById('showRails').checked;
-            document.querySelectorAll('.rail').forEach(r => {
-                r.style.opacity = show ? '1' : '0';
-            });
-        }
+        let activeDrag=null;
+        function getAngle(x,y){return Math.atan2(y-cy,x-cx);}
         
-        function togglePastilles() {
-            const show = document.getElementById('showPastilles').checked;
-            document.querySelectorAll('.pastille-anchor').forEach(p => {
-                p.style.display = show ? 'flex' : 'none';
-            });
-        }
-        
-        function toggleSoleil() {
-            const show = document.getElementById('showSoleil').checked;
-            document.getElementById('centerSun').style.display = show ? 'flex' : 'none';
-        }
-        
-        // ========== DRAG DES COURONNES ==========
-        let dragData = { isDragging: false, crown: -1 };
-        
-        function getCrownAtPosition(x, y) {
-            const dx = Math.abs(x - cx);
-            const dy = Math.abs(y - cy);
-            const dist = Math.max(dx, dy);
-            
-            // Seuils proportionnels à canvasSize (45/260, 100/260, 168/260)
-            const threshold1 = canvasSize * 0.0865; // ~45/520
-            const threshold2 = canvasSize * 0.192;  // ~100/520
-            const threshold3 = canvasSize * 0.323;  // ~168/520
-            
-            if (dist < threshold1) return -1;
-            if (dist < threshold2) return 2;
-            if (dist < threshold3) return 1;
-            return 0;
-        }
-        
-        function getAngle(x, y) {
-            return Math.atan2(y - cy, x - cx);
-        }
-        
-        function startCrownDrag(e) {
-            const target = e.target;
-            if (target.classList.contains('pastille') || 
-                target.classList.contains('pastille-anchor') ||
-                target.id === 'centerSun') return;
-            
-            initAudio();
-            
-            const ga = document.getElementById('gameArea');
-            const rect = ga.getBoundingClientRect();
-            const px = e.touches ? e.touches[0].clientX : e.clientX;
-            const py = e.touches ? e.touches[0].clientY : e.clientY;
-            const x = px - rect.left;
-            const y = py - rect.top;
-            
-            const targetCrown = getCrownAtPosition(x, y);
-            if (targetCrown < 0) return;
-            
-            const railClass = ['rail-c1', 'rail-c2', 'rail-c3'][targetCrown];
-            const rail = document.querySelector('.' + railClass);
-            if (rail) {
-                rail.classList.add('dragging');
-            }
-            
-            dragData = {
-                isDragging: true,
-                crown: targetCrown,
-                startAngle: getAngle(x, y),
-                startOffset: offsets[targetCrown]
-            };
-            
-            e.preventDefault();
-        }
-        
-        function doCrownDrag(e) {
-            if (!dragData.isDragging) return;
-            
-            const ga = document.getElementById('gameArea');
-            const rect = ga.getBoundingClientRect();
-            const px = e.touches ? e.touches[0].clientX : e.clientX;
-            const py = e.touches ? e.touches[0].clientY : e.clientY;
-            const x = px - rect.left;
-            const y = py - rect.top;
-            
-            const currentAngle = getAngle(x, y);
-            let deltaAngle = currentAngle - dragData.startAngle;
-            
-            if (deltaAngle > Math.PI) deltaAngle -= 2 * Math.PI;
-            if (deltaAngle < -Math.PI) deltaAngle += 2 * Math.PI;
-            
-            const crown = dragData.crown;
-            const count = crowns[crown].count;
-            const deltaPositions = (deltaAngle / (2 * Math.PI)) * count;
-            
-            const oldOffset = offsets[crown];
-            const newOffset = dragData.startOffset + deltaPositions;
-            
-            const oldSnap = Math.round(oldOffset);
-            const newSnap = Math.round(newOffset);
-            if (oldSnap !== newSnap) {
-                playTick();
-            }
-            
-            offsets[crown] = newOffset;
-            updateAllPositions();
-            
-            e.preventDefault();
-        }
-        
-        function endCrownDrag() {
-            if (!dragData.isDragging) return;
-            
-            const crown = dragData.crown;
-            const count = crowns[crown].count;
-            
-            const railClass = ['rail-c1', 'rail-c2', 'rail-c3'][crown];
-            const rail = document.querySelector('.' + railClass);
-            if (rail) {
-                rail.classList.remove('dragging');
-                rail.classList.add('snapping');
-                setTimeout(() => {
-                    rail.classList.remove('snapping');
-                }, 300);
-            }
-            
-            const targetOffset = Math.round(offsets[crown]) % count;
-            const startOffset = offsets[crown];
-            const startTime = performance.now();
-            
-            function animSnap(t) {
-                const p = Math.min((t - startTime) / 150, 1);
-                const eased = 1 - Math.pow(1 - p, 3);
-                offsets[crown] = startOffset + (targetOffset - startOffset) * eased;
-                updateAllPositions();
-                if (p < 1) {
-                    requestAnimationFrame(animSnap);
-                } else {
-                    offsets[crown] = targetOffset;
-                }
-            }
-            requestAnimationFrame(animSnap);
-            
-            dragData.isDragging = false;
-        }
-        
-        // ========== SYSTÈME DE FUSION H/V (horizontale/verticale) ==========
-        
-        let fusionDrag = { active: false };
-        
-        // Trouver tous les voisins H/V d'une pastille sur une AUTRE couronne
-        function findHVNeighbors(sourceCrown, sourceIndex) {
-            const [sourceRow, sourceCol] = getGridPosition(sourceCrown, sourceIndex);
-            const targets = [];
-            
-            // 4 directions: haut, bas, gauche, droite
-            const directions = [
-                { dr: -1, dc: 0, name: 'up' },
-                { dr: 1, dc: 0, name: 'down' },
-                { dr: 0, dc: -1, name: 'left' },
-                { dr: 0, dc: 1, name: 'right' }
-            ];
-            
-            for (const dir of directions) {
-                const newRow = sourceRow + dir.dr;
-                const newCol = sourceCol + dir.dc;
-                
-                // Hors grille ?
-                if (newRow < 0 || newRow > 6 || newCol < 0 || newCol > 6) continue;
-                
-                // C'est le centre ?
-                if (newRow === 3 && newCol === 3) {
-                    targets.push({ 
-                        type: 'center', 
-                        direction: dir.name,
-                        dr: dir.dr,
-                        dc: dir.dc
-                    });
-                    continue;
-                }
-                
-                // Chercher dans quelle couronne/index se trouve cette position
-                for (let c = 0; c < 3; c++) {
-                    // IGNORER la même couronne !
-                    if (c === sourceCrown) continue;
-                    
-                    const positions = crownPositions[c];
-                    const offset = Math.round(offsets[c]);
-                    
-                    for (let i = 0; i < positions.length; i++) {
-                        const posIdx = ((i + offset) % positions.length + positions.length) % positions.length;
-                        const [r, col2] = positions[posIdx];
-                        if (r === newRow && col2 === newCol) {
-                            targets.push({ 
-                                type: 'crown',
-                                crown: c, 
-                                index: i, 
-                                direction: dir.name,
-                                dr: dir.dr,
-                                dc: dir.dc
-                            });
-                            break;
-                        }
+        function findHVNeighbors(sourceCrown,sourceIndex){
+            const[sourceRow,sourceCol]=getGridPosition(sourceCrown,sourceIndex),targets=[];
+            const directions=[{dr:-1,dc:0,name:'up'},{dr:1,dc:0,name:'down'},{dr:0,dc:-1,name:'left'},{dr:0,dc:1,name:'right'}];
+            for(const dir of directions){
+                const newRow=sourceRow+dir.dr,newCol=sourceCol+dir.dc;
+                if(newRow<0||newRow>6||newCol<0||newCol>6)continue;
+                if(newRow===3&&newCol===3){targets.push({type:'center',direction:dir.name,dr:dir.dr,dc:dir.dc});continue;}
+                for(let c=0;c<3;c++){
+                    if(c===sourceCrown)continue;
+                    const positions=crownPositions[c],offset=Math.round(offsets[c]);
+                    for(let i=0;i<positions.length;i++){
+                        const posIdx=((i+offset)%positions.length+positions.length)%positions.length;
+                        const[r,col2]=positions[posIdx];
+                        if(r===newRow&&col2===newCol){targets.push({type:'crown',crown:c,index:i,direction:dir.name,dr:dir.dr,dc:dir.dc});break;}
                     }
                 }
             }
-            
             return targets;
         }
         
-        // Ancienne fonction pour compatibilité
-        function findRadialTarget(sourceCrown, sourceIndex) {
-            return findHVNeighbors(sourceCrown, sourceIndex);
-        }
-        
-        function startFusionDrag(e) {
-            const target = e.target;
-            
-            let anchor = null;
-            if (target.classList.contains('pastille')) {
-                anchor = target.parentElement;
-            } else if (target.classList.contains('pastille-anchor')) {
-                anchor = target;
-            }
-            
-            if (!anchor) return;
-            
-            initAudio();
-            
-            const crown = parseInt(anchor.dataset.crown);
-            const index = parseInt(anchor.dataset.index);
-            
-            const targets = findRadialTarget(crown, index);
-            if (targets.length === 0) return;
-            
-            const ga = document.getElementById('gameArea');
-            const rect = ga.getBoundingClientRect();
-            const px = e.touches ? e.touches[0].clientX : e.clientX;
-            const py = e.touches ? e.touches[0].clientY : e.clientY;
-            const x = px - rect.left;
-            const y = py - rect.top;
-            
-            const startPos = getPositionOnSquare(crown, index);
-            
-            fusionDrag = {
-                active: true,
-                crown: crown,
-                index: index,
-                startX: x,
-                startY: y,
-                startPosX: startPos.x,
-                startPosY: startPos.y,
-                anchor: anchor,
-                elem: anchor.querySelector('.pastille'),
-                targets: targets
-            };
-            
-            anchor.style.zIndex = 200;
-            e.preventDefault();
-            e.stopPropagation();
-        }
-        
-        function doFusionDrag(e) {
-            if (!fusionDrag.active) return;
-            
-            const ga = document.getElementById('gameArea');
-            const rect = ga.getBoundingClientRect();
-            const px = e.touches ? e.touches[0].clientX : e.clientX;
-            const py = e.touches ? e.touches[0].clientY : e.clientY;
-            const x = px - rect.left;
-            const y = py - rect.top;
-            
-            const dx = x - fusionDrag.startX;
-            const dy = y - fusionDrag.startY;
-            
-            // Direction du mouvement basée sur hvDirection
-            let moveDirX = 0, moveDirY = 0;
-            if (fusionDrag.hvDirection === 'up') moveDirY = -1;
-            else if (fusionDrag.hvDirection === 'down') moveDirY = 1;
-            else if (fusionDrag.hvDirection === 'left') moveDirX = -1;
-            else if (fusionDrag.hvDirection === 'right') moveDirX = 1;
-            
-            // Projection du déplacement sur la direction
-            const projection = dx * moveDirX + dy * moveDirY;
-            
-            const maxDist = cellSize * 1.2;
-            const clampedProjection = Math.max(0, Math.min(maxDist, projection));
-            
-            const newX = fusionDrag.startPosX + moveDirX * clampedProjection;
-            const newY = fusionDrag.startPosY + moveDirY * clampedProjection;
-            
-            fusionDrag.anchor.style.left = (newX - sizeAncrage / 2) + 'px';
-            fusionDrag.anchor.style.top = (newY - sizeAncrage / 2) + 'px';
-            
-            fusionDrag.currentProjection = clampedProjection;
-            
-            e.preventDefault();
-        }
-        
-        function endFusionDrag(e) {
-            if (!fusionDrag.active) return;
-            
-            const sourceCrown = fusionDrag.crown;
-            const sourceIndex = fusionDrag.index;
-            const projection = fusionDrag.currentProjection || 0;
-            
-            const threshold = cellSize * 0.4;
-            
-            // Si on a assez bougé et qu'on a une cible
-            if (projection > threshold && fusionDrag.targets.length > 0) {
-                const targetInfo = fusionDrag.targets[0]; // On a déjà filtré la bonne direction
-                
-                const sourceColor = data[sourceCrown][sourceIndex].value;
-                let targetColor;
-                
-                // Récupérer la couleur cible
-                if (targetInfo.type === 'center') {
-                    targetColor = centerColor;
-                } else {
-                    targetColor = data[targetInfo.crown][targetInfo.index].value;
-                }
-                
-                const fusionKey = sourceColor + '-' + targetColor;
-                const fusionResult = fusionRules[fusionKey];
-                const fissionResult = fissionRules[fusionKey];
-                
-                if (fusionResult !== undefined) {
-                    // FUSION
-                    if (targetInfo.type === 'center') {
-                        centerColor = fusionResult;
-                        updateCenterSunColor();
-                    } else {
-                        data[targetInfo.crown][targetInfo.index].value = fusionResult;
-                        data[targetInfo.crown][targetInfo.index].elem.style.background = pastilleColors[fusionResult];
-                    }
-                    
-                    data[sourceCrown][sourceIndex].value = 6;
-                    data[sourceCrown][sourceIndex].elem.style.background = pastilleColors[6];
-                    
-                    playFusionSound();
-                } else if (fissionResult !== undefined) {
-                    // FISSION
-                    data[sourceCrown][sourceIndex].value = fissionResult[0];
-                    data[sourceCrown][sourceIndex].elem.style.background = pastilleColors[fissionResult[0]];
-                    
-                    if (targetInfo.type === 'center') {
-                        centerColor = fissionResult[1];
-                        updateCenterSunColor();
-                    } else {
-                        data[targetInfo.crown][targetInfo.index].value = fissionResult[1];
-                        data[targetInfo.crown][targetInfo.index].elem.style.background = pastilleColors[fissionResult[1]];
-                    }
-                    
-                    playFissionSound();
-                } else {
-                    // PAS DE RÈGLE = BLOQUÉ
-                    playBlockedSound();
-                    fusionDrag.elem.classList.add('blocked');
-                    setTimeout(() => {
-                        fusionDrag.elem.classList.remove('blocked');
-                    }, 300);
-                }
-            }
-            
-            fusionDrag.anchor.style.zIndex = 10;
-            updateAllPositions();
-            
-            fusionDrag.active = false;
-        }
-        
-        // ========== SYSTÈME D'ÉCHANGE DIAGONAL ==========
-        
-        let diagonalDrag = { active: false };
-        
-        // Trouver les voisins diagonaux d'une position grille
-        function findDiagonalNeighbors(row, col) {
-            const neighbors = [];
-            const diagonals = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
-            
-            for (const [dr, dc] of diagonals) {
-                const newRow = row + dr;
-                const newCol = col + dc;
-                
-                if (newRow < 0 || newRow > 6 || newCol < 0 || newCol > 6) continue;
-                
-                // Est-ce le centre ?
-                if (newRow === 3 && newCol === 3) {
-                    neighbors.push({ type: 'center', row: newRow, col: newCol, dr, dc });
-                    continue;
-                }
-                
-                // Chercher dans quelle couronne/index
-                for (let c = 0; c < 3; c++) {
-                    const positions = crownPositions[c];
-                    const offset = Math.round(offsets[c]);
-                    
-                    for (let i = 0; i < positions.length; i++) {
-                        const posIdx = ((i + offset) % positions.length + positions.length) % positions.length;
-                        const [r, col2] = positions[posIdx];
-                        if (r === newRow && col2 === newCol) {
-                            neighbors.push({ type: 'crown', crown: c, index: i, row: newRow, col: newCol, dr, dc });
-                            break;
-                        }
+        function findDiagonalNeighbors(row,col){
+            const neighbors=[],diagonals=[[-1,-1],[-1,1],[1,-1],[1,1]];
+            for(const[dr,dc]of diagonals){
+                const newRow=row+dr,newCol=col+dc;
+                if(newRow<0||newRow>6||newCol<0||newCol>6)continue;
+                if(newRow===3&&newCol===3){neighbors.push({type:'center',dr,dc});continue;}
+                for(let c=0;c<3;c++){
+                    const positions=crownPositions[c],offset=Math.round(offsets[c]);
+                    for(let i=0;i<positions.length;i++){
+                        const posIdx=((i+offset)%positions.length+positions.length)%positions.length;
+                        const[r,col2]=positions[posIdx];
+                        if(r===newRow&&col2===newCol){neighbors.push({type:'crown',crown:c,index:i,dr,dc});break;}
                     }
                 }
             }
-            
             return neighbors;
         }
         
-        // Calculer la direction du drag
-        function getDragDirection(dx, dy) {
-            if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return null;
-            
-            // Normaliser
-            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-            
-            // -135 à -45: haut
-            // -45 à 45: droite
-            // 45 à 135: bas
-            // 135 à 180 ou -180 à -135: gauche
-            
-            // Pour les diagonales:
-            // -180 à -90: haut-gauche
-            // -90 à 0: haut-droite
-            // 0 à 90: bas-droite
-            // 90 à 180: bas-gauche
-            
-            if (angle >= -180 && angle < -90) return { dr: -1, dc: -1 }; // haut-gauche
-            if (angle >= -90 && angle < 0) return { dr: -1, dc: 1 };    // haut-droite
-            if (angle >= 0 && angle < 90) return { dr: 1, dc: 1 };      // bas-droite
-            if (angle >= 90 && angle <= 180) return { dr: 1, dc: -1 };  // bas-gauche
-            
-            return null;
-        }
-        
-        // Démarrer un drag diagonal depuis une pastille
-        function startDiagonalDragFromPastille(e, crown, index) {
-            const pos = getGridPosition(crown, index);
-            const [row, col] = pos;
-            
-            const neighbors = findDiagonalNeighbors(row, col);
-            if (neighbors.length === 0) return false;
-            
-            const ga = document.getElementById('gameArea');
-            const rect = ga.getBoundingClientRect();
-            const px = e.touches ? e.touches[0].clientX : e.clientX;
-            const py = e.touches ? e.touches[0].clientY : e.clientY;
-            
-            diagonalDrag = {
-                active: true,
-                sourceType: 'crown',
-                sourceCrown: crown,
-                sourceIndex: index,
-                sourceRow: row,
-                sourceCol: col,
-                startX: px - rect.left,
-                startY: py - rect.top,
-                neighbors: neighbors
-            };
-            
-            return true;
-        }
-        
-        // Démarrer un drag diagonal depuis le centre
-        function startDiagonalDragFromCenter(e) {
-            const neighbors = findDiagonalNeighbors(3, 3);
-            if (neighbors.length === 0) return false;
-            
-            const ga = document.getElementById('gameArea');
-            const rect = ga.getBoundingClientRect();
-            const px = e.touches ? e.touches[0].clientX : e.clientX;
-            const py = e.touches ? e.touches[0].clientY : e.clientY;
-            
-            diagonalDrag = {
-                active: true,
-                sourceType: 'center',
-                sourceRow: 3,
-                sourceCol: 3,
-                startX: px - rect.left,
-                startY: py - rect.top,
-                neighbors: neighbors
-            };
-            
-            document.getElementById('centerSun').classList.add('dragging');
-            
-            return true;
-        }
-        
-        function doDiagonalDrag(e) {
-            if (!diagonalDrag.active) return;
-            
-            const ga = document.getElementById('gameArea');
-            const rect = ga.getBoundingClientRect();
-            const px = e.touches ? e.touches[0].clientX : e.clientX;
-            const py = e.touches ? e.touches[0].clientY : e.clientY;
-            const x = px - rect.left;
-            const y = py - rect.top;
-            
-            const dx = x - diagonalDrag.startX;
-            const dy = y - diagonalDrag.startY;
-            
-            diagonalDrag.currentDx = dx;
-            diagonalDrag.currentDy = dy;
-            
-            e.preventDefault();
-        }
-        
-        function endDiagonalDrag(e) {
-            if (!diagonalDrag.active) return;
-            
-            const dx = diagonalDrag.currentDx || 0;
-            const dy = diagonalDrag.currentDy || 0;
-            
-            const direction = getDragDirection(dx, dy);
-            
-            if (direction) {
-                // Trouver le voisin dans cette direction
-                const target = diagonalDrag.neighbors.find(n => n.dr === direction.dr && n.dc === direction.dc);
-                
-                if (target) {
-                    // Effectuer l'échange
-                    let sourceColor, targetColor;
-                    
-                    if (diagonalDrag.sourceType === 'center') {
-                        sourceColor = centerColor;
-                    } else {
-                        sourceColor = data[diagonalDrag.sourceCrown][diagonalDrag.sourceIndex].value;
-                    }
-                    
-                    if (target.type === 'center') {
-                        targetColor = centerColor;
-                    } else {
-                        targetColor = data[target.crown][target.index].value;
-                    }
-                    
-                    // Échanger les couleurs
-                    if (diagonalDrag.sourceType === 'center') {
-                        centerColor = targetColor;
-                        updateCenterSunColor();
-                    } else {
-                        data[diagonalDrag.sourceCrown][diagonalDrag.sourceIndex].value = targetColor;
-                        data[diagonalDrag.sourceCrown][diagonalDrag.sourceIndex].elem.style.background = pastilleColors[targetColor];
-                    }
-                    
-                    if (target.type === 'center') {
-                        centerColor = sourceColor;
-                        updateCenterSunColor();
-                    } else {
-                        data[target.crown][target.index].value = sourceColor;
-                        data[target.crown][target.index].elem.style.background = pastilleColors[sourceColor];
-                    }
-                    
-                    playDiagonalSound();
-                }
-            }
-            
-            document.getElementById('centerSun').classList.remove('dragging');
-            diagonalDrag.active = false;
-        }
-        
-        // ========== GESTIONNAIRE UNIFIÉ POUR LE CENTRE ==========
-        
-        function startCenterDrag(e) {
-            if (e.target.id !== 'centerSun') return;
-            
-            initAudio();
-            startDiagonalDragFromCenter(e);
-            
-            e.preventDefault();
-            e.stopPropagation();
-        }
-        
-        // ========== DÉTECTION DU TYPE DE DRAG POUR LES PASTILLES ==========
-        
-        let dragTypeDetection = { active: false };
-        
-        function startUnifiedPastilleDrag(e) {
-            const target = e.target;
-            
-            let anchor = null;
-            if (target.classList.contains('pastille')) {
-                anchor = target.parentElement;
-            } else if (target.classList.contains('pastille-anchor')) {
-                anchor = target;
-            }
-            
-            if (!anchor) return;
-            
+        function handleStart(e){
+            const target=e.target,ga=document.getElementById('gameArea'),rect=ga.getBoundingClientRect();
+            const px=e.touches?e.touches[0].clientX:e.clientX,py=e.touches?e.touches[0].clientY:e.clientY;
+            const x=px-rect.left,y=py-rect.top;
             initAudio();
             
-            const crown = parseInt(anchor.dataset.crown);
-            const index = parseInt(anchor.dataset.index);
+            if(target.id==='centerSun'){
+                activeDrag={type:'centerDiagonal',startX:x,startY:y,neighbors:findDiagonalNeighbors(3,3)};
+                target.classList.add('dragging');
+                e.preventDefault();return;
+            }
             
-            const ga = document.getElementById('gameArea');
-            const rect = ga.getBoundingClientRect();
-            const px = e.touches ? e.touches[0].clientX : e.clientX;
-            const py = e.touches ? e.touches[0].clientY : e.clientY;
-            const x = px - rect.left;
-            const y = py - rect.top;
+            let anchor=null;
+            if(target.classList.contains('pastille'))anchor=target.parentElement;
+            else if(target.classList.contains('pastille-anchor'))anchor=target;
             
-            dragTypeDetection = {
-                active: true,
-                anchor: anchor,
-                crown: crown,
-                index: index,
-                startX: x,
-                startY: y,
-                detected: false
-            };
-            
-            e.preventDefault();
-            e.stopPropagation();
+            if(anchor){
+                const crown=parseInt(anchor.dataset.crown),index=parseInt(anchor.dataset.index);
+                const pos=getPositionOnSquare(crown,index);
+                activeDrag={type:'pastilleDetect',anchor,crown,index,startX:x,startY:y,posX:pos.x,posY:pos.y};
+                e.preventDefault();
+            }
         }
         
-        function doUnifiedPastilleDrag(e) {
-            if (!dragTypeDetection.active) return;
+        function handleMove(e){
+            if(!activeDrag)return;
+            const ga=document.getElementById('gameArea'),rect=ga.getBoundingClientRect();
+            const px=e.touches?e.touches[0].clientX:e.clientX,py=e.touches?e.touches[0].clientY:e.clientY;
+            const x=px-rect.left,y=py-rect.top;
+            const dx=x-activeDrag.startX,dy=y-activeDrag.startY,dist=Math.sqrt(dx*dx+dy*dy);
             
-            const ga = document.getElementById('gameArea');
-            const rect = ga.getBoundingClientRect();
-            const px = e.touches ? e.touches[0].clientX : e.clientX;
-            const py = e.touches ? e.touches[0].clientY : e.clientY;
-            const x = px - rect.left;
-            const y = py - rect.top;
-            
-            const dx = x - dragTypeDetection.startX;
-            const dy = y - dragTypeDetection.startY;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            
-            if (dist > 15 && !dragTypeDetection.detected) {
-                dragTypeDetection.detected = true;
+            if(activeDrag.type==='pastilleDetect'&&dist>15){
+                const angle=Math.atan2(dy,dx)*180/Math.PI,absAngle=Math.abs(angle);
+                const isDiagonal=(absAngle>30&&absAngle<60)||(absAngle>120&&absAngle<150);
                 
-                // Calculer l'angle du drag (en degrés)
-                const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-                
-                // Diagonal = angles autour de 45°, 135°, -45°, -135°
-                // H/V = angles autour de 0°, 90°, 180°, -90°
-                const absAngle = Math.abs(angle);
-                const isDiagonal = (absAngle > 30 && absAngle < 60) || 
-                                   (absAngle > 120 && absAngle < 150);
-                
-                if (isDiagonal) {
-                    // Drag diagonal -> échange libre
-                    dragTypeDetection.active = false;
-                    startDiagonalDragFromPastille(e, dragTypeDetection.crown, dragTypeDetection.index);
-                    diagonalDrag.currentDx = dx;
-                    diagonalDrag.currentDy = dy;
-                } else {
-                    // Drag H/V -> vérifier si fusion/fission possible
-                    const crown = dragTypeDetection.crown;
-                    const index = dragTypeDetection.index;
-                    const anchor = dragTypeDetection.anchor;
-                    const pos = getPositionOnSquare(crown, index);
+                if(isDiagonal){
+                    const[row,col]=getGridPosition(activeDrag.crown,activeDrag.index);
+                    activeDrag.type='diagonal';
+                    activeDrag.neighbors=findDiagonalNeighbors(row,col);
+                }else{
+                    const radialDirX=activeDrag.posX-cx,radialDirY=activeDrag.posY-cy;
+                    const radialLen=Math.sqrt(radialDirX*radialDirX+radialDirY*radialDirY);
+                    const radialNormX=radialDirX/radialLen,radialNormY=radialDirY/radialLen;
+                    const tangentNormX=-radialNormY,tangentNormY=radialNormX;
+                    const dragNormX=dx/dist,dragNormY=dy/dist;
+                    const tangentProj=Math.abs(dragNormX*tangentNormX+dragNormY*tangentNormY);
+                    const radialProj=Math.abs(dragNormX*radialNormX+dragNormY*radialNormY);
                     
-                    // Déterminer la direction H/V
-                    let hvDirection;
-                    if (Math.abs(dx) > Math.abs(dy)) {
-                        hvDirection = dx > 0 ? 'right' : 'left';
-                    } else {
-                        hvDirection = dy > 0 ? 'down' : 'up';
-                    }
-                    
-                    // Trouver les voisins H/V sur une AUTRE couronne
-                    const allTargets = findHVNeighbors(crown, index);
-                    
-                    // Filtrer pour garder celui dans la direction du drag
-                    const targets = allTargets.filter(t => t.direction === hvDirection);
-                    
-                    if (targets.length > 0) {
-                        const targetInfo = targets[0];
-                        const sourceColor = data[crown][index].value;
-                        let targetColor;
+                    if(tangentProj>radialProj){
+                        activeDrag.type='crownRotation';
+                        activeDrag.startAngle=getAngle(x,y);
+                        activeDrag.startOffset=offsets[activeDrag.crown];
+                        const railClass=['rail-c1','rail-c2','rail-c3'][activeDrag.crown];
+                        const rail=document.querySelector('.'+railClass);
+                        if(rail)rail.classList.add('dragging');
+                    }else{
+                        let hvDirection;
+                        if(Math.abs(dx)>Math.abs(dy))hvDirection=dx>0?'right':'left';
+                        else hvDirection=dy>0?'down':'up';
                         
-                        if (targetInfo.type === 'center') {
-                            targetColor = centerColor;
-                        } else {
-                            targetColor = data[targetInfo.crown][targetInfo.index].value;
-                        }
+                        const allTargets=findHVNeighbors(activeDrag.crown,activeDrag.index);
+                        const targets=allTargets.filter(t=>t.direction===hvDirection);
                         
-                        // Vérifier si une règle s'applique
-                        const fusionKey = sourceColor + '-' + targetColor;
-                        const hasFusion = fusionRules[fusionKey] !== undefined;
-                        const hasFission = fissionRules[fusionKey] !== undefined;
-                        
-                        if (hasFusion || hasFission) {
-                            // Règle applicable -> permettre le mouvement
-                            dragTypeDetection.active = false;
+                        if(targets.length>0){
+                            const targetInfo=targets[0];
+                            const sourceColor=data[activeDrag.crown][activeDrag.index].value;
+                            const targetColor=targetInfo.type==='center'?centerColor:data[targetInfo.crown][targetInfo.index].value;
+                            const fusionKey=sourceColor+'-'+targetColor;
                             
-                            fusionDrag = {
-                                active: true,
-                                crown: crown,
-                                index: index,
-                                startX: dragTypeDetection.startX,
-                                startY: dragTypeDetection.startY,
-                                startPosX: pos.x,
-                                startPosY: pos.y,
-                                anchor: anchor,
-                                elem: anchor.querySelector('.pastille'),
-                                targets: targets,
-                                hvDirection: hvDirection,
-                                currentProjection: 0
-                            };
-                            anchor.style.zIndex = 200;
-                            
-                            doFusionDrag(e);
-                        } else {
-                            // Pas de règle -> BLOQUÉ, ne pas bouger
-                            dragTypeDetection.active = false;
+                            if(fusionRules[fusionKey]!==undefined||fissionRules[fusionKey]!==undefined){
+                                activeDrag.type='fusion';
+                                activeDrag.hvDirection=hvDirection;
+                                activeDrag.targets=targets;
+                                activeDrag.anchor.style.zIndex=200;
+                            }else{
+                                playBlockedSound();
+                                const pastille=activeDrag.anchor.querySelector('.pastille');
+                                if(pastille){pastille.classList.add('blocked');setTimeout(()=>pastille.classList.remove('blocked'),300);}
+                                activeDrag=null;return;
+                            }
+                        }else{
                             playBlockedSound();
-                            anchor.querySelector('.pastille').classList.add('blocked');
-                            setTimeout(() => {
-                                anchor.querySelector('.pastille').classList.remove('blocked');
-                            }, 300);
+                            const pastille=activeDrag.anchor.querySelector('.pastille');
+                            if(pastille){pastille.classList.add('blocked');setTimeout(()=>pastille.classList.remove('blocked'),300);}
+                            activeDrag=null;return;
                         }
-                    } else {
-                        // Pas de voisin sur une autre couronne -> bloqué
-                        dragTypeDetection.active = false;
-                        playBlockedSound();
-                        anchor.querySelector('.pastille').classList.add('blocked');
-                        setTimeout(() => {
-                            anchor.querySelector('.pastille').classList.remove('blocked');
-                        }, 300);
                     }
                 }
             }
             
-            // Continuer les drags actifs
-            if (fusionDrag.active) {
-                doFusionDrag(e);
-            } else if (diagonalDrag.active) {
-                doDiagonalDrag(e);
+            if(activeDrag && activeDrag.type==='crownRotation'){
+                const currentAngle=getAngle(x,y);
+                let deltaAngle=currentAngle-activeDrag.startAngle;
+                if(deltaAngle>Math.PI)deltaAngle-=2*Math.PI;
+                if(deltaAngle<-Math.PI)deltaAngle+=2*Math.PI;
+                const count=crowns[activeDrag.crown].count;
+                const deltaPositions=(deltaAngle/(2*Math.PI))*count;
+                const oldSnap=Math.round(offsets[activeDrag.crown]);
+                offsets[activeDrag.crown]=activeDrag.startOffset+deltaPositions;
+                if(Math.round(offsets[activeDrag.crown])!==oldSnap)playTick();
+                updateAllPositions();
+            }
+            
+            if(activeDrag && activeDrag.type==='fusion'){
+                let moveDirX=0,moveDirY=0;
+                if(activeDrag.hvDirection==='up')moveDirY=-1;
+                else if(activeDrag.hvDirection==='down')moveDirY=1;
+                else if(activeDrag.hvDirection==='left')moveDirX=-1;
+                else if(activeDrag.hvDirection==='right')moveDirX=1;
+                const projection=dx*moveDirX+dy*moveDirY;
+                const clamped=Math.max(0,Math.min(cellSize*1.2,projection));
+                activeDrag.anchor.style.left=(activeDrag.posX+moveDirX*clamped-sizeAncrage/2)+'px';
+                activeDrag.anchor.style.top=(activeDrag.posY+moveDirY*clamped-sizeAncrage/2)+'px';
+                activeDrag.currentProjection=clamped;
+            }
+            
+            if(activeDrag && (activeDrag.type==='diagonal'||activeDrag.type==='centerDiagonal')){
+                activeDrag.currentDx=dx;activeDrag.currentDy=dy;
             }
             
             e.preventDefault();
         }
         
-        function endUnifiedPastilleDrag(e) {
-            if (dragTypeDetection.active) {
-                dragTypeDetection.active = false;
+        function handleEnd(e){
+            if(!activeDrag)return;
+            
+            if(activeDrag.type==='crownRotation'){
+                const crown=activeDrag.crown,count=crowns[crown].count;
+                const railClass=['rail-c1','rail-c2','rail-c3'][crown];
+                const rail=document.querySelector('.'+railClass);
+                if(rail){rail.classList.remove('dragging');rail.classList.add('snapping');setTimeout(()=>rail.classList.remove('snapping'),300);}
+                const targetOffset=Math.round(offsets[crown])%count;
+                const startOffset=offsets[crown],startTime=performance.now();
+                function animSnap(t){
+                    const p=Math.min((t-startTime)/150,1),eased=1-Math.pow(1-p,3);
+                    offsets[crown]=startOffset+(targetOffset-startOffset)*eased;
+                    updateAllPositions();
+                    if(p<1)requestAnimationFrame(animSnap);
+                    else offsets[crown]=targetOffset;
+                }
+                requestAnimationFrame(animSnap);
             }
             
-            if (fusionDrag.active) {
-                endFusionDrag(e);
+            if(activeDrag.type==='fusion'){
+                const projection=activeDrag.currentProjection||0;
+                if(projection>cellSize*0.4&&activeDrag.targets&&activeDrag.targets.length>0){
+                    const targetInfo=activeDrag.targets[0];
+                    const sourceColor=data[activeDrag.crown][activeDrag.index].value;
+                    const targetColor=targetInfo.type==='center'?centerColor:data[targetInfo.crown][targetInfo.index].value;
+                    const fusionKey=sourceColor+'-'+targetColor;
+                    
+                    if(fusionRules[fusionKey]!==undefined){
+                        if(targetInfo.type==='center'){centerColor=fusionRules[fusionKey];updateCenterSunColor();}
+                        else{data[targetInfo.crown][targetInfo.index].value=fusionRules[fusionKey];data[targetInfo.crown][targetInfo.index].elem.style.background=pastilleColors[fusionRules[fusionKey]];}
+                        data[activeDrag.crown][activeDrag.index].value=6;
+                        data[activeDrag.crown][activeDrag.index].elem.style.background=pastilleColors[6];
+                        playFusionSound();
+                    }else if(fissionRules[fusionKey]!==undefined){
+                        const[c1,c2]=fissionRules[fusionKey];
+                        data[activeDrag.crown][activeDrag.index].value=c1;
+                        data[activeDrag.crown][activeDrag.index].elem.style.background=pastilleColors[c1];
+                        if(targetInfo.type==='center'){centerColor=c2;updateCenterSunColor();}
+                        else{data[targetInfo.crown][targetInfo.index].value=c2;data[targetInfo.crown][targetInfo.index].elem.style.background=pastilleColors[c2];}
+                        playFissionSound();
+                    }
+                }
+                if(activeDrag.anchor)activeDrag.anchor.style.zIndex=10;
+                updateAllPositions();
             }
             
-            if (diagonalDrag.active) {
-                endDiagonalDrag(e);
+            if(activeDrag.type==='diagonal'||activeDrag.type==='centerDiagonal'){
+                const dx=activeDrag.currentDx||0,dy=activeDrag.currentDy||0;
+                if(Math.abs(dx)>10||Math.abs(dy)>10){
+                    const angle=Math.atan2(dy,dx)*180/Math.PI;
+                    let dr,dc;
+                    if(angle>=-180&&angle<-90){dr=-1;dc=-1;}
+                    else if(angle>=-90&&angle<0){dr=-1;dc=1;}
+                    else if(angle>=0&&angle<90){dr=1;dc=1;}
+                    else{dr=1;dc=-1;}
+                    
+                    const target=activeDrag.neighbors?activeDrag.neighbors.find(n=>n.dr===dr&&n.dc===dc):null;
+                    if(target){
+                        let sourceColor,targetColor;
+                        if(activeDrag.type==='centerDiagonal')sourceColor=centerColor;
+                        else sourceColor=data[activeDrag.crown][activeDrag.index].value;
+                        targetColor=target.type==='center'?centerColor:data[target.crown][target.index].value;
+                        
+                        if(activeDrag.type==='centerDiagonal'){centerColor=targetColor;updateCenterSunColor();}
+                        else{data[activeDrag.crown][activeDrag.index].value=targetColor;data[activeDrag.crown][activeDrag.index].elem.style.background=pastilleColors[targetColor];}
+                        if(target.type==='center'){centerColor=sourceColor;updateCenterSunColor();}
+                        else{data[target.crown][target.index].value=sourceColor;data[target.crown][target.index].elem.style.background=pastilleColors[sourceColor];}
+                        playDiagonalSound();
+                    }
+                }
+                document.getElementById('centerSun').classList.remove('dragging');
             }
+            
+            activeDrag=null;
         }
         
-        // ========== INITIALISATION ==========
-        
-        function init() {
-            const ga = document.getElementById('gameArea');
-            document.querySelectorAll('.pastille-anchor').forEach(el => el.remove());
-            
-            // Mettre à jour les dimensions dynamiques
+        function init(){
+            document.querySelectorAll('.pastille-anchor').forEach(el=>el.remove());
             updateDimensions();
-            
-            // Appliquer les valeurs des sliders (priorité sur les valeurs calculées)
-            sizePastille = parseInt(document.getElementById('sizePastille').value);
-            sizeAncrage = parseInt(document.getElementById('sizeAncrage').value);
-            radiusPastille = parseInt(document.getElementById('radiusPastille').value);
-            
-            data = [[], [], []];
-            offsets = [0, 0, 0];
-            
+            sizePastille=parseInt(document.getElementById('sizePastille').value);
+            sizeAncrage=parseInt(document.getElementById('sizeAncrage').value);
+            radiusPastille=parseInt(document.getElementById('radiusPastille').value);
+            data=[[],[],[]];offsets=[0,0,0];
             initColorPool();
-            
-            // Initialiser le centre avec une couleur aléatoire
-            centerColor = Math.floor(Math.random() * 3); // Primaire aléatoire
+            centerColor=Math.floor(Math.random()*3);
             updateCenterSunColor();
-            
-            for (let c = 0; c < 3; c++) {
-                for (let i = 0; i < crowns[c].count; i++) {
-                    const colorIdx = getNextColor();
-                    const { anchor, elem } = createPastille(colorIdx, c, i);
-                    data[c].push({ value: colorIdx, anchor, elem });
-                }
-            }
-            
-            updateAllPositions();
-        }
-        
-        // Resize handler pour mobile
-        window.addEventListener('resize', function() {
-            updateDimensions();
-            // Mettre à jour les tailles des pastilles existantes
-            for (let c = 0; c < 3; c++) {
-                for (let i = 0; i < data[c].length; i++) {
-                    const anchor = data[c][i].anchor;
-                    const elem = data[c][i].elem;
-                    if (anchor && elem) {
-                        anchor.style.width = sizeAncrage + 'px';
-                        anchor.style.height = sizeAncrage + 'px';
-                        elem.style.width = sizePastille + 'px';
-                        elem.style.height = sizePastille + 'px';
-                        elem.style.borderRadius = radiusPastille + 'px';
-                    }
-                }
+            for(let c=0;c<3;c++)for(let i=0;i<crowns[c].count;i++){
+                const colorIdx=getNextColor();
+                const{anchor,elem}=createPastille(colorIdx,c,i);
+                data[c].push({value:colorIdx,anchor,elem});
             }
             updateAllPositions();
-        });
-        
-        // Event listeners
-        const ga = document.getElementById('gameArea');
-        
-        // === MOUSEDOWN / TOUCHSTART ===
-        function handleStart(e) {
-            const target = e.target;
-            
-            // Centre (soleil) ?
-            if (target.id === 'centerSun') {
-                initAudio();
-                startDiagonalDragFromCenter(e);
-                e.preventDefault();
-                e.stopPropagation();
-                return;
-            }
-            
-            // Pastille ?
-            let anchor = null;
-            if (target.classList.contains('pastille')) {
-                anchor = target.parentElement;
-            } else if (target.classList.contains('pastille-anchor')) {
-                anchor = target;
-            }
-            
-            if (anchor) {
-                initAudio();
-                const crown = parseInt(anchor.dataset.crown);
-                const index = parseInt(anchor.dataset.index);
-                
-                const rect = ga.getBoundingClientRect();
-                const px = e.touches ? e.touches[0].clientX : e.clientX;
-                const py = e.touches ? e.touches[0].clientY : e.clientY;
-                const x = px - rect.left;
-                const y = py - rect.top;
-                
-                dragTypeDetection = {
-                    active: true,
-                    anchor: anchor,
-                    crown: crown,
-                    index: index,
-                    startX: x,
-                    startY: y,
-                    detected: false
-                };
-                
-                e.preventDefault();
-                e.stopPropagation();
-                return;
-            }
-            
-            // Sinon, rotation de couronne
-            initAudio();
-            
-            const rect = ga.getBoundingClientRect();
-            const px = e.touches ? e.touches[0].clientX : e.clientX;
-            const py = e.touches ? e.touches[0].clientY : e.clientY;
-            const x = px - rect.left;
-            const y = py - rect.top;
-            
-            const targetCrown = getCrownAtPosition(x, y);
-            if (targetCrown < 0) return;
-            
-            const railClass = ['rail-c1', 'rail-c2', 'rail-c3'][targetCrown];
-            const rail = document.querySelector('.' + railClass);
-            if (rail) rail.classList.add('dragging');
-            
-            dragData = {
-                isDragging: true,
-                crown: targetCrown,
-                startAngle: getAngle(x, y),
-                startOffset: offsets[targetCrown]
-            };
-            
-            e.preventDefault();
         }
         
-        // === MOUSEMOVE / TOUCHMOVE ===
-        function handleMove(e) {
-            // Drag de pastille en cours de détection ?
-            if (dragTypeDetection.active) {
-                doUnifiedPastilleDrag(e);
-                return;
-            }
-            
-            // Fusion drag ?
-            if (fusionDrag.active) {
-                doFusionDrag(e);
-                return;
-            }
-            
-            // Diagonal drag ?
-            if (diagonalDrag.active) {
-                doDiagonalDrag(e);
-                return;
-            }
-            
-            // Crown drag ?
-            if (dragData.isDragging) {
-                doCrownDrag(e);
-                return;
-            }
-        }
+        window.addEventListener('resize',()=>{updateDimensions();updateAllPositions();});
         
-        // === MOUSEUP / TOUCHEND ===
-        function handleEnd(e) {
-            // Drag de pastille en cours de détection ?
-            if (dragTypeDetection.active) {
-                dragTypeDetection.active = false;
-            }
-            
-            // Fusion drag ?
-            if (fusionDrag.active) {
-                endFusionDrag(e);
-            }
-            
-            // Diagonal drag ?
-            if (diagonalDrag.active) {
-                endDiagonalDrag(e);
-            }
-            
-            // Crown drag ?
-            if (dragData.isDragging) {
-                endCrownDrag();
-            }
-        }
-        
-        ga.addEventListener('mousedown', handleStart);
-        ga.addEventListener('touchstart', handleStart, { passive: false });
-        document.addEventListener('mousemove', handleMove);
-        document.addEventListener('touchmove', handleMove, { passive: false });
-        document.addEventListener('mouseup', handleEnd);
-        document.addEventListener('touchend', handleEnd);
+        const ga=document.getElementById('gameArea');
+        ga.addEventListener('mousedown',handleStart);
+        ga.addEventListener('touchstart',handleStart,{passive:false});
+        document.addEventListener('mousemove',handleMove);
+        document.addEventListener('touchmove',handleMove,{passive:false});
+        document.addEventListener('mouseup',handleEnd);
+        document.addEventListener('touchend',handleEnd);
         
         init();
     </script>
