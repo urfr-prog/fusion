@@ -298,6 +298,73 @@
         .control-value { min-width: 20px; text-align: center; font-weight: bold; color: #ffd700; }
         button { padding: 6px 12px; font-size: 0.75em; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
         button:active { transform: scale(0.95); }
+        
+        /* Boutons icônes compacts */
+        .icon-btn {
+            padding: 8px 12px;
+            font-size: 1.1em;
+            min-width: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+        .icon-btn:active { transform: scale(0.95); }
+        
+        /* Sliders tactiles optimisés pour iPhone */
+        .slider-large {
+            flex: 1;
+            min-width: 100px;
+            max-width: 150px;
+        }
+        
+        .slider-touch {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 24px;
+            background: transparent;
+            cursor: pointer;
+            touch-action: pan-x;
+        }
+        
+        .slider-touch::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 12px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 6px;
+        }
+        
+        .slider-touch::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
+            border-radius: 50%;
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        
+        .slider-touch::-moz-range-track {
+            width: 100%;
+            height: 12px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 6px;
+        }
+        
+        .slider-touch::-moz-range-thumb {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        
         .toggle-switch { position: relative; width: 32px; height: 18px; }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
         .toggle-slider { position: absolute; cursor: pointer; inset: 0; background-color: rgba(255,255,255,0.2); border-radius: 18px; }
@@ -381,18 +448,23 @@
     
     <div class="bottom-menu">
         <div class="controls">
-            <button onclick="startSequence()" id="startBtn">▶ Démarrer</button>
-            <button onclick="pauseSequence()" id="pauseBtn" style="display:none;">⏸ Pause</button>
-            <button onclick="resetGame()">↺ Reset</button>
-            <div class="control-item">
-                <label>Timing:</label>
-                <input type="range" id="timingRange" min="1" max="10" value="3" oninput="updateTimingDisplay()" style="width:50px;">
+            <button class="icon-btn" onclick="startSequence()" id="startBtn">▶</button>
+            <button class="icon-btn" onclick="pauseSequence()" id="pauseBtn" style="display:none;">⏸</button>
+            <button class="icon-btn" onclick="resetGame()">↺</button>
+            <div class="control-item slider-large">
+                <label>⏱</label>
+                <input type="range" id="timingRange" min="1" max="10" value="3" oninput="updateTimingDisplay()" class="slider-touch">
                 <span class="control-value" id="timingValue">3s</span>
+            </div>
+            <div class="control-item slider-large">
+                <label>📐</label>
+                <input type="range" id="sizePastille" min="10" max="50" value="22" oninput="updateSizes()" class="slider-touch">
+                <span class="control-value" id="sizeValue">22</span>
             </div>
         </div>
         <div class="controls">
             <div class="control-item rotation-controls">
-                <label>🔄 Rotation:</label>
+                <label>🔄</label>
                 <input type="range" id="rotationSpeed" min="100" max="1000" value="400" oninput="updateRotationSpeed()" style="width:60px;">
                 <span class="control-value" id="rotationSpeedValue">0.4s</span>
             </div>
@@ -414,11 +486,6 @@
                 <button class="option-btn" id="align2x2Btn" onclick="toggleSquareMatch()">2×2</button>
             </div>
             <div class="control-item"><label>Rails:</label><label class="toggle-switch"><input type="checkbox" id="showRails" checked onchange="toggleRails()"><span class="toggle-slider"></span></label></div>
-        </div>
-        <div class="controls">
-            <div class="control-item"><label>Taille:</label><input type="range" id="sizePastille" min="10" max="50" value="22" oninput="updateSizes()" style="width:50px;"></div>
-            <div class="control-item"><label>Ancrage:</label><input type="range" id="sizeAncrage" min="20" max="80" value="45" oninput="updateSizes()" style="width:50px;"></div>
-            <div class="control-item"><label>Arrondi:</label><input type="range" id="radiusPastille" min="0" max="50" value="15" oninput="updateSizes()" style="width:50px;"></div>
         </div>
         <div class="legend">
             <div class="legend-item"><div class="legend-dot" style="background:#3498db;"></div><span>Bleu</span></div>
@@ -478,8 +545,8 @@
         }
         
         let sizePastille = 22;
-        let sizeAncrage = 45;
-        let radiusPastille = 15;
+        let sizeAncrage = 44; // 2x sizePastille
+        let radiusPastille = 15; // Fixe
         
         let data=[[],[],[]],offsets=[0,0,0],centerColor=1;
         const pastilleColors=["#3498db","#f1c40f","#e74c3c","#2ecc71","#9b59b6","#e67e22","#bdc3c7"];
@@ -1326,8 +1393,12 @@
         
         function updateSizes(){
             sizePastille = parseInt(document.getElementById('sizePastille').value);
-            sizeAncrage = parseInt(document.getElementById('sizeAncrage').value);
-            radiusPastille = parseInt(document.getElementById('radiusPastille').value);
+            // Ancrage et arrondi calculés automatiquement en fonction de la taille
+            sizeAncrage = sizePastille * 2;
+            radiusPastille = 15; // Valeur fixe
+            
+            // Afficher la valeur
+            document.getElementById('sizeValue').textContent = sizePastille;
             
             for(let c = 0; c < 3; c++) {
                 for(let i = 0; i < data[c].length; i++) {
