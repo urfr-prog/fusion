@@ -3,95 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fusion Square v8.1 - Rotation Diagonale</title>
+    <title>Fusion Square v8.2</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; overflow: hidden; touch-action: none; }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-            background: #ffffff; 
+            background: #1a1a2e; 
             min-height: 100vh; min-height: -webkit-fill-available;
             display: flex; flex-direction: column; align-items: center;
-            justify-content: center; /* Centrage vertical */
+            justify-content: space-between;
         }
         
-        .top-zone {
-            padding: 10px;
-            flex-shrink: 0;
-        }
-        
-        /* Conteneur principal avec zones de rotation */
-        .main-game-wrapper {
+        .game-zone {
+            flex: 1;
             display: flex;
             align-items: center;
-            gap: 0;
-        }
-        
-        /* Zones de rotation latérales */
-        .rotation-zone {
-            width: 40px;
-            height: min(85vw, 45vh);
-            display: flex;
-            flex-direction: column;
             justify-content: center;
-            align-items: center;
-            cursor: grab;
-            user-select: none;
-            position: relative;
-            border-radius: 12px;
-            transition: background 0.2s;
-        }
-        
-        .rotation-zone:hover {
-            background: rgba(100, 100, 255, 0.1);
-        }
-        
-        .rotation-zone.active {
-            background: rgba(100, 100, 255, 0.2);
-            cursor: grabbing;
-        }
-        
-        .rotation-zone-left {
-            border-right: 3px dashed rgba(100, 100, 255, 0.3);
-        }
-        
-        .rotation-zone-right {
-            border-left: 3px dashed rgba(100, 100, 255, 0.3);
-        }
-        
-        .rotation-indicator {
-            font-size: 1.5em;
-            color: rgba(100, 100, 255, 0.5);
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-        }
-        
-        .rotation-arrow {
-            font-size: 1.2em;
-            color: rgba(100, 100, 255, 0.4);
-            margin: 5px 0;
+            width: 100%;
+            padding: 20px;
         }
         
         .game-container { 
             background: #ffffff; 
             border-radius: 8%; 
-            box-shadow: 0 8px 30px rgba(0,0,0,0.12); 
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3); 
             position: relative; 
             overflow: hidden;
         }
         
         .game-area { 
             position: relative; 
-            width: min(85vw, 45vh); 
-            height: min(85vw, 45vh);
+            width: min(90vw, 55vh); 
+            height: min(90vw, 55vh);
             background: #ffffff; 
             border-radius: 8%; 
             overflow: hidden;
             transition: transform var(--rotation-duration, 0.4s) cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .game-area.rotating {
-            /* Animation gérée par JS */
         }
         
         .rail { position: absolute; border: 2px dashed rgba(100,100,100,0.4); pointer-events: none; z-index: 2; }
@@ -109,31 +57,18 @@
             transition: opacity 0.15s;
         }
         .local-rotation-indicator.visible { opacity: 1; }
-        .rail-c1 { top: 11.4%; left: 11.4%; right: 11.4%; bottom: 11.4%; }
-        .rail-c2 { top: 24.3%; left: 24.3%; right: 24.3%; bottom: 24.3%; }
-        .rail-c3 { top: 37.1%; left: 37.1%; right: 37.1%; bottom: 37.1%; }
         
-        /* CENTRE: z-index réduit pour ne pas masquer les animations */
         .center-sun { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
             border-radius: 15%; 
             box-shadow: 0 2px 6px rgba(0,0,0,0.3); 
             cursor: grab; 
-            z-index: 10; /* Même niveau que les pastilles */
+            z-index: 10;
             transition: transform var(--rotation-duration, 0.4s) cubic-bezier(0.4, 0, 0.2, 1);
         }
         .center-sun.dragging { transform: translate(-50%, -50%) scale(1.15); box-shadow: 0 0 15px rgba(0,0,0,0.4); z-index: 100; }
-        .center-sun.arriving { animation: arriveCenter 0.4s ease-out forwards; }
         .center-sun.vanishing { animation: vanishCenter 0.5s ease-out forwards; }
-        .center-sun.counter-rotating {
-            /* Contre-rotation appliquée par JS */
-        }
         
-        @keyframes arriveCenter {
-            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
-            50% { transform: translate(-50%, -50%) scale(1.2); }
-            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-        }
         @keyframes vanishCenter { 
             0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
             50% { transform: translate(-50%, -50%) scale(1.3); opacity: 0.8; }
@@ -148,61 +83,20 @@
             z-index: 10; 
             transition: opacity 0.1s, transform 0.1s;
         }
-        .pastille.blocked { animation: shake 0.3s ease-in-out; }
         .pastille.vanishing { animation: vanish 0.5s ease-out forwards; pointer-events: none; }
-        .pastille.arriving { animation: arrive 0.4s ease-out forwards; }
-        .pastille.counter-rotating {
-            transition: transform var(--rotation-duration, 0.4s) cubic-bezier(0.4, 0, 0.2, 1);
-        }
+        .pastille.counter-rotating { transition: transform var(--rotation-duration, 0.4s) cubic-bezier(0.4, 0, 0.2, 1); }
+        .pastille-anchor.rotating { z-index: 50; }
         
-        /* Pastille en rotation locale : z-index élevé pendant l'animation */
-        .pastille-anchor.rotating {
-            z-index: 50;
-        }
-        
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
         @keyframes vanish { 
             0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.3); opacity: 0.8; box-shadow: 0 0 20px currentColor; }
+            50% { transform: scale(1.3); opacity: 0.8; }
             100% { transform: scale(0); opacity: 0; }
         }
-        @keyframes arrive {
-            0% { transform: scale(0); opacity: 0; }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); opacity: 1; }
-        }
         
-        /* Indicateur de rotation de matrice */
-        .matrix-rotation-indicator {
-            position: absolute;
-            top: 5px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(100, 100, 255, 0.9);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.7em;
-            font-weight: bold;
-            opacity: 0;
-            transition: opacity 0.2s;
-            z-index: 200;
-            pointer-events: none;
-        }
-        
-        .matrix-rotation-indicator.visible {
-            opacity: 1;
-        }
-        
-        /* Zone d'information supprimée pour centrer la matrice */
-        
-        /* Menu en bas */
         .bottom-menu { 
             display: flex; flex-direction: column; gap: 6px; padding: 10px; 
-            background: #1a1a2e; border-radius: 15px 15px 0 0; 
-            width: 100%; max-width: 100%;
-            flex-shrink: 0;
-            margin-top: auto; /* Pousse le menu en bas */
+            background: #1a1a2e; 
+            width: 100%; flex-shrink: 0;
         }
         .controls { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; align-items: center; }
         .control-item { background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 12px; display: flex; align-items: center; gap: 4px; font-size: 0.7em; color: white; }
@@ -210,71 +104,16 @@
         button { padding: 6px 12px; font-size: 0.75em; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
         button:active { transform: scale(0.95); }
         
-        /* Boutons icônes compacts */
-        .icon-btn {
-            padding: 8px 12px;
-            font-size: 1.1em;
-            min-width: 40px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-        }
-        .icon-btn:active { transform: scale(0.95); }
+        .icon-btn { padding: 8px 12px; font-size: 1.1em; min-width: 40px; }
         
-        /* Sliders tactiles optimisés pour iPhone */
-        .slider-large {
-            flex: 1;
-            min-width: 100px;
-            max-width: 150px;
-        }
+        .slider-large { flex: 1; min-width: 80px; max-width: 120px; }
         
         .slider-touch {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 100%;
-            height: 24px;
-            background: transparent;
-            cursor: pointer;
-            touch-action: pan-x;
+            -webkit-appearance: none; appearance: none;
+            width: 100%; height: 24px; background: transparent; cursor: pointer; touch-action: pan-x;
         }
-        
-        .slider-touch::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 12px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 6px;
-        }
-        
-        .slider-touch::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 28px;
-            height: 28px;
-            background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
-            border-radius: 50%;
-            cursor: pointer;
-            margin-top: -8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-        }
-        
-        .slider-touch::-moz-range-track {
-            width: 100%;
-            height: 12px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 6px;
-        }
-        
-        .slider-touch::-moz-range-thumb {
-            width: 28px;
-            height: 28px;
-            background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
-            border-radius: 50%;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-        }
+        .slider-touch::-webkit-slider-runnable-track { width: 100%; height: 12px; background: rgba(255,255,255,0.2); border-radius: 6px; }
+        .slider-touch::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%); border-radius: 50%; margin-top: -8px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
         
         .toggle-switch { position: relative; width: 32px; height: 18px; }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
@@ -282,66 +121,29 @@
         .toggle-slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: 0.2s; }
         input:checked + .toggle-slider { background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%); }
         input:checked + .toggle-slider:before { transform: translateX(14px); }
+        
         .legend { display: flex; gap: 6px; font-size: 0.6em; flex-wrap: wrap; justify-content: center; color: white; }
         .legend-item { display: flex; align-items: center; gap: 3px; }
         .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
         
-        /* Boutons options */
-        .option-btn {
-            padding: 4px 10px;
-            font-size: 0.7em;
-            background: rgba(255,255,255,0.2);
-            color: white;
-            border: 2px solid transparent;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .option-btn.active {
-            background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
-            color: #1a1a2e;
-            font-weight: bold;
-        }
+        .option-btn { padding: 4px 10px; font-size: 0.7em; background: rgba(255,255,255,0.2); color: white; border: 2px solid transparent; border-radius: 8px; cursor: pointer; }
+        .option-btn.active { background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%); color: #1a1a2e; font-weight: bold; }
         
-        /* Section rotation matrix */
-        .rotation-controls {
-            background: rgba(100, 100, 255, 0.2);
-            padding: 4px 8px;
-            border-radius: 8px;
-        }
+        .rotation-controls { background: rgba(100, 100, 255, 0.2); padding: 4px 8px; border-radius: 8px; }
     </style>
 </head>
 <body>
-    <div class="top-zone">
-        <div class="main-game-wrapper">
-            <!-- Zone de rotation GAUCHE -->
-            <div class="rotation-zone rotation-zone-left" id="rotationZoneLeft">
-                <div class="rotation-arrow">↑</div>
-                <div class="rotation-indicator">⟲</div>
-                <div class="rotation-arrow">↓</div>
-            </div>
-            
-            <div class="game-container">
-                <div class="game-area" id="gameArea">
-                    <div class="rail rail-c1"></div>
-                    <div class="rail rail-c2"></div>
-                    <div class="rail rail-c3"></div>
-                    <div class="center-sun" id="centerSun"></div>
-                    <div class="local-rotation-indicator" id="localRotationIndicator"></div>
-                    <div class="matrix-rotation-indicator" id="matrixIndicator">↻ 90°</div>
-                </div>
-            </div>
-            
-            <!-- Zone de rotation DROITE -->
-            <div class="rotation-zone rotation-zone-right" id="rotationZoneRight">
-                <div class="rotation-arrow">↑</div>
-                <div class="rotation-indicator">⟳</div>
-                <div class="rotation-arrow">↓</div>
+    <div class="game-zone">
+        <div class="game-container">
+            <div class="game-area" id="gameArea">
+                <div class="rail rail-c1"></div>
+                <div class="rail rail-c2"></div>
+                <div class="rail rail-c3"></div>
+                <div class="center-sun" id="centerSun"></div>
+                <div class="local-rotation-indicator" id="localRotationIndicator"></div>
             </div>
         </div>
     </div>
-    
-    <!-- Zone info supprimée pour centrer la matrice -->
     
     <div class="bottom-menu">
         <div class="controls">
@@ -351,15 +153,20 @@
                 <input type="range" id="sizePastille" min="10" max="50" value="32" oninput="updateSizes()" class="slider-touch">
                 <span class="control-value" id="sizeValue">32</span>
             </div>
-        </div>
-        <div class="controls">
             <div class="control-item rotation-controls">
                 <label>🔄</label>
-                <input type="range" id="rotationSpeed" min="100" max="1000" value="400" oninput="updateRotationSpeed()" style="width:60px;">
+                <input type="range" id="rotationSpeed" min="100" max="1000" value="400" oninput="updateRotationSpeed()" style="width:50px;">
                 <span class="control-value" id="rotationSpeedValue">0.4s</span>
             </div>
-            <button onclick="testMatrixRotation(1)">Test ↻</button>
-            <button onclick="testMatrixRotation(-1)">Test ↺</button>
+        </div>
+        <div class="controls">
+            <button onclick="testMatrixRotation(1)">Mat ↻</button>
+            <button onclick="testMatrixRotation(-1)">Mat ↺</button>
+            <div class="control-item">
+                <label>Multi:</label>
+                <button class="option-btn" id="multi1Btn" onclick="setMultiRotation(1)">×1</button>
+                <button class="option-btn active" id="multi2Btn" onclick="setMultiRotation(2)">×2</button>
+            </div>
         </div>
         <div class="controls">
             <div class="control-item">
@@ -370,21 +177,12 @@
             </div>
             <div class="control-item">
                 <label>Diag:</label>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="diagAlignEnabled" checked onchange="toggleDiagAlign()">
-                    <span class="toggle-slider"></span>
-                </label>
+                <label class="toggle-switch"><input type="checkbox" id="diagAlignEnabled" checked onchange="toggleDiagAlign()"><span class="toggle-slider"></span></label>
             </div>
         </div>
         <div class="controls">
             <div class="control-item"><label>Rails:</label><label class="toggle-switch"><input type="checkbox" id="showRails" checked onchange="toggleRails()"><span class="toggle-slider"></span></label></div>
-            <div class="control-item">
-                <label>Gravité:</label>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="gravityEnabled" checked onchange="toggleGravity()">
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
+            <div class="control-item"><label>Gravité:</label><label class="toggle-switch"><input type="checkbox" id="gravityEnabled" checked onchange="toggleGravity()"><span class="toggle-slider"></span></label></div>
         </div>
         <div class="legend">
             <div class="legend-item"><div class="legend-dot" style="background:#3498db;"></div><span>Bleu</span></div>
@@ -400,25 +198,20 @@
         function updateDimensions(){
             const ga=document.getElementById('gameArea');
             canvasSize=ga.offsetWidth;
-            cx=canvasSize/2;
-            cy=canvasSize/2;
+            cx=canvasSize/2; cy=canvasSize/2;
             padding=canvasSize*0.05;
             cellSize=(canvasSize-2*padding)/gridSize;
             updateRailPositions();
         }
         
         function updateRailPositions(){
-            const c0 = (padding + cellSize * 0.5) / canvasSize * 100;
-            const c1 = (padding + cellSize * 1.5) / canvasSize * 100;
-            const c2 = (padding + cellSize * 2.5) / canvasSize * 100;
-            
-            const rail1 = document.querySelector('.rail-c1');
-            const rail2 = document.querySelector('.rail-c2');
-            const rail3 = document.querySelector('.rail-c3');
-            
-            if(rail1) { rail1.style.top = c0+'%'; rail1.style.left = c0+'%'; rail1.style.right = c0+'%'; rail1.style.bottom = c0+'%'; }
-            if(rail2) { rail2.style.top = c1+'%'; rail2.style.left = c1+'%'; rail2.style.right = c1+'%'; rail2.style.bottom = c1+'%'; }
-            if(rail3) { rail3.style.top = c2+'%'; rail3.style.left = c2+'%'; rail3.style.right = c2+'%'; rail3.style.bottom = c2+'%'; }
+            const c0=(padding+cellSize*0.5)/canvasSize*100;
+            const c1=(padding+cellSize*1.5)/canvasSize*100;
+            const c2=(padding+cellSize*2.5)/canvasSize*100;
+            const rail1=document.querySelector('.rail-c1'),rail2=document.querySelector('.rail-c2'),rail3=document.querySelector('.rail-c3');
+            if(rail1){rail1.style.top=c0+'%';rail1.style.left=c0+'%';rail1.style.right=c0+'%';rail1.style.bottom=c0+'%';}
+            if(rail2){rail2.style.top=c1+'%';rail2.style.left=c1+'%';rail2.style.right=c1+'%';rail2.style.bottom=c1+'%';}
+            if(rail3){rail3.style.top=c2+'%';rail3.style.left=c2+'%';rail3.style.right=c2+'%';rail3.style.bottom=c2+'%';}
         }
         
         const c1Positions=[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[1,6],[2,6],[3,6],[4,6],[5,6],[6,6],[6,5],[6,4],[6,3],[6,2],[6,1],[6,0],[5,0],[4,0],[3,0],[2,0],[1,0]];
@@ -427,804 +220,449 @@
         const crownPositions=[c1Positions,c2Positions,c3Positions];
         const crowns=[{count:24},{count:16},{count:8}];
         
-        const cornerIndices = [
-            [0, 6, 12, 18],
-            [0, 4, 8, 12],
-            [0, 2, 4, 6]
-        ];
-        
-        function isCornerPosition(crown, index) {
-            const offsetIndex = Math.round(offsets[crown]);
-            const count = crowns[crown].count;
-            const actualIndex = ((index + offsetIndex) % count + count) % count;
-            return cornerIndices[crown].includes(actualIndex);
-        }
-        
-        // DÉFAUT: taille 32
-        let sizePastille = 32;
-        let sizeAncrage = 64; // 2x sizePastille
-        let radiusPastille = 15; // Fixe
-        
+        let sizePastille=32,sizeAncrage=64,radiusPastille=15;
         let data=[[],[],[]],offsets=[0,0,0];
-        let centerData = null;
+        let centerData=null;
         const pastilleColors=["#3498db","#f1c40f","#e74c3c"];
-        let isLocalRotating = false;
+        let isLocalRotating=false,isMatrixRotating=false;
         
-        // ============ PARAMÈTRES DE JEU ============
+        let alignMinLength=0,squareMatchEnabled=true,diagAlignEnabled=true;
+        let rotationDuration=400,gravityEnabled=true,multiRotationMax=2;
         
-        // DÉFAUT: alignMinLength = 0 (désactivé), squareMatchEnabled = true (2x2 actif)
-        let alignMinLength = 0;
-        let squareMatchEnabled = true;
-        let diagAlignEnabled = true; // Toggle pour les diagonales dans findAlignments
-        let rotationDuration = 400;
-        let gravityEnabled = true;
-        
-        // ============ ROTATION MATRICIELLE ============
-        
-        let isMatrixRotating = false;
-        let matrixRotationDrag = null;
-        
-        function toggleGravity() {
-            gravityEnabled = document.getElementById('gravityEnabled').checked;
+        function toggleGravity(){gravityEnabled=document.getElementById('gravityEnabled').checked;}
+        function toggleDiagAlign(){diagAlignEnabled=document.getElementById('diagAlignEnabled').checked;}
+        function setMultiRotation(n){
+            multiRotationMax=n;
+            document.getElementById('multi1Btn').classList.toggle('active',n===1);
+            document.getElementById('multi2Btn').classList.toggle('active',n===2);
         }
-        
-        function toggleDiagAlign() {
-            diagAlignEnabled = document.getElementById('diagAlignEnabled').checked;
+        function updateRotationSpeed(){
+            rotationDuration=parseInt(document.getElementById('rotationSpeed').value);
+            document.getElementById('rotationSpeedValue').textContent=(rotationDuration/1000).toFixed(1)+'s';
+            document.documentElement.style.setProperty('--rotation-duration',rotationDuration+'ms');
         }
+        function testMatrixRotation(direction){rotateMatrix(direction);}
         
-        function updateRotationSpeed() {
-            rotationDuration = parseInt(document.getElementById('rotationSpeed').value);
-            document.getElementById('rotationSpeedValue').textContent = (rotationDuration / 1000).toFixed(1) + 's';
-            document.documentElement.style.setProperty('--rotation-duration', rotationDuration + 'ms');
-        }
-        
-        function testMatrixRotation(direction) {
-            rotateMatrix(direction);
-        }
-        
-        function rotateMatrix(direction) {
-            if (isMatrixRotating) return;
+        function rotateMatrix(direction){
+            if(isMatrixRotating)return;
+            isMatrixRotating=true;
+            const rotationAngle=direction*90;
+            const gameArea=document.getElementById('gameArea');
+            const centerSun=document.getElementById('centerSun');
             
-            isMatrixRotating = true;
-            const rotationAngle = direction * 90;
+            gameArea.style.transition=`transform ${rotationDuration}ms cubic-bezier(0.4,0,0.2,1)`;
+            gameArea.style.transform=`rotate(${rotationAngle}deg)`;
+            centerSun.style.transition=`transform ${rotationDuration}ms cubic-bezier(0.4,0,0.2,1)`;
+            centerSun.style.transform=`translate(-50%,-50%) rotate(${-rotationAngle}deg)`;
             
-            const indicator = document.getElementById('matrixIndicator');
-            indicator.textContent = (direction > 0 ? '↻' : '↺') + ' 90°';
-            indicator.classList.add('visible');
-            
-            const gameArea = document.getElementById('gameArea');
-            const centerSun = document.getElementById('centerSun');
-            
-            gameArea.style.transition = `transform ${rotationDuration}ms cubic-bezier(0.4, 0, 0.2, 1)`;
-            gameArea.style.transform = `rotate(${rotationAngle}deg)`;
-            
-            centerSun.style.transition = `transform ${rotationDuration}ms cubic-bezier(0.4, 0, 0.2, 1)`;
-            centerSun.style.transform = `translate(-50%, -50%) rotate(${-rotationAngle}deg)`;
-            
-            document.querySelectorAll('.pastille').forEach(p => {
+            document.querySelectorAll('.pastille').forEach(p=>{
                 p.classList.add('counter-rotating');
-                p.style.transform = `rotate(${-rotationAngle}deg)`;
+                p.style.transform=`rotate(${-rotationAngle}deg)`;
             });
             
             playMatrixRotationSound();
             
-            setTimeout(() => {
-                gameArea.style.transition = 'none';
-                centerSun.style.transition = 'none';
-                document.querySelectorAll('.pastille').forEach(p => {
-                    p.style.transition = 'none';
-                });
-                
+            setTimeout(()=>{
+                gameArea.style.transition='none';
+                centerSun.style.transition='none';
+                document.querySelectorAll('.pastille').forEach(p=>p.style.transition='none');
                 void gameArea.offsetHeight;
                 
                 transposeDataForRotation(direction);
                 
-                gameArea.style.transform = 'rotate(0deg)';
-                centerSun.style.transform = 'translate(-50%, -50%)';
-                document.querySelectorAll('.pastille').forEach(p => {
-                    p.style.transform = 'rotate(0deg)';
+                gameArea.style.transform='rotate(0deg)';
+                centerSun.style.transform='translate(-50%,-50%)';
+                document.querySelectorAll('.pastille').forEach(p=>{
+                    p.style.transform='rotate(0deg)';
                     p.classList.remove('counter-rotating');
                 });
-                
                 void gameArea.offsetHeight;
                 
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        gameArea.style.transition = '';
-                        centerSun.style.transition = '';
-                        document.querySelectorAll('.pastille').forEach(p => {
-                            p.style.transition = '';
-                        });
+                requestAnimationFrame(()=>{
+                    requestAnimationFrame(()=>{
+                        gameArea.style.transition='';
+                        centerSun.style.transition='';
+                        document.querySelectorAll('.pastille').forEach(p=>p.style.transition='');
                     });
                 });
                 
-                indicator.classList.remove('visible');
-                isMatrixRotating = false;
-                
-                if (gravityEnabled) {
-                    setTimeout(() => {
-                        applyDownwardGravity();
-                        setTimeout(() => vanishAlignedPastilles(), 200);
-                    }, 50);
-                } else {
-                    setTimeout(() => vanishAlignedPastilles(), 50);
+                isMatrixRotating=false;
+                if(gravityEnabled){
+                    setTimeout(()=>{applyDownwardGravity();setTimeout(()=>vanishAlignedPastilles(),200);},50);
+                }else{
+                    setTimeout(()=>vanishAlignedPastilles(),50);
                 }
-                
-            }, rotationDuration + 50);
+            },rotationDuration+50);
         }
         
-        function transposeDataForRotation(direction) {
-            const gridData = [];
-            
-            for (let c = 0; c < 3; c++) {
-                for (let i = 0; i < data[c].length; i++) {
-                    if (data[c][i] && data[c][i].value !== null) {
-                        const [row, col] = getGridPosition(c, i);
-                        gridData.push({
-                            color: data[c][i].value,
-                            row, col,
-                            anchor: data[c][i].anchor,
-                            elem: data[c][i].elem,
-                            isCenter: false
-                        });
+        function transposeDataForRotation(direction){
+            const gridData=[];
+            for(let c=0;c<3;c++){
+                for(let i=0;i<data[c].length;i++){
+                    if(data[c][i]&&data[c][i].value!==null){
+                        const[row,col]=getGridPosition(c,i);
+                        gridData.push({color:data[c][i].value,row,col,anchor:data[c][i].anchor,elem:data[c][i].elem,isCenter:false});
                     }
                 }
             }
-            
-            if (centerData && centerData.value !== null) {
-                gridData.push({
-                    color: centerData.value,
-                    row: 3, col: 3,
-                    isCenter: true
-                });
+            if(centerData&&centerData.value!==null){
+                gridData.push({color:centerData.value,row:3,col:3,isCenter:true});
             }
             
-            for (let c = 0; c < 3; c++) {
-                for (let i = 0; i < data[c].length; i++) {
-                    data[c][i] = null;
-                }
-            }
-            centerData = null;
+            for(let c=0;c<3;c++)for(let i=0;i<data[c].length;i++)data[c][i]=null;
+            centerData=null;
             
-            for (const item of gridData) {
-                let newRow, newCol;
+            for(const item of gridData){
+                let newRow,newCol;
+                if(direction>0){newRow=item.col;newCol=6-item.row;}
+                else{newRow=6-item.col;newCol=item.row;}
                 
-                if (direction > 0) {
-                    newRow = item.col;
-                    newCol = 6 - item.row;
-                } else {
-                    newRow = 6 - item.col;
-                    newCol = item.row;
-                }
-                
-                if (newRow === 3 && newCol === 3) {
-                    centerData = { value: item.color };
-                    if (!item.isCenter && item.anchor) {
-                        item.anchor.remove();
-                    }
-                } else {
-                    const target = findCrownIndexForGridPosition(newRow, newCol);
-                    
-                    if (target) {
-                        if (item.isCenter) {
-                            const {anchor, elem} = createPastille(item.color, target.crown, target.index);
-                            data[target.crown][target.index] = { value: item.color, anchor, elem };
-                            positionPastille(anchor, target.crown, target.index);
-                        } else {
-                            data[target.crown][target.index] = {
-                                value: item.color,
-                                anchor: item.anchor,
-                                elem: item.elem
-                            };
-                            item.anchor.dataset.crown = target.crown;
-                            item.anchor.dataset.index = target.index;
-                            positionPastille(item.anchor, target.crown, target.index);
+                if(newRow===3&&newCol===3){
+                    centerData={value:item.color};
+                    if(!item.isCenter&&item.anchor)item.anchor.remove();
+                }else{
+                    const target=findCrownIndexForGridPosition(newRow,newCol);
+                    if(target){
+                        if(item.isCenter){
+                            const{anchor,elem}=createPastille(item.color,target.crown,target.index);
+                            data[target.crown][target.index]={value:item.color,anchor,elem};
+                            positionPastille(anchor,target.crown,target.index);
+                        }else{
+                            data[target.crown][target.index]={value:item.color,anchor:item.anchor,elem:item.elem};
+                            item.anchor.dataset.crown=target.crown;
+                            item.anchor.dataset.index=target.index;
+                            positionPastille(item.anchor,target.crown,target.index);
                         }
                     }
                 }
             }
-            
             updateCenterDisplay();
         }
         
-        function findCrownIndexForGridPosition(row, col) {
-            if (row === 3 && col === 3) return null;
-            
-            for (let c = 0; c < 3; c++) {
-                const positions = crownPositions[c];
-                const offset = Math.round(offsets[c]);
-                
-                for (let i = 0; i < positions.length; i++) {
-                    const posIdx = ((i + offset) % positions.length + positions.length) % positions.length;
-                    const [r, co] = positions[posIdx];
-                    if (r === row && co === col) {
-                        return { crown: c, index: i };
-                    }
+        function findCrownIndexForGridPosition(row,col){
+            if(row===3&&col===3)return null;
+            for(let c=0;c<3;c++){
+                const positions=crownPositions[c];
+                const offset=Math.round(offsets[c]);
+                for(let i=0;i<positions.length;i++){
+                    const posIdx=((i+offset)%positions.length+positions.length)%positions.length;
+                    const[r,co]=positions[posIdx];
+                    if(r===row&&co===col)return{crown:c,index:i};
                 }
             }
             return null;
         }
         
-        function initMatrixRotationZones() {
-            const leftZone = document.getElementById('rotationZoneLeft');
-            const rightZone = document.getElementById('rotationZoneRight');
-            
-            function handleZoneStart(e, side) {
-                if (isMatrixRotating) return;
-                
-                const touch = e.touches ? e.touches[0] : e;
-                matrixRotationDrag = {
-                    side,
-                    startY: touch.clientY,
-                    triggered: false
-                };
-                
-                (side === 'left' ? leftZone : rightZone).classList.add('active');
-                initAudio();
-                e.preventDefault();
-            }
-            
-            function handleZoneMove(e) {
-                if (!matrixRotationDrag || matrixRotationDrag.triggered || isMatrixRotating) return;
-                
-                const touch = e.touches ? e.touches[0] : e;
-                const dy = touch.clientY - matrixRotationDrag.startY;
-                
-                const threshold = 30;
-                
-                if (Math.abs(dy) > threshold) {
-                    let direction;
-                    if (matrixRotationDrag.side === 'left') {
-                        direction = dy < 0 ? 1 : -1;
-                    } else {
-                        direction = dy < 0 ? -1 : 1;
-                    }
-                    
-                    matrixRotationDrag.triggered = true;
-                    
-                    const zone = matrixRotationDrag.side === 'left' ? leftZone : rightZone;
-                    zone.classList.remove('active');
-                    
-                    rotateMatrix(direction);
-                }
-                
-                e.preventDefault();
-            }
-            
-            function handleZoneEnd(e) {
-                if (!matrixRotationDrag) return;
-                
-                const zone = matrixRotationDrag.side === 'left' ? leftZone : rightZone;
-                zone.classList.remove('active');
-                
-                matrixRotationDrag = null;
-            }
-            
-            leftZone.addEventListener('mousedown', e => handleZoneStart(e, 'left'));
-            leftZone.addEventListener('touchstart', e => handleZoneStart(e, 'left'), {passive: false});
-            
-            rightZone.addEventListener('mousedown', e => handleZoneStart(e, 'right'));
-            rightZone.addEventListener('touchstart', e => handleZoneStart(e, 'right'), {passive: false});
-            
-            document.addEventListener('mousemove', handleZoneMove);
-            document.addEventListener('touchmove', handleZoneMove, {passive: false});
-            document.addEventListener('mouseup', handleZoneEnd);
-            document.addEventListener('touchend', handleZoneEnd);
+        function setAlignMin(n){
+            if(alignMinLength===n){alignMinLength=0;document.getElementById('align3Btn').classList.remove('active');document.getElementById('align4Btn').classList.remove('active');}
+            else{alignMinLength=n;document.getElementById('align3Btn').classList.toggle('active',n===3);document.getElementById('align4Btn').classList.toggle('active',n===4);}
+        }
+        function toggleSquareMatch(){
+            squareMatchEnabled=!squareMatchEnabled;
+            document.getElementById('align2x2Btn').classList.toggle('active',squareMatchEnabled);
         }
         
-        function setAlignMin(n) {
-            if (alignMinLength === n) {
-                alignMinLength = 0;
-                document.getElementById('align3Btn').classList.remove('active');
-                document.getElementById('align4Btn').classList.remove('active');
-            } else {
-                alignMinLength = n;
-                document.getElementById('align3Btn').classList.toggle('active', n === 3);
-                document.getElementById('align4Btn').classList.toggle('active', n === 4);
-            }
-        }
-        
-        function toggleSquareMatch() {
-            squareMatchEnabled = !squareMatchEnabled;
-            document.getElementById('align2x2Btn').classList.toggle('active', squareMatchEnabled);
-        }
-        
-        // ============ GRAVITÉ VERS LE BAS ============
-        
-        function applyDownwardGravity() {
-            const grid = Array(7).fill(null).map(() => Array(7).fill(null));
-            
-            for (let c = 0; c < 3; c++) {
-                for (let i = 0; i < data[c].length; i++) {
-                    if (data[c][i] && data[c][i].value !== null) {
-                        const [row, col] = getGridPosition(c, i);
-                        grid[row][col] = {
-                            color: data[c][i].value,
-                            anchor: data[c][i].anchor,
-                            elem: data[c][i].elem,
-                            crown: c,
-                            index: i,
-                            isCenter: false
-                        };
+        function applyDownwardGravity(){
+            const grid=Array(7).fill(null).map(()=>Array(7).fill(null));
+            for(let c=0;c<3;c++){
+                for(let i=0;i<data[c].length;i++){
+                    if(data[c][i]&&data[c][i].value!==null){
+                        const[row,col]=getGridPosition(c,i);
+                        grid[row][col]={color:data[c][i].value,anchor:data[c][i].anchor,elem:data[c][i].elem,crown:c,index:i,isCenter:false};
                     }
                 }
             }
+            if(centerData&&centerData.value!==null)grid[3][3]={color:centerData.value,isCenter:true};
             
-            if (centerData && centerData.value !== null) {
-                grid[3][3] = {
-                    color: centerData.value,
-                    isCenter: true
-                };
-            }
-            
-            let moved = false;
-            
-            for (let col = 0; col < 7; col++) {
-                const squaresInColumn = [];
-                for (let row = 0; row < 7; row++) {
-                    if (grid[row][col]) {
-                        squaresInColumn.push({ ...grid[row][col], originalRow: row });
-                    }
+            let moved=false;
+            for(let col=0;col<7;col++){
+                const squaresInColumn=[];
+                for(let row=0;row<7;row++)if(grid[row][col])squaresInColumn.push({...grid[row][col],originalRow:row});
+                if(squaresInColumn.length===0)continue;
+                
+                const availablePositions=[];
+                for(let row=6;row>=0;row--){
+                    if(row===3&&col===3)availablePositions.push({row:3,col:3,isCenter:true});
+                    else{const target=findCrownIndexForGridPosition(row,col);if(target)availablePositions.push({row,col,...target,isCenter:false});}
                 }
                 
-                if (squaresInColumn.length === 0) continue;
-                
-                const availablePositions = [];
-                for (let row = 6; row >= 0; row--) {
-                    if (row === 3 && col === 3) {
-                        availablePositions.push({ row: 3, col: 3, isCenter: true });
-                    } else {
-                        const target = findCrownIndexForGridPosition(row, col);
-                        if (target) {
-                            availablePositions.push({ row, col, ...target, isCenter: false });
-                        }
-                    }
+                for(const square of squaresInColumn){
+                    if(!square.isCenter&&data[square.crown]&&data[square.crown][square.index])data[square.crown][square.index]=null;
                 }
+                if(col===3&&grid[3][3]&&grid[3][3].isCenter)centerData=null;
                 
-                for (const square of squaresInColumn) {
-                    if (!square.isCenter && data[square.crown] && data[square.crown][square.index]) {
-                        data[square.crown][square.index] = null;
-                    }
-                }
-                if (col === 3 && grid[3][3] && grid[3][3].isCenter) {
-                    centerData = null;
-                }
-                
-                for (let i = 0; i < squaresInColumn.length && i < availablePositions.length; i++) {
-                    const square = squaresInColumn[squaresInColumn.length - 1 - i];
-                    const pos = availablePositions[i];
+                for(let i=0;i<squaresInColumn.length&&i<availablePositions.length;i++){
+                    const square=squaresInColumn[squaresInColumn.length-1-i];
+                    const pos=availablePositions[i];
+                    if(pos.row!==square.originalRow)moved=true;
                     
-                    if (pos.row !== square.originalRow) {
-                        moved = true;
-                    }
-                    
-                    if (pos.isCenter) {
-                        centerData = { value: square.color };
-                        if (!square.isCenter && square.anchor) {
-                            square.anchor.remove();
-                        }
-                    } else {
-                        if (square.isCenter) {
-                            const {anchor, elem} = createPastille(square.color, pos.crown, pos.index);
-                            data[pos.crown][pos.index] = { value: square.color, anchor, elem };
-                            positionPastille(anchor, pos.crown, pos.index);
-                        } else {
-                            data[pos.crown][pos.index] = {
-                                value: square.color,
-                                anchor: square.anchor,
-                                elem: square.elem
-                            };
-                            square.anchor.dataset.crown = pos.crown;
-                            square.anchor.dataset.index = pos.index;
-                            positionPastille(square.anchor, pos.crown, pos.index);
+                    if(pos.isCenter){
+                        centerData={value:square.color};
+                        if(!square.isCenter&&square.anchor)square.anchor.remove();
+                    }else{
+                        if(square.isCenter){
+                            const{anchor,elem}=createPastille(square.color,pos.crown,pos.index);
+                            data[pos.crown][pos.index]={value:square.color,anchor,elem};
+                            positionPastille(anchor,pos.crown,pos.index);
+                        }else{
+                            data[pos.crown][pos.index]={value:square.color,anchor:square.anchor,elem:square.elem};
+                            square.anchor.dataset.crown=pos.crown;
+                            square.anchor.dataset.index=pos.index;
+                            positionPastille(square.anchor,pos.crown,pos.index);
                         }
                     }
                 }
             }
-            
             updateCenterDisplay();
-            
-            if (moved) {
-                playGravitySound();
-            }
-            
+            if(moved)playGravitySound();
             return moved;
         }
         
-        // ============ ROTATION LOCALE 2x2 (DIAGONALE) ============
+        function gridToPixel(row,col){return{x:padding+col*cellSize+cellSize/2,y:padding+row*cellSize+cellSize/2};}
         
-        function gridToPixel(row, col) {
-            return {
-                x: padding + col * cellSize + cellSize / 2,
-                y: padding + row * cellSize + cellSize / 2
-            };
+        function getColorAt(row,col){
+            if(row===3&&col===3)return centerData&&centerData.value!==null?centerData.value:null;
+            const target=findCrownIndexForGridPosition(row,col);
+            if(!target)return null;
+            const d=data[target.crown][target.index];
+            return d&&d.value!==null?d.value:null;
         }
         
-        function getColorAt(row, col) {
-            if (row === 3 && col === 3) {
-                return centerData && centerData.value !== null ? centerData.value : null;
-            }
-            const target = findCrownIndexForGridPosition(row, col);
-            if (!target) return null;
-            const d = data[target.crown][target.index];
-            return d && d.value !== null ? d.value : null;
-        }
-        
-        function setColorAt(row, col, color) {
-            if (row === 3 && col === 3) {
-                if (color !== null) {
-                    centerData = { value: color };
-                } else {
-                    centerData = null;
+        function setColorAt(row,col,color){
+            if(row===3&&col===3){centerData=color!==null?{value:color}:null;return;}
+            const target=findCrownIndexForGridPosition(row,col);
+            if(!target)return;
+            if(color!==null){
+                if(data[target.crown][target.index]&&data[target.crown][target.index].anchor){
+                    data[target.crown][target.index].value=color;
+                    data[target.crown][target.index].elem.style.background=pastilleColors[color];
+                }else{
+                    const{anchor,elem}=createPastille(color,target.crown,target.index);
+                    data[target.crown][target.index]={value:color,anchor,elem};
+                    positionPastille(anchor,target.crown,target.index);
                 }
-                return;
-            }
-            const target = findCrownIndexForGridPosition(row, col);
-            if (!target) return;
-            
-            if (color !== null) {
-                if (data[target.crown][target.index] && data[target.crown][target.index].anchor) {
-                    data[target.crown][target.index].value = color;
-                    data[target.crown][target.index].elem.style.background = pastilleColors[color];
-                } else {
-                    const {anchor, elem} = createPastille(color, target.crown, target.index);
-                    data[target.crown][target.index] = { value: color, anchor, elem };
-                    positionPastille(anchor, target.crown, target.index);
-                }
-            } else {
-                if (data[target.crown][target.index] && data[target.crown][target.index].anchor) {
-                    data[target.crown][target.index].anchor.remove();
-                }
-                data[target.crown][target.index] = null;
+            }else{
+                if(data[target.crown][target.index]&&data[target.crown][target.index].anchor)data[target.crown][target.index].anchor.remove();
+                data[target.crown][target.index]=null;
             }
         }
         
-        // ============ NOUVELLE MÉCANIQUE : ROTATION DIAGONALE ============
-        
-        function calculateDiagonalRotationGroup(sourceRow, sourceCol, diagDirection) {
-            let topRow, topCol;
-            
-            switch(diagDirection) {
-                case 'upRight':
-                    topRow = sourceRow - 1;
-                    topCol = sourceCol;
-                    break;
-                case 'upLeft':
-                    topRow = sourceRow - 1;
-                    topCol = sourceCol - 1;
-                    break;
-                case 'downRight':
-                    topRow = sourceRow;
-                    topCol = sourceCol;
-                    break;
-                case 'downLeft':
-                    topRow = sourceRow;
-                    topCol = sourceCol - 1;
-                    break;
-                default:
-                    return null;
+        function calculateDiagonalRotationGroup(sourceRow,sourceCol,diagDirection){
+            let topRow,topCol;
+            switch(diagDirection){
+                case'upRight':topRow=sourceRow-1;topCol=sourceCol;break;
+                case'upLeft':topRow=sourceRow-1;topCol=sourceCol-1;break;
+                case'downRight':topRow=sourceRow;topCol=sourceCol;break;
+                case'downLeft':topRow=sourceRow;topCol=sourceCol-1;break;
+                default:return null;
             }
-            
-            if (topRow < 0 || topRow > 5 || topCol < 0 || topCol > 5) {
-                return null;
-            }
-            
-            return {
-                topRow, topCol,
-                positions: [
-                    [topRow, topCol],
-                    [topRow, topCol + 1],
-                    [topRow + 1, topCol],
-                    [topRow + 1, topCol + 1]
-                ],
-                centerX: padding + (topCol + 1) * cellSize,
-                centerY: padding + (topRow + 1) * cellSize
-            };
+            if(topRow<0||topRow>5||topCol<0||topCol>5)return null;
+            return{topRow,topCol,positions:[[topRow,topCol],[topRow,topCol+1],[topRow+1,topCol],[topRow+1,topCol+1]],centerX:padding+(topCol+1)*cellSize,centerY:padding+(topRow+1)*cellSize};
         }
         
-        function getDiagonalRotationDirection(diagDirection) {
-            switch(diagDirection) {
-                case 'upRight': return false;
-                case 'downLeft': return true;
-                case 'downRight': return false;
-                case 'upLeft': return true;
-                default: return true;
-            }
+        function getDiagonalRotationDirection(diagDirection){
+            switch(diagDirection){case'upRight':return false;case'downLeft':return true;case'downRight':return false;case'upLeft':return true;default:return true;}
         }
         
-        function detectDiagonalDirection(dx, dy) {
-            const absDx = Math.abs(dx);
-            const absDy = Math.abs(dy);
-            
-            if (absDx < 5 || absDy < 5) return null;
-            const ratio = absDx / absDy;
-            if (ratio < 0.3 || ratio > 3) return null;
-            
-            if (dy < 0 && dx > 0) return 'upRight';
-            if (dy < 0 && dx < 0) return 'upLeft';
-            if (dy > 0 && dx > 0) return 'downRight';
-            if (dy > 0 && dx < 0) return 'downLeft';
-            
+        function detectDiagonalDirection(dx,dy){
+            const absDx=Math.abs(dx),absDy=Math.abs(dy);
+            if(absDx<5||absDy<5)return null;
+            const ratio=absDx/absDy;
+            if(ratio<0.3||ratio>3)return null;
+            if(dy<0&&dx>0)return'upRight';
+            if(dy<0&&dx<0)return'upLeft';
+            if(dy>0&&dx>0)return'downRight';
+            if(dy>0&&dx<0)return'downLeft';
             return null;
         }
         
-        function getAvailableDiagonalDirections(row, col) {
-            const available = [];
-            
-            if (row >= 1 && col <= 5) available.push('upRight');
-            if (row >= 1 && col >= 1) available.push('upLeft');
-            if (row <= 5 && col <= 5) available.push('downRight');
-            if (row <= 5 && col >= 1) available.push('downLeft');
-            
+        function getAvailableDiagonalDirections(row,col){
+            const available=[];
+            if(row>=1&&col<=5)available.push('upRight');
+            if(row>=1&&col>=1)available.push('upLeft');
+            if(row<=5&&col<=5)available.push('downRight');
+            if(row<=5&&col>=1)available.push('downLeft');
             return available;
         }
         
-        function executeLocalRotation(group, clockwise) {
-            if (isLocalRotating) return;
-            isLocalRotating = true;
+        function calculateRotationCount(dist){
+            const threshold1=30,threshold2=80;
+            if(dist<threshold1)return 0;
+            if(dist<threshold2||multiRotationMax===1)return 1;
+            return 2;
+        }
+        
+        function executeLocalRotation(group,clockwise,rotationCount=1){
+            if(isLocalRotating)return;
+            isLocalRotating=true;
             
-            const indicator = document.getElementById('localRotationIndicator');
-            indicator.style.left = (group.centerX - cellSize) + 'px';
-            indicator.style.top = (group.centerY - cellSize) + 'px';
-            indicator.style.width = (cellSize * 2 - 4) + 'px';
-            indicator.style.height = (cellSize * 2 - 4) + 'px';
+            const indicator=document.getElementById('localRotationIndicator');
+            indicator.style.left=(group.centerX-cellSize)+'px';
+            indicator.style.top=(group.centerY-cellSize)+'px';
+            indicator.style.width=(cellSize*2-4)+'px';
+            indicator.style.height=(cellSize*2-4)+'px';
             indicator.classList.add('visible');
             
             playLocalRotationSound();
             
-            const centerInGroup = group.positions.some(([r, c]) => r === 3 && c === 3);
+            const centerInGroup=group.positions.some(([r,c])=>r===3&&c===3);
+            const centerSun=document.getElementById('centerSun');
+            if(centerInGroup)centerSun.style.zIndex='50';
             
-            // Élever le z-index du centre pendant l'animation si nécessaire
-            const centerSun = document.getElementById('centerSun');
-            if (centerInGroup) {
-                centerSun.style.zIndex = '50';
-            }
-            
-            const cells = group.positions.map(([r, c]) => {
-                const color = getColorAt(r, c);
-                let anchor = null;
-                if (r !== 3 || c !== 3) {
-                    const target = findCrownIndexForGridPosition(r, c);
-                    if (target && data[target.crown][target.index]) {
-                        anchor = data[target.crown][target.index].anchor;
-                        // Élever le z-index pendant l'animation
-                        if (anchor) anchor.classList.add('rotating');
+            const cells=group.positions.map(([r,c])=>{
+                const color=getColorAt(r,c);
+                let anchor=null;
+                if(r!==3||c!==3){
+                    const target=findCrownIndexForGridPosition(r,c);
+                    if(target&&data[target.crown][target.index]){
+                        anchor=data[target.crown][target.index].anchor;
+                        if(anchor)anchor.classList.add('rotating');
                     }
                 }
-                return { row: r, col: c, color, anchor, startPos: gridToPixel(r, c) };
+                return{row:r,col:c,color,anchor,startPos:gridToPixel(r,c)};
             });
             
-            const newIndices = clockwise ? [2, 0, 3, 1] : [1, 3, 0, 2];
+            let newIndices;
+            if(rotationCount===2)newIndices=[3,2,1,0];
+            else newIndices=clockwise?[2,0,3,1]:[1,3,0,2];
             
-            for (let i = 0; i < 4; i++) {
-                const targetIdx = newIndices[i];
-                cells[i].endPos = gridToPixel(group.positions[targetIdx][0], group.positions[targetIdx][1]);
-                cells[i].targetRow = group.positions[targetIdx][0];
-                cells[i].targetCol = group.positions[targetIdx][1];
+            for(let i=0;i<4;i++){
+                const targetIdx=newIndices[i];
+                cells[i].endPos=gridToPixel(group.positions[targetIdx][0],group.positions[targetIdx][1]);
+                cells[i].targetRow=group.positions[targetIdx][0];
+                cells[i].targetCol=group.positions[targetIdx][1];
             }
             
-            // Animer aussi le centre s'il fait partie du groupe
-            let centerStartPos = null;
-            let centerEndPos = null;
-            if (centerInGroup) {
-                for (let i = 0; i < 4; i++) {
-                    if (cells[i].row === 3 && cells[i].col === 3) {
-                        centerStartPos = cells[i].startPos;
-                        centerEndPos = cells[i].endPos;
-                        break;
-                    }
+            let centerStartPos=null,centerEndPos=null;
+            if(centerInGroup){
+                for(let i=0;i<4;i++){
+                    if(cells[i].row===3&&cells[i].col===3){centerStartPos=cells[i].startPos;centerEndPos=cells[i].endPos;break;}
                 }
             }
             
-            const duration = 180;
-            const startTime = performance.now();
+            const duration=180*rotationCount;
+            const startTime=performance.now();
             
-            function animate(currentTime) {
-                const progress = Math.min((currentTime - startTime) / duration, 1);
-                const eased = 1 - Math.pow(1 - progress, 3);
+            function animate(currentTime){
+                const progress=Math.min((currentTime-startTime)/duration,1);
+                const eased=1-Math.pow(1-progress,3);
                 
-                for (const cell of cells) {
-                    if (cell.anchor) {
-                        const x = cell.startPos.x + (cell.endPos.x - cell.startPos.x) * eased;
-                        const y = cell.startPos.y + (cell.endPos.y - cell.startPos.y) * eased;
-                        cell.anchor.style.left = (x - sizeAncrage/2) + 'px';
-                        cell.anchor.style.top = (y - sizeAncrage/2) + 'px';
+                for(const cell of cells){
+                    if(cell.anchor){
+                        const x=cell.startPos.x+(cell.endPos.x-cell.startPos.x)*eased;
+                        const y=cell.startPos.y+(cell.endPos.y-cell.startPos.y)*eased;
+                        cell.anchor.style.left=(x-sizeAncrage/2)+'px';
+                        cell.anchor.style.top=(y-sizeAncrage/2)+'px';
                     }
                 }
                 
-                // Animer le centre visuellement
-                if (centerInGroup && centerStartPos && centerEndPos) {
-                    const cx = centerStartPos.x + (centerEndPos.x - centerStartPos.x) * eased;
-                    const cy = centerStartPos.y + (centerEndPos.y - centerStartPos.y) * eased;
-                    // Convertir en pourcentage pour le positionnement du centre
-                    const leftPercent = (cx / canvasSize) * 100;
-                    const topPercent = (cy / canvasSize) * 100;
-                    centerSun.style.left = leftPercent + '%';
-                    centerSun.style.top = topPercent + '%';
+                if(centerInGroup&&centerStartPos&&centerEndPos){
+                    const cx2=centerStartPos.x+(centerEndPos.x-centerStartPos.x)*eased;
+                    const cy2=centerStartPos.y+(centerEndPos.y-centerStartPos.y)*eased;
+                    centerSun.style.left=(cx2/canvasSize*100)+'%';
+                    centerSun.style.top=(cy2/canvasSize*100)+'%';
                 }
                 
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
-                } else {
-                    finishLocalRotation(group, cells, newIndices, centerInGroup);
-                }
+                if(progress<1)requestAnimationFrame(animate);
+                else finishLocalRotation(group,cells,newIndices,centerInGroup);
             }
-            
             requestAnimationFrame(animate);
         }
         
-        function finishLocalRotation(group, cells, newIndices, centerInGroup) {
-            const newColors = [null, null, null, null];
-            for (let i = 0; i < 4; i++) {
-                newColors[newIndices[i]] = cells[i].color;
-            }
+        function finishLocalRotation(group,cells,newIndices,centerInGroup){
+            const newColors=[null,null,null,null];
+            for(let i=0;i<4;i++)newColors[newIndices[i]]=cells[i].color;
             
-            // Retirer la classe rotating et remettre z-index normal
-            for (const cell of cells) {
-                if (cell.anchor) {
-                    cell.anchor.classList.remove('rotating');
-                }
-            }
+            for(const cell of cells)if(cell.anchor)cell.anchor.classList.remove('rotating');
             
-            for (const [r, c] of group.positions) {
-                if (r === 3 && c === 3) continue;
-                const target = findCrownIndexForGridPosition(r, c);
-                if (target && data[target.crown][target.index] && data[target.crown][target.index].anchor) {
+            for(const[r,c]of group.positions){
+                if(r===3&&c===3)continue;
+                const target=findCrownIndexForGridPosition(r,c);
+                if(target&&data[target.crown][target.index]&&data[target.crown][target.index].anchor){
                     data[target.crown][target.index].anchor.remove();
-                    data[target.crown][target.index] = null;
+                    data[target.crown][target.index]=null;
                 }
             }
+            if(centerInGroup)centerData=null;
             
-            if (centerInGroup) {
-                centerData = null;
+            for(let i=0;i<4;i++){
+                const[r,c]=group.positions[i];
+                if(newColors[i]!==null)setColorAt(r,c,newColors[i]);
             }
             
-            for (let i = 0; i < 4; i++) {
-                const [r, c] = group.positions[i];
-                if (newColors[i] !== null) {
-                    setColorAt(r, c, newColors[i]);
-                }
-            }
-            
-            // Remettre le centre à sa position normale (50%, 50%) et z-index
-            const centerSun = document.getElementById('centerSun');
-            centerSun.style.left = '50%';
-            centerSun.style.top = '50%';
-            centerSun.style.zIndex = '10';
+            const centerSun=document.getElementById('centerSun');
+            centerSun.style.left='50%';
+            centerSun.style.top='50%';
+            centerSun.style.zIndex='10';
             
             updateCenterDisplay();
-            
-            const indicator = document.getElementById('localRotationIndicator');
-            indicator.classList.remove('visible');
-            isLocalRotating = false;
-            
-            setTimeout(() => vanishAlignedPastilles(), 100);
+            document.getElementById('localRotationIndicator').classList.remove('visible');
+            isLocalRotating=false;
+            setTimeout(()=>vanishAlignedPastilles(),100);
         }
         
-        function attemptDiagonalRotation(row, col, dx, dy) {
-            const diagDirection = detectDiagonalDirection(dx, dy);
-            if (!diagDirection) {
-                playBlockedSound();
-                return false;
-            }
+        function attemptDiagonalRotation(row,col,dx,dy,dist){
+            const diagDirection=detectDiagonalDirection(dx,dy);
+            if(!diagDirection){playBlockedSound();return false;}
             
-            const availableDirections = getAvailableDiagonalDirections(row, col);
-            if (!availableDirections.includes(diagDirection)) {
-                playBlockedSound();
-                return false;
-            }
+            const availableDirections=getAvailableDiagonalDirections(row,col);
+            if(!availableDirections.includes(diagDirection)){playBlockedSound();return false;}
             
-            const group = calculateDiagonalRotationGroup(row, col, diagDirection);
-            if (!group) {
-                playBlockedSound();
-                return false;
-            }
+            const group=calculateDiagonalRotationGroup(row,col,diagDirection);
+            if(!group){playBlockedSound();return false;}
             
-            let filledCount = 0;
-            for (const [r, c] of group.positions) {
-                if (getColorAt(r, c) !== null) filledCount++;
-            }
+            let filledCount=0;
+            for(const[r,c]of group.positions)if(getColorAt(r,c)!==null)filledCount++;
+            if(filledCount<2){playBlockedSound();return false;}
             
-            if (filledCount < 2) {
-                playBlockedSound();
-                return false;
-            }
+            const rotationCount=calculateRotationCount(dist);
+            if(rotationCount===0)return false;
             
-            const clockwise = getDiagonalRotationDirection(diagDirection);
-            executeLocalRotation(group, clockwise);
+            const clockwise=getDiagonalRotationDirection(diagDirection);
+            executeLocalRotation(group,clockwise,rotationCount);
             return true;
         }
         
-        function playLocalRotationSound() {
-            if(!audioCtx) return;
-            const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-            o.connect(g); g.connect(audioCtx.destination);
-            o.frequency.setValueAtTime(400, audioCtx.currentTime);
-            o.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.15);
-            o.type = 'triangle';
-            g.gain.setValueAtTime(0.25, audioCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.18);
-            o.start(); o.stop(audioCtx.currentTime + 0.18);
+        function playLocalRotationSound(){
+            if(!audioCtx)return;
+            const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+            o.connect(g);g.connect(audioCtx.destination);
+            o.frequency.setValueAtTime(400,audioCtx.currentTime);
+            o.frequency.exponentialRampToValueAtTime(600,audioCtx.currentTime+0.15);
+            o.type='triangle';
+            g.gain.setValueAtTime(0.25,audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.18);
+            o.start();o.stop(audioCtx.currentTime+0.18);
         }
         
-        // ============ MATRICE INITIALE FIXE ============
+        const INITIAL_GRID=[[0,1,2,0,1,2,0],[1,2,0,1,2,0,1],[2,0,1,2,0,1,2],[0,1,2,1,2,0,1],[1,2,0,2,1,2,0],[2,0,1,0,2,0,1],[0,1,2,1,0,1,2]];
         
-        const INITIAL_GRID = [
-            [0, 1, 2, 0, 1, 2, 0],
-            [1, 2, 0, 1, 2, 0, 1],
-            [2, 0, 1, 2, 0, 1, 2],
-            [0, 1, 2, 1, 2, 0, 1],
-            [1, 2, 0, 2, 1, 2, 0],
-            [2, 0, 1, 0, 2, 0, 1],
-            [0, 1, 2, 1, 0, 1, 2]
-        ];
-        
-        function loadInitialGrid() {
-            document.querySelectorAll('.pastille-anchor').forEach(el => el.remove());
-            data = [[], [], []];
-            offsets = [0, 0, 0];
-            centerData = null;
+        function loadInitialGrid(){
+            document.querySelectorAll('.pastille-anchor').forEach(el=>el.remove());
+            data=[[],[],[]];offsets=[0,0,0];centerData=null;
+            centerData={value:INITIAL_GRID[3][3]};
             
-            centerData = { value: INITIAL_GRID[3][3] };
-            
-            for (let c = 0; c < 3; c++) {
-                const positions = crownPositions[c];
-                for (let i = 0; i < positions.length; i++) {
-                    const [row, col] = positions[i];
-                    if (row === 3 && col === 3) continue;
-                    
-                    const color = INITIAL_GRID[row][col];
-                    const {anchor, elem} = createPastille(color, c, i);
-                    data[c][i] = { value: color, anchor, elem };
-                    positionPastille(anchor, c, i);
+            for(let c=0;c<3;c++){
+                const positions=crownPositions[c];
+                for(let i=0;i<positions.length;i++){
+                    const[row,col]=positions[i];
+                    if(row===3&&col===3)continue;
+                    const color=INITIAL_GRID[row][col];
+                    const{anchor,elem}=createPastille(color,c,i);
+                    data[c][i]={value:color,anchor,elem};
+                    positionPastille(anchor,c,i);
                 }
             }
-            
             updateCenterDisplay();
         }
         
-        // ============ AUDIO ============
-        
         let audioCtx=null;
         function initAudio(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();}
-        function playTick(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.frequency.value=800;o.type='sine';g.gain.setValueAtTime(0.3,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.05);o.start(audioCtx.currentTime);o.stop(audioCtx.currentTime+0.05);}
-        function playBlockedSound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.frequency.value=200;o.type='square';g.gain.setValueAtTime(0.2,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.1);o.start(audioCtx.currentTime);o.stop(audioCtx.currentTime+0.1);}
-        function playVanishSound(){
-            if(!audioCtx)return;
-            const o=audioCtx.createOscillator(),g=audioCtx.createGain();
-            o.connect(g);g.connect(audioCtx.destination);
-            o.frequency.setValueAtTime(880,audioCtx.currentTime);
-            o.frequency.exponentialRampToValueAtTime(220,audioCtx.currentTime+0.4);
-            o.type='sine';
-            g.gain.setValueAtTime(0.3,audioCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.4);
-            o.start(audioCtx.currentTime);o.stop(audioCtx.currentTime+0.4);
-        }
-        function playGravitySound(){
-            if(!audioCtx)return;
-            const o=audioCtx.createOscillator(),g=audioCtx.createGain();
-            o.connect(g);g.connect(audioCtx.destination);
-            o.frequency.setValueAtTime(500,audioCtx.currentTime);
-            o.frequency.exponentialRampToValueAtTime(300,audioCtx.currentTime+0.1);
-            o.type='sine';
-            g.gain.setValueAtTime(0.15,audioCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.1);
-            o.start(audioCtx.currentTime);o.stop(audioCtx.currentTime+0.1);
-        }
-        function playMatrixRotationSound(){
-            if(!audioCtx)return;
-            const o=audioCtx.createOscillator(),g=audioCtx.createGain();
-            o.connect(g);g.connect(audioCtx.destination);
-            o.frequency.setValueAtTime(220,audioCtx.currentTime);
-            o.frequency.exponentialRampToValueAtTime(440,audioCtx.currentTime + rotationDuration/1000);
-            o.type='sine';
-            g.gain.setValueAtTime(0.2,audioCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime + rotationDuration/1000);
-            o.start(audioCtx.currentTime);
-            o.stop(audioCtx.currentTime + rotationDuration/1000);
-        }
-        
-        // ============ GRID & ALIGNMENT ============
+        function playTick(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.frequency.value=800;o.type='sine';g.gain.setValueAtTime(0.3,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.05);o.start();o.stop(audioCtx.currentTime+0.05);}
+        function playBlockedSound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.frequency.value=200;o.type='square';g.gain.setValueAtTime(0.2,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.1);o.start();o.stop(audioCtx.currentTime+0.1);}
+        function playVanishSound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.frequency.setValueAtTime(880,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(220,audioCtx.currentTime+0.4);o.type='sine';g.gain.setValueAtTime(0.3,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.4);o.start();o.stop(audioCtx.currentTime+0.4);}
+        function playGravitySound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.frequency.setValueAtTime(500,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(300,audioCtx.currentTime+0.1);o.type='sine';g.gain.setValueAtTime(0.15,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.1);o.start();o.stop(audioCtx.currentTime+0.1);}
+        function playMatrixRotationSound(){if(!audioCtx)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.frequency.setValueAtTime(220,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(440,audioCtx.currentTime+rotationDuration/1000);o.type='sine';g.gain.setValueAtTime(0.2,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+rotationDuration/1000);o.start();o.stop(audioCtx.currentTime+rotationDuration/1000);}
         
         function getPositionOnSquare(crown,index){
             const positions=crownPositions[crown],count=positions.length;
@@ -1232,8 +670,7 @@
             const idx1=Math.floor(realIndex),idx2=(idx1+1)%count,t=realIndex-idx1;
             const[row1,col1]=positions[idx1],[row2,col2]=positions[idx2];
             const row=row1+(row2-row1)*t,col=col1+(col2-col1)*t;
-            const x=padding+col*cellSize+cellSize/2,y=padding+row*cellSize+cellSize/2;
-            return{x,y};
+            return{x:padding+col*cellSize+cellSize/2,y:padding+row*cellSize+cellSize/2};
         }
         
         function getGridPosition(crown,index){
@@ -1242,54 +679,39 @@
             return positions[((index+offsetIndex)%count+count)%count];
         }
         
-        function buildGrid() {
-            const grid = Array(7).fill(null).map(() => Array(7).fill(null));
-            
-            if (centerData && centerData.value !== null) {
-                grid[3][3] = { type: 'center', color: centerData.value };
-            }
-            
-            for (let c = 0; c < 3; c++) {
-                for (let i = 0; i < data[c].length; i++) {
-                    if (!data[c][i] || data[c][i].value === null) continue;
-                    const [row, col] = getGridPosition(c, i);
-                    grid[row][col] = { type: 'crown', crown: c, index: i, color: data[c][i].value };
+        function buildGrid(){
+            const grid=Array(7).fill(null).map(()=>Array(7).fill(null));
+            if(centerData&&centerData.value!==null)grid[3][3]={type:'center',color:centerData.value};
+            for(let c=0;c<3;c++){
+                for(let i=0;i<data[c].length;i++){
+                    if(!data[c][i]||data[c][i].value===null)continue;
+                    const[row,col]=getGridPosition(c,i);
+                    grid[row][col]={type:'crown',crown:c,index:i,color:data[c][i].value};
                 }
             }
             return grid;
         }
         
-        function findAlignments(minLength) {
-            const grid = buildGrid();
-            const alignments = [];
+        function findAlignments(minLength){
+            const grid=buildGrid();
+            const alignments=[];
+            const directions=[[0,1],[1,0]];
+            if(diagAlignEnabled)directions.push([1,1],[1,-1]);
             
-            // Directions: horizontal, vertical, et diagonales seulement si activées
-            const directions = [[0, 1], [1, 0]]; // H et V toujours
-            if (diagAlignEnabled) {
-                directions.push([1, 1], [1, -1]); // Diagonales si activées
-            }
-            
-            for (let row = 0; row < 7; row++) {
-                for (let col = 0; col < 7; col++) {
-                    if (!grid[row][col] || grid[row][col].color === null) continue;
-                    const startColor = grid[row][col].color;
-                    
-                    for (const [dr, dc] of directions) {
-                        const line = [{ row, col, ...grid[row][col] }];
-                        let r = row + dr, c = col + dc;
-                        
-                        while (r >= 0 && r < 7 && c >= 0 && c < 7) {
-                            if (grid[r][c] && grid[r][c].color === startColor) {
-                                line.push({ row: r, col: c, ...grid[r][c] });
-                                r += dr; c += dc;
-                            } else break;
+            for(let row=0;row<7;row++){
+                for(let col=0;col<7;col++){
+                    if(!grid[row][col]||grid[row][col].color===null)continue;
+                    const startColor=grid[row][col].color;
+                    for(const[dr,dc]of directions){
+                        const line=[{row,col,...grid[row][col]}];
+                        let r=row+dr,c=col+dc;
+                        while(r>=0&&r<7&&c>=0&&c<7){
+                            if(grid[r][c]&&grid[r][c].color===startColor){line.push({row:r,col:c,...grid[r][c]});r+=dr;c+=dc;}
+                            else break;
                         }
-                        
-                        if (line.length >= minLength) {
-                            const key = line.map(p => `${p.row},${p.col}`).sort().join('|');
-                            if (!alignments.find(a => a.key === key)) {
-                                alignments.push({ cells: line, color: startColor, key });
-                            }
+                        if(line.length>=minLength){
+                            const key=line.map(p=>`${p.row},${p.col}`).sort().join('|');
+                            if(!alignments.find(a=>a.key===key))alignments.push({cells:line,color:startColor,key});
                         }
                     }
                 }
@@ -1297,322 +719,235 @@
             return alignments;
         }
         
-        function findSquareMatches() {
-            const grid = buildGrid();
-            const squares = [];
-            
-            for (let row = 0; row < 6; row++) {
-                for (let col = 0; col < 6; col++) {
-                    const topLeft = grid[row][col];
-                    const topRight = grid[row][col + 1];
-                    const bottomLeft = grid[row + 1][col];
-                    const bottomRight = grid[row + 1][col + 1];
-                    
-                    if (topLeft && topRight && bottomLeft && bottomRight &&
-                        topLeft.color !== null &&
-                        topLeft.color === topRight.color &&
-                        topLeft.color === bottomLeft.color &&
-                        topLeft.color === bottomRight.color) {
-                        
-                        const cells = [
-                            { row, col, ...topLeft },
-                            { row, col: col + 1, ...topRight },
-                            { row: row + 1, col, ...bottomLeft },
-                            { row: row + 1, col: col + 1, ...bottomRight }
-                        ];
-                        
-                        const key = cells.map(p => `${p.row},${p.col}`).sort().join('|');
-                        if (!squares.find(s => s.key === key)) {
-                            squares.push({ cells, color: topLeft.color, key });
-                        }
+        function findSquareMatches(){
+            const grid=buildGrid();
+            const squares=[];
+            for(let row=0;row<6;row++){
+                for(let col=0;col<6;col++){
+                    const tl=grid[row][col],tr=grid[row][col+1],bl=grid[row+1][col],br=grid[row+1][col+1];
+                    if(tl&&tr&&bl&&br&&tl.color!==null&&tl.color===tr.color&&tl.color===bl.color&&tl.color===br.color){
+                        const cells=[{row,col,...tl},{row,col:col+1,...tr},{row:row+1,col,...bl},{row:row+1,col:col+1,...br}];
+                        const key=cells.map(p=>`${p.row},${p.col}`).sort().join('|');
+                        if(!squares.find(s=>s.key===key))squares.push({cells,color:tl.color,key});
                     }
                 }
             }
             return squares;
         }
         
-        function vanishAlignedPastilles() {
-            const alignments = alignMinLength > 0 ? findAlignments(alignMinLength) : [];
-            const squareMatches = squareMatchEnabled ? findSquareMatches() : [];
-            const allMatches = [...alignments, ...squareMatches];
-            
-            if (allMatches.length === 0) return false;
+        function vanishAlignedPastilles(){
+            const alignments=alignMinLength>0?findAlignments(alignMinLength):[];
+            const squareMatches=squareMatchEnabled?findSquareMatches():[];
+            const allMatches=[...alignments,...squareMatches];
+            if(allMatches.length===0)return false;
             
             playVanishSound();
+            const toVanish=new Set();
+            let centerVanishes=false;
             
-            const toVanish = new Set();
-            let centerVanishes = false;
-            
-            for (const match of allMatches) {
-                for (const cell of match.cells) {
-                    if (cell.type === 'crown') {
-                        toVanish.add(`${cell.crown}-${cell.index}`);
-                    } else if (cell.type === 'center') {
-                        centerVanishes = true;
-                    }
+            for(const match of allMatches){
+                for(const cell of match.cells){
+                    if(cell.type==='crown')toVanish.add(`${cell.crown}-${cell.index}`);
+                    else if(cell.type==='center')centerVanishes=true;
                 }
             }
             
-            for (const key of toVanish) {
-                const [crown, index] = key.split('-').map(Number);
-                if (data[crown][index] && data[crown][index].elem) {
-                    data[crown][index].elem.classList.add('vanishing');
-                    data[crown][index].value = null;
-                }
+            for(const key of toVanish){
+                const[crown,index]=key.split('-').map(Number);
+                if(data[crown][index]&&data[crown][index].elem){data[crown][index].elem.classList.add('vanishing');data[crown][index].value=null;}
             }
             
-            if (centerVanishes && centerData) {
-                const sun = document.getElementById('centerSun');
+            if(centerVanishes&&centerData){
+                const sun=document.getElementById('centerSun');
                 sun.classList.add('vanishing');
-                centerData = null;
-                
-                setTimeout(() => {
-                    sun.classList.remove('vanishing');
-                    updateCenterDisplay();
-                }, 500);
+                centerData=null;
+                setTimeout(()=>{sun.classList.remove('vanishing');updateCenterDisplay();},500);
             }
             
-            setTimeout(() => {
-                for (const key of toVanish) {
-                    const [crown, index] = key.split('-').map(Number);
-                    if (data[crown][index] && data[crown][index].anchor) {
-                        data[crown][index].anchor.remove();
-                        data[crown][index] = null;
-                    }
+            setTimeout(()=>{
+                for(const key of toVanish){
+                    const[crown,index]=key.split('-').map(Number);
+                    if(data[crown][index]&&data[crown][index].anchor){data[crown][index].anchor.remove();data[crown][index]=null;}
                 }
-            }, 500);
-            
+            },500);
             return true;
         }
         
-        // ============ PASTILLES ============
-        
-        function createPastille(colorIdx, crown, index){
-            const anchor = document.createElement('div');
-            anchor.className = 'pastille-anchor';
-            anchor.style.cssText = `position:absolute;width:${sizeAncrage}px;height:${sizeAncrage}px;display:flex;align-items:center;justify-content:center;`;
-            anchor.dataset.crown = crown;
-            anchor.dataset.index = index;
-            
-            const elem = document.createElement('div');
-            elem.className = 'pastille';
-            elem.style.cssText = `width:${sizePastille}px;height:${sizePastille}px;border-radius:${radiusPastille}%;background:${pastilleColors[colorIdx]};position:relative;`;
+        function createPastille(colorIdx,crown,index){
+            const anchor=document.createElement('div');
+            anchor.className='pastille-anchor';
+            anchor.style.cssText=`position:absolute;width:${sizeAncrage}px;height:${sizeAncrage}px;display:flex;align-items:center;justify-content:center;`;
+            anchor.dataset.crown=crown;
+            anchor.dataset.index=index;
+            const elem=document.createElement('div');
+            elem.className='pastille';
+            elem.style.cssText=`width:${sizePastille}px;height:${sizePastille}px;border-radius:${radiusPastille}%;background:${pastilleColors[colorIdx]};position:relative;`;
             anchor.appendChild(elem);
             document.getElementById('gameArea').appendChild(anchor);
-            return {anchor, elem};
+            return{anchor,elem};
         }
         
-        function positionPastille(anchor, crown, index){
-            const pos = getPositionOnSquare(crown, index);
-            anchor.style.left = (pos.x - sizeAncrage/2) + 'px';
-            anchor.style.top = (pos.y - sizeAncrage/2) + 'px';
+        function positionPastille(anchor,crown,index){
+            const pos=getPositionOnSquare(crown,index);
+            anchor.style.left=(pos.x-sizeAncrage/2)+'px';
+            anchor.style.top=(pos.y-sizeAncrage/2)+'px';
         }
         
         function updateAllPositions(){
-            for(let c = 0; c < 3; c++) {
-                for(let i = 0; i < data[c].length; i++) {
-                    if(data[c][i] && data[c][i].anchor) {
-                        positionPastille(data[c][i].anchor, c, i);
-                    }
-                }
-            }
+            for(let c=0;c<3;c++)for(let i=0;i<data[c].length;i++)if(data[c][i]&&data[c][i].anchor)positionPastille(data[c][i].anchor,c,i);
         }
         
         function updateCenterDisplay(){
-            const sun = document.getElementById('centerSun');
-            sun.style.width = sizePastille + 'px';
-            sun.style.height = sizePastille + 'px';
-            sun.style.borderRadius = radiusPastille + '%';
-            
-            if (centerData && centerData.value !== null) {
-                sun.style.background = pastilleColors[centerData.value];
-                sun.style.opacity = '1';
-                sun.style.boxShadow = '0 2px 6px rgba(0,0,0,0.3)';
-                sun.style.cursor = 'grab';
-            } else {
-                sun.style.background = 'rgba(200,200,200,0.3)';
-                sun.style.opacity = '0.5';
-                sun.style.boxShadow = 'none';
-                sun.style.cursor = 'default';
+            const sun=document.getElementById('centerSun');
+            sun.style.width=sizePastille+'px';
+            sun.style.height=sizePastille+'px';
+            sun.style.borderRadius=radiusPastille+'%';
+            if(centerData&&centerData.value!==null){
+                sun.style.background=pastilleColors[centerData.value];
+                sun.style.opacity='1';
+                sun.style.boxShadow='0 2px 6px rgba(0,0,0,0.3)';
+                sun.style.cursor='grab';
+            }else{
+                sun.style.background='rgba(200,200,200,0.3)';
+                sun.style.opacity='0.5';
+                sun.style.boxShadow='none';
+                sun.style.cursor='default';
             }
         }
         
         function updateSizes(){
-            sizePastille = parseInt(document.getElementById('sizePastille').value);
-            sizeAncrage = sizePastille * 2;
-            radiusPastille = 15;
-            
-            document.getElementById('sizeValue').textContent = sizePastille;
-            
-            for(let c = 0; c < 3; c++) {
-                for(let i = 0; i < data[c].length; i++) {
-                    if(!data[c][i]) continue;
-                    const {anchor, elem} = data[c][i];
-                    if(anchor && elem) {
-                        anchor.style.width = sizeAncrage + 'px';
-                        anchor.style.height = sizeAncrage + 'px';
-                        elem.style.width = sizePastille + 'px';
-                        elem.style.height = sizePastille + 'px';
-                        elem.style.borderRadius = radiusPastille + '%';
-                    }
+            sizePastille=parseInt(document.getElementById('sizePastille').value);
+            sizeAncrage=sizePastille*2;
+            document.getElementById('sizeValue').textContent=sizePastille;
+            for(let c=0;c<3;c++){
+                for(let i=0;i<data[c].length;i++){
+                    if(!data[c][i])continue;
+                    const{anchor,elem}=data[c][i];
+                    if(anchor&&elem){anchor.style.width=sizeAncrage+'px';anchor.style.height=sizeAncrage+'px';elem.style.width=sizePastille+'px';elem.style.height=sizePastille+'px';elem.style.borderRadius=radiusPastille+'%';}
                 }
             }
-            
             updateCenterDisplay();
             updateAllPositions();
         }
         
-        function toggleRails(){
-            document.querySelectorAll('.rail').forEach(r => 
-                r.style.opacity = document.getElementById('showRails').checked ? '1' : '0'
-            );
-        }
+        function toggleRails(){document.querySelectorAll('.rail').forEach(r=>r.style.opacity=document.getElementById('showRails').checked?'1':'0');}
         
-        // ============ DRAG HANDLING ============
-        
-        let activeDrag = null;
-        function getAngle(x, y){ return Math.atan2(y - cy, x - cx); }
+        let activeDrag=null;
+        function getAngle(x,y){return Math.atan2(y-cy,x-cx);}
         
         function handleStart(e){
-            if (isMatrixRotating || isLocalRotating) return;
-            
-            const target = e.target, ga = document.getElementById('gameArea'), rect = ga.getBoundingClientRect();
-            const px = e.touches ? e.touches[0].clientX : e.clientX;
-            const py = e.touches ? e.touches[0].clientY : e.clientY;
-            const x = px - rect.left, y = py - rect.top;
+            if(isMatrixRotating||isLocalRotating)return;
+            const target=e.target,ga=document.getElementById('gameArea'),rect=ga.getBoundingClientRect();
+            const px=e.touches?e.touches[0].clientX:e.clientX;
+            const py=e.touches?e.touches[0].clientY:e.clientY;
+            const x=px-rect.left,y=py-rect.top;
             initAudio();
             
-            if(target.id === 'centerSun'){
-                if(!centerData || centerData.value === null){
-                    e.preventDefault(); return;
-                }
-                activeDrag = {type:'diagonal', row: 3, col: 3, startX:x, startY:y, isCenter: true};
+            if(target.id==='centerSun'){
+                if(!centerData||centerData.value===null){e.preventDefault();return;}
+                activeDrag={type:'diagonal',row:3,col:3,startX:x,startY:y,isCenter:true};
                 target.classList.add('dragging');
-                e.preventDefault(); return;
+                e.preventDefault();return;
             }
             
-            let anchor = null;
-            if(target.classList.contains('pastille')) anchor = target.parentElement;
-            else if(target.classList.contains('pastille-anchor')) anchor = target;
+            let anchor=null;
+            if(target.classList.contains('pastille'))anchor=target.parentElement;
+            else if(target.classList.contains('pastille-anchor'))anchor=target;
             
             if(anchor){
-                const crown = parseInt(anchor.dataset.crown), index = parseInt(anchor.dataset.index);
-                if(!data[crown][index] || data[crown][index].value === null) return;
-                
-                const [row, col] = getGridPosition(crown, index);
-                const pos = getPositionOnSquare(crown, index);
-                
-                activeDrag = {
-                    type: 'detect', 
-                    anchor, 
-                    crown, 
-                    index, 
-                    row, 
-                    col,
-                    startX: x, 
-                    startY: y, 
-                    posX: pos.x, 
-                    posY: pos.y
-                };
+                const crown=parseInt(anchor.dataset.crown),index=parseInt(anchor.dataset.index);
+                if(!data[crown][index]||data[crown][index].value===null)return;
+                const[row,col]=getGridPosition(crown,index);
+                const pos=getPositionOnSquare(crown,index);
+                activeDrag={type:'detect',anchor,crown,index,row,col,startX:x,startY:y,posX:pos.x,posY:pos.y};
                 e.preventDefault();
             }
         }
         
         function handleMove(e){
-            if(!activeDrag || isMatrixRotating || isLocalRotating) return;
-            const ga = document.getElementById('gameArea'), rect = ga.getBoundingClientRect();
-            const px = e.touches ? e.touches[0].clientX : e.clientX;
-            const py = e.touches ? e.touches[0].clientY : e.clientY;
-            const x = px - rect.left, y = py - rect.top;
-            const dx = x - activeDrag.startX, dy = y - activeDrag.startY, dist = Math.sqrt(dx*dx + dy*dy);
+            if(!activeDrag||isMatrixRotating||isLocalRotating)return;
+            const ga=document.getElementById('gameArea'),rect=ga.getBoundingClientRect();
+            const px=e.touches?e.touches[0].clientX:e.clientX;
+            const py=e.touches?e.touches[0].clientY:e.clientY;
+            const x=px-rect.left,y=py-rect.top;
+            const dx=x-activeDrag.startX,dy=y-activeDrag.startY,dist=Math.sqrt(dx*dx+dy*dy);
             
-            if((activeDrag.type === 'diagonal' || activeDrag.type === 'detect') && dist > 15){
-                const row = activeDrag.row !== undefined ? activeDrag.row : getGridPosition(activeDrag.crown, activeDrag.index)[0];
-                const col = activeDrag.col !== undefined ? activeDrag.col : getGridPosition(activeDrag.crown, activeDrag.index)[1];
+            if((activeDrag.type==='diagonal'||activeDrag.type==='detect')&&dist>15){
+                const row=activeDrag.row!==undefined?activeDrag.row:getGridPosition(activeDrag.crown,activeDrag.index)[0];
+                const col=activeDrag.col!==undefined?activeDrag.col:getGridPosition(activeDrag.crown,activeDrag.index)[1];
+                const diagDirection=detectDiagonalDirection(dx,dy);
                 
-                const diagDirection = detectDiagonalDirection(dx, dy);
-                
-                if (diagDirection) {
-                    attemptDiagonalRotation(row, col, dx, dy);
-                    activeDrag = null;
+                if(diagDirection){
+                    attemptDiagonalRotation(row,col,dx,dy,dist);
+                    activeDrag=null;
                     document.getElementById('centerSun').classList.remove('dragging');
-                } else {
-                    if (activeDrag.type === 'detect' && activeDrag.crown !== undefined) {
-                        const radialDirX = activeDrag.posX - cx, radialDirY = activeDrag.posY - cy;
-                        const radialLen = Math.sqrt(radialDirX*radialDirX + radialDirY*radialDirY);
-                        const tangentNormX = -radialDirY/radialLen, tangentNormY = radialDirX/radialLen;
-                        const dragNormX = dx/dist, dragNormY = dy/dist;
-                        const tangentProj = Math.abs(dragNormX*tangentNormX + dragNormY*tangentNormY);
+                }else{
+                    if(activeDrag.type==='detect'&&activeDrag.crown!==undefined){
+                        const radialDirX=activeDrag.posX-cx,radialDirY=activeDrag.posY-cy;
+                        const radialLen=Math.sqrt(radialDirX*radialDirX+radialDirY*radialDirY);
+                        const tangentNormX=-radialDirY/radialLen,tangentNormY=radialDirX/radialLen;
+                        const dragNormX=dx/dist,dragNormY=dy/dist;
+                        const tangentProj=Math.abs(dragNormX*tangentNormX+dragNormY*tangentNormY);
                         
-                        if (tangentProj > 0.7) {
-                            activeDrag.type = 'crownRotation';
-                            activeDrag.startAngle = getAngle(x, y);
-                            activeDrag.startOffset = offsets[activeDrag.crown];
-                            const railClass = ['rail-c1','rail-c2','rail-c3'][activeDrag.crown];
-                            const rail = document.querySelector('.' + railClass);
-                            if(rail) rail.classList.add('dragging');
+                        if(tangentProj>0.7){
+                            activeDrag.type='crownRotation';
+                            activeDrag.startAngle=getAngle(x,y);
+                            activeDrag.startOffset=offsets[activeDrag.crown];
+                            const railClass=['rail-c1','rail-c2','rail-c3'][activeDrag.crown];
+                            const rail=document.querySelector('.'+railClass);
+                            if(rail)rail.classList.add('dragging');
                         }
                     }
                 }
             }
             
-            if(activeDrag && activeDrag.type === 'crownRotation'){
-                const currentAngle = getAngle(x, y);
-                let deltaAngle = currentAngle - activeDrag.startAngle;
-                if(deltaAngle > Math.PI) deltaAngle -= 2*Math.PI;
-                if(deltaAngle < -Math.PI) deltaAngle += 2*Math.PI;
-                const count = crowns[activeDrag.crown].count;
-                const deltaPositions = (deltaAngle / (2*Math.PI)) * count;
-                const oldSnap = Math.round(offsets[activeDrag.crown]);
-                offsets[activeDrag.crown] = activeDrag.startOffset + deltaPositions;
-                if(Math.round(offsets[activeDrag.crown]) !== oldSnap) playTick();
+            if(activeDrag&&activeDrag.type==='crownRotation'){
+                const currentAngle=getAngle(x,y);
+                let deltaAngle=currentAngle-activeDrag.startAngle;
+                if(deltaAngle>Math.PI)deltaAngle-=2*Math.PI;
+                if(deltaAngle<-Math.PI)deltaAngle+=2*Math.PI;
+                const count=crowns[activeDrag.crown].count;
+                const deltaPositions=(deltaAngle/(2*Math.PI))*count;
+                const oldSnap=Math.round(offsets[activeDrag.crown]);
+                offsets[activeDrag.crown]=activeDrag.startOffset+deltaPositions;
+                if(Math.round(offsets[activeDrag.crown])!==oldSnap)playTick();
                 updateAllPositions();
             }
-            
             e.preventDefault();
         }
         
         function handleEnd(e){
-            if(!activeDrag) return;
-            
-            if(activeDrag.type === 'crownRotation'){
-                const crown = activeDrag.crown, count = crowns[crown].count;
-                const railClass = ['rail-c1','rail-c2','rail-c3'][crown];
-                const rail = document.querySelector('.' + railClass);
-                if(rail){ rail.classList.remove('dragging'); rail.classList.add('snapping'); setTimeout(() => rail.classList.remove('snapping'), 300); }
-                const targetOffset = Math.round(offsets[crown]) % count;
-                const startOffset = offsets[crown], startTime = performance.now();
+            if(!activeDrag)return;
+            if(activeDrag.type==='crownRotation'){
+                const crown=activeDrag.crown,count=crowns[crown].count;
+                const railClass=['rail-c1','rail-c2','rail-c3'][crown];
+                const rail=document.querySelector('.'+railClass);
+                if(rail){rail.classList.remove('dragging');rail.classList.add('snapping');setTimeout(()=>rail.classList.remove('snapping'),300);}
+                const targetOffset=Math.round(offsets[crown])%count;
+                const startOffset=offsets[crown],startTime=performance.now();
                 
                 function animSnap(t){
-                    const p = Math.min((t - startTime) / 150, 1), eased = 1 - Math.pow(1-p, 3);
-                    offsets[crown] = startOffset + (targetOffset - startOffset) * eased;
+                    const p=Math.min((t-startTime)/150,1),eased=1-Math.pow(1-p,3);
+                    offsets[crown]=startOffset+(targetOffset-startOffset)*eased;
                     updateAllPositions();
-                    if(p < 1) requestAnimationFrame(animSnap);
-                    else {
-                        offsets[crown] = targetOffset;
-                        setTimeout(() => vanishAlignedPastilles(), 100);
-                    }
+                    if(p<1)requestAnimationFrame(animSnap);
+                    else{offsets[crown]=targetOffset;setTimeout(()=>vanishAlignedPastilles(),100);}
                 }
                 requestAnimationFrame(animSnap);
             }
-            
             document.getElementById('centerSun').classList.remove('dragging');
-            activeDrag = null;
+            activeDrag=null;
         }
         
-        // ============ INIT ============
-        
         function resetGame(){
-            isLocalRotating = false;
+            isLocalRotating=false;
             document.getElementById('localRotationIndicator').classList.remove('visible');
-            
-            const gameArea = document.getElementById('gameArea');
-            const centerSun = document.getElementById('centerSun');
-            gameArea.style.transform = 'rotate(0deg)';
-            centerSun.style.transform = 'translate(-50%, -50%)';
-            centerSun.style.left = '50%';
-            centerSun.style.top = '50%';
-            
+            const gameArea=document.getElementById('gameArea');
+            const centerSun=document.getElementById('centerSun');
+            gameArea.style.transform='rotate(0deg)';
+            centerSun.style.transform='translate(-50%,-50%)';
+            centerSun.style.left='50%';
+            centerSun.style.top='50%';
             loadInitialGrid();
         }
         
@@ -1620,18 +955,17 @@
             updateDimensions();
             updateRotationSpeed();
             loadInitialGrid();
-            initMatrixRotationZones();
         }
         
-        window.addEventListener('resize', () => { updateDimensions(); updateAllPositions(); });
+        window.addEventListener('resize',()=>{updateDimensions();updateAllPositions();});
         
-        const ga = document.getElementById('gameArea');
-        ga.addEventListener('mousedown', handleStart);
-        ga.addEventListener('touchstart', handleStart, {passive: false});
-        document.addEventListener('mousemove', handleMove);
-        document.addEventListener('touchmove', handleMove, {passive: false});
-        document.addEventListener('mouseup', handleEnd);
-        document.addEventListener('touchend', handleEnd);
+        const ga=document.getElementById('gameArea');
+        ga.addEventListener('mousedown',handleStart);
+        ga.addEventListener('touchstart',handleStart,{passive:false});
+        document.addEventListener('mousemove',handleMove);
+        document.addEventListener('touchmove',handleMove,{passive:false});
+        document.addEventListener('mouseup',handleEnd);
+        document.addEventListener('touchend',handleEnd);
         
         init();
     </script>
