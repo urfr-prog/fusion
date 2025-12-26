@@ -22,20 +22,23 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            width: 100%;
         }
         
         /* Conteneur principal avec zones de rotation */
         .main-game-wrapper {
             display: flex;
-            align-items: center;
+            align-items: stretch; /* Les zones s'étirent sur toute la hauteur */
             justify-content: center;
             gap: 0;
+            height: min(90vw, 50vh); /* Hauteur fixe pour les zones */
         }
         
-        /* Zones de rotation latérales - transparentes et invisibles */
+        /* Zones de rotation latérales - transparentes, hauteur étendue */
         .rotation-zone {
-            width: 40px;
-            height: min(85vw, 45vh);
+            width: 50px;
+            height: 100%; /* Prend toute la hauteur disponible */
+            min-height: min(85vw, 45vh);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -43,7 +46,7 @@
             cursor: grab;
             user-select: none;
             position: relative;
-            /* Pas de fond, pas de bordure, pas de transition */
+            /* Totalement transparent */
         }
         
         .rotation-zone:hover {
@@ -52,15 +55,15 @@
         
         .rotation-zone.active {
             cursor: grabbing;
-            /* Pas de fond gris au touch */
+            /* Pas de fond au touch */
         }
         
         .rotation-zone-left {
-            /* Pas de bordure pointillée */
+            /* Rien */
         }
         
         .rotation-zone-right {
-            /* Pas de bordure pointillée */
+            /* Rien */
         }
         
         /* Indicateurs cachés */
@@ -70,20 +73,17 @@
         }
         
         .game-container { 
-            background: #ffffff; 
-            border-radius: 8%; 
-            box-shadow: 0 8px 30px rgba(0,0,0,0.12); 
+            /* Conteneur invisible - plus de fond blanc arrondi */
             position: relative; 
-            overflow: visible; /* Permettre aux pastilles de dépasser */
+            overflow: visible;
         }
         
         .game-area { 
             position: relative; 
             width: min(85vw, 45vh); 
             height: min(85vw, 45vh);
-            background: #ffffff; 
-            border-radius: 8%; 
-            overflow: visible; /* Permettre aux pastilles de dépasser pendant rotation */
+            /* Plus de fond ni bordure - transparent */
+            overflow: visible;
             transition: transform var(--rotation-duration, 0.4s) cubic-bezier(0.4, 0, 0.2, 1);
         }
         
