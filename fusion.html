@@ -106,6 +106,19 @@
             transition: opacity 0.15s;
         }
         .local-rotation-indicator.visible { opacity: 1; }
+        .local-rotation-indicator.continuous {
+            border-color: rgba(255, 165, 0, 0.9);
+            background: rgba(255, 165, 0, 0.15);
+            box-shadow: 0 0 15px rgba(255, 165, 0, 0.4);
+        }
+        
+        .slider-xl { flex: 1; min-width: 180px; max-width: 280px; }
+        .diagonal-controls {
+            background: rgba(255, 165, 0, 0.1);
+            padding: 6px 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 165, 0, 0.3);
+        }
         .rail-c1 { top: 11.4%; left: 11.4%; right: 11.4%; bottom: 11.4%; }
         .rail-c2 { top: 24.3%; left: 24.3%; right: 24.3%; bottom: 24.3%; }
         .rail-c3 { top: 37.1%; left: 37.1%; right: 37.1%; bottom: 37.1%; }
@@ -326,6 +339,20 @@
                 <span class="control-value" id="sizeValue">32</span>
             </div>
         </div>
+        <div class="controls diagonal-controls">
+            <div class="control-item slider-xl">
+                <label title="Zone de détection diagonale">⤡ Zone</label>
+                <input type="range" id="diagSensitivity" min="10" max="90" value="50" step="1" oninput="updateDiagSensitivity()" class="slider-touch">
+                <span class="control-value" id="diagSensValue">50%</span>
+            </div>
+        </div>
+        <div class="controls diagonal-controls">
+            <div class="control-item slider-xl">
+                <label title="Vitesse de rotation continue">⟳ Vitesse</label>
+                <input type="range" id="contRotSpeed" min="500" max="1500" value="500" step="50" oninput="updateContRotSpeed()" class="slider-touch">
+                <span class="control-value" id="contRotSpeedValue">500ms</span>
+            </div>
+        </div>
         <div class="controls">
             <div class="control-item rotation-controls">
                 <label>🔄</label>
@@ -432,6 +459,29 @@
         let diagAlignEnabled = true; // Toggle pour les diagonales dans findAlignments
         let rotationDuration = 400;
         let gravityEnabled = true;
+        
+        // ============ PARAMÈTRES DIAGONAUX ============
+        let diagSensitivity = 50;
+        let continuousRotationSpeed = 500;
+        let continuousRotationState = null;
+        let continuousRotationTimer = null;
+        
+        function updateDiagSensitivity() {
+            diagSensitivity = parseInt(document.getElementById('diagSensitivity').value);
+            document.getElementById('diagSensValue').textContent = diagSensitivity + '%';
+        }
+        
+        function updateContRotSpeed() {
+            continuousRotationSpeed = parseInt(document.getElementById('contRotSpeed').value);
+            document.getElementById('contRotSpeedValue').textContent = continuousRotationSpeed + 'ms';
+        }
+        
+        function stopContinuousRotation() {
+            if (continuousRotationTimer) { clearTimeout(continuousRotationTimer); continuousRotationTimer = null; }
+            continuousRotationState = null;
+            document.getElementById('localRotationIndicator').classList.remove('visible', 'continuous');
+            setTimeout(() => vanishAlignedPastilles(), 100);
+        }
         
         // ============ ROTATION MATRICIELLE ============
         
@@ -912,7 +962,13 @@
             
             if (absDx < 5 || absDy < 5) return null;
             const ratio = absDx / absDy;
-            if (ratio < 0.3 || ratio > 3) return null;
+            
+            // Seuils basés sur diagSensitivity (10-90)
+            // 50 = équilibré (ratio 0.3-3.0 original)
+            const minRatio = 0.7 - (diagSensitivity / 100) * 0.6;
+            const maxRatio = 1.4 + (diagSensitivity / 100) * 8.6;
+            
+            if (ratio < minRatio || ratio > maxRatio) return null;
             
             if (dy < 0 && dx > 0) return 'upRight';
             if (dy < 0 && dx < 0) return 'upLeft';
@@ -933,7 +989,7 @@
             return available;
         }
         
-        function executeLocalRotation(group, clockwise) {
+        function executeLocalRotation(group, clockwise, callback) {
             if (isLocalRotating) return;
             isLocalRotating = true;
             
@@ -943,6 +999,7 @@
             indicator.style.width = (cellSize * 2 - 4) + 'px';
             indicator.style.height = (cellSize * 2 - 4) + 'px';
             indicator.classList.add('visible');
+            if (continuousRotationState) indicator.classList.add('continuous');
             
             playLocalRotationSound();
             
@@ -990,7 +1047,8 @@
                 }
             }
             
-            const duration = 180;
+            // Durée d'animation : 70% du temps total en mode continu, 180ms en mode simple
+            const duration = continuousRotationState ? continuousRotationSpeed * 0.7 : 180;
             const startTime = performance.now();
             
             function animate(currentTime) {
@@ -1008,11 +1066,11 @@
                 
                 // Animer le centre visuellement
                 if (centerInGroup && centerStartPos && centerEndPos) {
-                    const cx = centerStartPos.x + (centerEndPos.x - centerStartPos.x) * eased;
-                    const cy = centerStartPos.y + (centerEndPos.y - centerStartPos.y) * eased;
+                    const ccx = centerStartPos.x + (centerEndPos.x - centerStartPos.x) * eased;
+                    const ccy = centerStartPos.y + (centerEndPos.y - centerStartPos.y) * eased;
                     // Convertir en pourcentage pour le positionnement du centre
-                    const leftPercent = (cx / canvasSize) * 100;
-                    const topPercent = (cy / canvasSize) * 100;
+                    const leftPercent = (ccx / canvasSize) * 100;
+                    const topPercent = (ccy / canvasSize) * 100;
                     centerSun.style.left = leftPercent + '%';
                     centerSun.style.top = topPercent + '%';
                 }
@@ -1020,14 +1078,14 @@
                 if (progress < 1) {
                     requestAnimationFrame(animate);
                 } else {
-                    finishLocalRotation(group, cells, newIndices, centerInGroup);
+                    finishLocalRotation(group, cells, newIndices, centerInGroup, callback);
                 }
             }
             
             requestAnimationFrame(animate);
         }
         
-        function finishLocalRotation(group, cells, newIndices, centerInGroup) {
+        function finishLocalRotation(group, cells, newIndices, centerInGroup, callback) {
             const newColors = [null, null, null, null];
             for (let i = 0; i < 4; i++) {
                 newColors[newIndices[i]] = cells[i].color;
@@ -1069,10 +1127,16 @@
             updateCenterDisplay();
             
             const indicator = document.getElementById('localRotationIndicator');
-            indicator.classList.remove('visible');
+            if (!continuousRotationState) {
+                indicator.classList.remove('visible', 'continuous');
+            }
             isLocalRotating = false;
             
-            setTimeout(() => vanishAlignedPastilles(), 100);
+            if (callback) {
+                callback();
+            } else {
+                setTimeout(() => vanishAlignedPastilles(), 100);
+            }
         }
         
         function attemptDiagonalRotation(row, col, dx, dy) {
@@ -1105,7 +1169,30 @@
             }
             
             const clockwise = getDiagonalRotationDirection(diagDirection);
-            executeLocalRotation(group, clockwise);
+            
+            // Démarrer la rotation continue
+            continuousRotationState = { row, col, diagDirection };
+            
+            function executeContinuousStep() {
+                if (!continuousRotationState) return;
+                
+                const grp = calculateDiagonalRotationGroup(continuousRotationState.row, continuousRotationState.col, continuousRotationState.diagDirection);
+                if (!grp) { stopContinuousRotation(); return; }
+                
+                let cnt = 0;
+                for (const [r, c] of grp.positions) { if (getColorAt(r, c) !== null) cnt++; }
+                if (cnt < 2) { stopContinuousRotation(); return; }
+                
+                const cw = getDiagonalRotationDirection(continuousRotationState.diagDirection);
+                executeLocalRotation(grp, cw, () => {
+                    if (continuousRotationState) {
+                        // Petit délai de 30% du temps pour laisser respirer entre les rotations
+                        continuousRotationTimer = setTimeout(executeContinuousStep, continuousRotationSpeed * 0.3);
+                    }
+                });
+            }
+            
+            executeContinuousStep();
             return true;
         }
         
@@ -1545,6 +1632,11 @@
         }
         
         function handleEnd(e){
+            // Arrêter la rotation continue si active
+            if (continuousRotationState) {
+                stopContinuousRotation();
+            }
+            
             if(!activeDrag) return;
             
             if(activeDrag.type === 'crownRotation'){
@@ -1575,8 +1667,9 @@
         // ============ INIT ============
         
         function resetGame(){
+            stopContinuousRotation();
             isLocalRotating = false;
-            document.getElementById('localRotationIndicator').classList.remove('visible');
+            document.getElementById('localRotationIndicator').classList.remove('visible', 'continuous');
             
             const gameArea = document.getElementById('gameArea');
             const centerSun = document.getElementById('centerSun');
@@ -1591,6 +1684,8 @@
         function init(){
             updateDimensions();
             updateRotationSpeed();
+            updateDiagSensitivity();
+            updateContRotSpeed();
             loadInitialGrid();
             initMatrixRotationZones();
         }
