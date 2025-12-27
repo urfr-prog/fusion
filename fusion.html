@@ -1005,15 +1005,61 @@
             };
         }
         
-        function getDiagonalRotationDirection(diagDirection) {
+        function getDiagonalRotationDirection(diagDirection, sourceRow, sourceCol, zone) {
+            // Logique cadran téléphonique : le sens dépend de la position dans la zone
             // true = horaire (clockwise), false = anti-horaire
-            switch(diagDirection) {
-                case 'upRight': return true;    // ↗ = horaire ✓
-                case 'upLeft': return false;    // ↖ = anti-horaire ✓
-                case 'downRight': return true;  // ↘ = horaire (inversé)
-                case 'downLeft': return false;  // ↙ = anti-horaire (inversé)
-                default: return true;
+            
+            // Position relative dans la zone 3x3
+            const relRow = sourceRow - zone.topRow; // 0, 1, ou 2
+            const relCol = sourceCol - zone.topCol; // 0, 1, ou 2
+            
+            // Position 1 : haut-centre (relRow=0, relCol=1)
+            if (relRow === 0 && relCol === 1) {
+                if (diagDirection === 'downLeft') return false;  // anti-horaire
+                if (diagDirection === 'downRight') return true;  // horaire
             }
+            
+            // Position 2 : milieu-gauche (relRow=1, relCol=0)
+            if (relRow === 1 && relCol === 0) {
+                if (diagDirection === 'upRight') return true;    // horaire
+                if (diagDirection === 'downRight') return true;  // horaire
+            }
+            
+            // Position 3 : milieu-droite (relRow=1, relCol=2)
+            if (relRow === 1 && relCol === 2) {
+                if (diagDirection === 'upLeft') return false;    // anti-horaire
+                if (diagDirection === 'downLeft') return false;  // anti-horaire
+            }
+            
+            // Position 4 : bas-centre (relRow=2, relCol=1)
+            if (relRow === 2 && relCol === 1) {
+                if (diagDirection === 'upLeft') return true;     // horaire
+                if (diagDirection === 'upRight') return false;   // anti-horaire
+            }
+            
+            // Coins : logique standard
+            // Coin haut-gauche (0,0)
+            if (relRow === 0 && relCol === 0) {
+                if (diagDirection === 'downRight') return true;  // horaire
+            }
+            
+            // Coin haut-droite (0,2)
+            if (relRow === 0 && relCol === 2) {
+                if (diagDirection === 'downLeft') return false;  // anti-horaire
+            }
+            
+            // Coin bas-gauche (2,0)
+            if (relRow === 2 && relCol === 0) {
+                if (diagDirection === 'upRight') return false;   // anti-horaire
+            }
+            
+            // Coin bas-droite (2,2)
+            if (relRow === 2 && relCol === 2) {
+                if (diagDirection === 'upLeft') return true;     // horaire
+            }
+            
+            // Défaut (ne devrait pas arriver)
+            return true;
         }
         
         function detectDiagonalDirection(dx, dy) {
@@ -1265,22 +1311,22 @@
                 return false;
             }
             
-            const clockwise = getDiagonalRotationDirection(diagDirection);
+            const clockwise = getDiagonalRotationDirection(diagDirection, row, col, group);
             
             // Démarrer la rotation continue
-            continuousRotationState = { row, col, diagDirection };
+            continuousRotationState = { row, col, diagDirection, group };
             
             function executeContinuousStep() {
                 if (!continuousRotationState) return;
                 
-                const grp = calculateDiagonalRotationGroup(continuousRotationState.row, continuousRotationState.col, continuousRotationState.diagDirection);
+                const grp = continuousRotationState.group;
                 if (!grp) { stopContinuousRotation(); return; }
                 
                 let cnt = 0;
                 for (const [r, c] of grp.positions) { if (getColorAt(r, c) !== null) cnt++; }
                 if (cnt < 2) { stopContinuousRotation(); return; }
                 
-                const cw = getDiagonalRotationDirection(continuousRotationState.diagDirection);
+                const cw = getDiagonalRotationDirection(continuousRotationState.diagDirection, continuousRotationState.row, continuousRotationState.col, grp);
                 executeLocalRotation(grp, cw, () => {
                     if (continuousRotationState) {
                         // Petit délai de 30% du temps pour laisser respirer entre les rotations
