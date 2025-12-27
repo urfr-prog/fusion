@@ -479,7 +479,6 @@
         function stopContinuousRotation() {
             if (continuousRotationTimer) { clearTimeout(continuousRotationTimer); continuousRotationTimer = null; }
             continuousRotationState = null;
-            document.getElementById('localRotationIndicator').classList.remove('visible', 'continuous');
             setTimeout(() => vanishAlignedPastilles(), 100);
         }
         
@@ -1101,15 +1100,6 @@
             if (isLocalRotating) return;
             isLocalRotating = true;
             
-            const indicator = document.getElementById('localRotationIndicator');
-            // Ajuster l'indicateur pour couvrir 3x3 cellules
-            indicator.style.left = (group.centerX - cellSize * 1.5) + 'px';
-            indicator.style.top = (group.centerY - cellSize * 1.5) + 'px';
-            indicator.style.width = (cellSize * 3 - 4) + 'px';
-            indicator.style.height = (cellSize * 3 - 4) + 'px';
-            indicator.classList.add('visible');
-            if (continuousRotationState) indicator.classList.add('continuous');
-            
             playLocalRotationSound();
             
             // Vérifier si le centre de la grille (3,3) fait partie du groupe
@@ -1269,10 +1259,6 @@
             
             updateCenterDisplay();
             
-            const indicator = document.getElementById('localRotationIndicator');
-            if (!continuousRotationState) {
-                indicator.classList.remove('visible', 'continuous');
-            }
             isLocalRotating = false;
             
             if (callback) {
@@ -1814,7 +1800,6 @@
         function resetGame(){
             stopContinuousRotation();
             isLocalRotating = false;
-            document.getElementById('localRotationIndicator').classList.remove('visible', 'continuous');
             
             const gameArea = document.getElementById('gameArea');
             const centerSun = document.getElementById('centerSun');
