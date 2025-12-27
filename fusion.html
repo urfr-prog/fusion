@@ -1020,15 +1020,17 @@
             }
             
             // Position 2 : milieu-gauche (relRow=1, relCol=0)
+            // Réagit uniquement aux gestes vers la droite
             if (relRow === 1 && relCol === 0) {
-                if (diagDirection === 'upRight') return true;    // horaire
-                if (diagDirection === 'downRight') return true;  // horaire
+                if (diagDirection === 'upRight') return true;     // horaire
+                if (diagDirection === 'downRight') return false;  // anti-horaire
             }
             
             // Position 3 : milieu-droite (relRow=1, relCol=2)
+            // Réagit uniquement aux gestes vers la gauche
             if (relRow === 1 && relCol === 2) {
-                if (diagDirection === 'upLeft') return false;    // anti-horaire
-                if (diagDirection === 'downLeft') return false;  // anti-horaire
+                if (diagDirection === 'upLeft') return false;     // anti-horaire
+                if (diagDirection === 'downLeft') return true;    // horaire
             }
             
             // Position 4 : bas-centre (relRow=2, relCol=1)
@@ -1842,6 +1844,7 @@
         document.addEventListener('touchmove', handleMove, {passive: false});
         document.addEventListener('mouseup', handleEnd);
         document.addEventListener('touchend', handleEnd);
+        document.addEventListener('touchcancel', handleEnd);
         
         init();
     </script>
