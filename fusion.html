@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fusion Square v8.5 - 8×8</title>
+    <title>Fusion Square v9 - Rotation 3×3</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; overflow: hidden; touch-action: none; }
@@ -12,7 +12,7 @@
             background: #ffffff; 
             min-height: 100vh; min-height: -webkit-fill-available;
             display: flex; flex-direction: column; align-items: center;
-            justify-content: center;
+            justify-content: center; /* Centrage vertical */
         }
         
         .top-zone {
@@ -25,17 +25,19 @@
             width: 100%;
         }
         
+        /* Conteneur principal avec zones de rotation */
         .main-game-wrapper {
             display: flex;
-            align-items: stretch;
+            align-items: stretch; /* Les zones s'étirent sur toute la hauteur */
             justify-content: center;
             gap: 0;
-            height: min(90vw, 50vh);
+            height: min(90vw, 50vh); /* Hauteur fixe pour les zones */
         }
         
+        /* Zones de rotation latérales - transparentes, hauteur étendue */
         .rotation-zone {
             width: 50px;
-            height: 100%;
+            height: 100%; /* Prend toute la hauteur disponible */
             min-height: min(85vw, 45vh);
             display: flex;
             flex-direction: column;
@@ -44,12 +46,34 @@
             cursor: grab;
             user-select: none;
             position: relative;
+            /* Totalement transparent */
         }
         
-        .rotation-zone.active { cursor: grabbing; }
-        .rotation-indicator, .rotation-arrow { display: none; }
+        .rotation-zone:hover {
+            /* Pas de changement visuel au hover */
+        }
+        
+        .rotation-zone.active {
+            cursor: grabbing;
+            /* Pas de fond au touch */
+        }
+        
+        .rotation-zone-left {
+            /* Rien */
+        }
+        
+        .rotation-zone-right {
+            /* Rien */
+        }
+        
+        /* Indicateurs cachés */
+        .rotation-indicator,
+        .rotation-arrow {
+            display: none;
+        }
         
         .game-container { 
+            /* Conteneur invisible - plus de fond blanc arrondi */
             position: relative; 
             overflow: visible;
         }
@@ -58,8 +82,13 @@
             position: relative; 
             width: min(85vw, 45vh); 
             height: min(85vw, 45vh);
+            /* Plus de fond ni bordure - transparent */
             overflow: visible;
             transition: transform var(--rotation-duration, 0.4s) cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .game-area.rotating {
+            /* Animation gérée par JS */
         }
         
         .rail { position: absolute; border: 2px dashed rgba(100,100,100,0.4); pointer-events: none; z-index: 2; }
@@ -83,11 +112,43 @@
             box-shadow: 0 0 15px rgba(255, 165, 0, 0.4);
         }
         
-        .slider-sm { width: 60px; }
-        .slider-xs { width: 40px; }
-        .crown-bg { background: rgba(50, 200, 100, 0.15) !important; }
-        .diag-bg { background: rgba(255, 165, 0, 0.15) !important; }
-        .matrix-bg { background: rgba(100, 100, 255, 0.15) !important; }
+        .slider-xl { flex: 1; min-width: 180px; max-width: 280px; }
+        .diagonal-controls {
+            background: rgba(255, 165, 0, 0.1);
+            padding: 6px 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 165, 0, 0.3);
+        }
+        .rail-c1 { top: 11.4%; left: 11.4%; right: 11.4%; bottom: 11.4%; }
+        .rail-c2 { top: 24.3%; left: 24.3%; right: 24.3%; bottom: 24.3%; }
+        .rail-c3 { top: 37.1%; left: 37.1%; right: 37.1%; bottom: 37.1%; }
+        
+        /* CENTRE: z-index réduit pour ne pas masquer les animations */
+        .center-sun { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            border-radius: 15%; 
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3); 
+            cursor: grab; 
+            z-index: 10; /* Même niveau que les pastilles */
+            transition: transform var(--rotation-duration, 0.4s) cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .center-sun.dragging { transform: translate(-50%, -50%) scale(1.15); box-shadow: 0 0 15px rgba(0,0,0,0.4); z-index: 100; }
+        .center-sun.arriving { animation: arriveCenter 0.4s ease-out forwards; }
+        .center-sun.vanishing { animation: vanishCenter 0.5s ease-out forwards; }
+        .center-sun.counter-rotating {
+            /* Contre-rotation appliquée par JS */
+        }
+        
+        @keyframes arriveCenter {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.2); }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+        @keyframes vanishCenter { 
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            50% { transform: translate(-50%, -50%) scale(1.3); opacity: 0.8; }
+            100% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+        }
         
         .pastille { 
             position: absolute; 
@@ -104,7 +165,10 @@
             transition: transform var(--rotation-duration, 0.4s) cubic-bezier(0.4, 0, 0.2, 1);
         }
         
-        .pastille-anchor.rotating { z-index: 50; }
+        /* Pastille en rotation locale : z-index élevé pendant l'animation */
+        .pastille-anchor.rotating {
+            z-index: 50;
+        }
         
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
         @keyframes vanish { 
@@ -118,93 +182,113 @@
             100% { transform: scale(1); opacity: 1; }
         }
         
-        .matrix-rotation-indicator { display: none; }
+        /* Indicateur de rotation de matrice - SUPPRIMÉ */
+        .matrix-rotation-indicator {
+            display: none;
+        }
+        /* Style visible supprimé */
         
+        /* Zone d'information supprimée pour centrer la matrice */
+        
+        /* Menu en bas */
         .bottom-menu { 
-            display: flex; flex-direction: column; gap: 4px; padding: 6px 8px; 
-            background: #ffffff; border-radius: 12px 12px 0 0; 
+            display: flex; flex-direction: column; gap: 6px; padding: 10px; 
+            background: #ffffff; border-radius: 15px 15px 0 0; 
             width: 100%; max-width: 100%;
             flex-shrink: 0;
-            margin-top: auto;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
+            margin-top: auto; /* Pousse le menu en bas */
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
         }
-        .controls { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; align-items: center; }
-        .control-item { background: rgba(100,100,150,0.1); padding: 2px 5px; border-radius: 8px; display: flex; align-items: center; gap: 2px; font-size: 0.65em; color: #333; }
-        .control-value { min-width: 18px; text-align: center; font-weight: bold; color: #667eea; font-size: 0.9em; }
-        button { padding: 4px 8px; font-size: 0.7em; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .controls { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; align-items: center; }
+        .control-item { background: rgba(100,100,150,0.1); padding: 4px 8px; border-radius: 12px; display: flex; align-items: center; gap: 4px; font-size: 0.7em; color: #333; }
+        .control-value { min-width: 20px; text-align: center; font-weight: bold; color: #667eea; }
+        button { padding: 6px 12px; font-size: 0.75em; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
         button:active { transform: scale(0.95); }
         
+        /* Boutons icônes compacts */
         .icon-btn {
-            padding: 5px 10px;
-            font-size: 1em;
-            min-width: 32px;
+            padding: 8px 12px;
+            font-size: 1.1em;
+            min-width: 40px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             cursor: pointer;
         }
         .icon-btn:active { transform: scale(0.95); }
         
-        .slider-touch, input[type="range"] {
+        /* Sliders tactiles optimisés pour iPhone */
+        .slider-large {
+            flex: 1;
+            min-width: 100px;
+            max-width: 150px;
+        }
+        
+        .slider-touch {
             -webkit-appearance: none;
             appearance: none;
-            height: 18px;
+            width: 100%;
+            height: 24px;
             background: transparent;
             cursor: pointer;
             touch-action: pan-x;
         }
         
-        .slider-touch::-webkit-slider-runnable-track, input[type="range"]::-webkit-slider-runnable-track {
+        .slider-touch::-webkit-slider-runnable-track {
             width: 100%;
-            height: 8px;
-            background: rgba(100,100,150,0.2);
-            border-radius: 4px;
+            height: 12px;
+            background: rgba(100,100,150,0.15);
+            border-radius: 6px;
         }
         
-        .slider-touch::-webkit-slider-thumb, input[type="range"]::-webkit-slider-thumb {
+        .slider-touch::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 18px;
-            height: 18px;
+            width: 28px;
+            height: 28px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 50%;
             cursor: pointer;
-            margin-top: -5px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            margin-top: -8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
         }
         
-        .slider-touch::-moz-range-track, input[type="range"]::-moz-range-track {
+        .slider-touch::-moz-range-track {
             width: 100%;
-            height: 8px;
-            background: rgba(100,100,150,0.2);
-            border-radius: 4px;
+            height: 12px;
+            background: rgba(100,100,150,0.15);
+            border-radius: 6px;
         }
         
-        .slider-touch::-moz-range-thumb, input[type="range"]::-moz-range-thumb {
-            width: 18px;
-            height: 18px;
+        .slider-touch::-moz-range-thumb {
+            width: 28px;
+            height: 28px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 50%;
             cursor: pointer;
             border: none;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
         }
         
-        .toggle-switch { position: relative; width: 28px; height: 16px; }
+        .toggle-switch { position: relative; width: 32px; height: 18px; }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
-        .toggle-slider { position: absolute; cursor: pointer; inset: 0; background-color: rgba(100,100,150,0.2); border-radius: 16px; }
-        .toggle-slider:before { position: absolute; content: ""; height: 10px; width: 10px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        .toggle-slider { position: absolute; cursor: pointer; inset: 0; background-color: rgba(100,100,150,0.2); border-radius: 18px; }
+        .toggle-slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
         input:checked + .toggle-slider { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        input:checked + .toggle-slider:before { transform: translateX(12px); }
+        input:checked + .toggle-slider:before { transform: translateX(14px); }
+        .legend { display: flex; gap: 6px; font-size: 0.6em; flex-wrap: wrap; justify-content: center; color: #333; }
+        .legend-item { display: flex; align-items: center; gap: 3px; }
+        .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
         
+        /* Boutons options */
         .option-btn {
-            padding: 3px 8px;
-            font-size: 0.65em;
+            padding: 4px 10px;
+            font-size: 0.7em;
             background: rgba(100,100,150,0.15);
             color: #333;
-            border: none;
-            border-radius: 6px;
+            border: 2px solid transparent;
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s;
         }
@@ -213,11 +297,19 @@
             color: white;
             font-weight: bold;
         }
+        
+        /* Section rotation matrix */
+        .rotation-controls {
+            background: rgba(100, 100, 255, 0.1);
+            padding: 4px 8px;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
     <div class="top-zone">
         <div class="main-game-wrapper">
+            <!-- Zone de rotation GAUCHE (transparente) -->
             <div class="rotation-zone rotation-zone-left" id="rotationZoneLeft"></div>
             
             <div class="game-container">
@@ -225,146 +317,121 @@
                     <div class="rail rail-c1"></div>
                     <div class="rail rail-c2"></div>
                     <div class="rail rail-c3"></div>
-                    <div class="rail rail-c4"></div>
+                    <div class="center-sun" id="centerSun"></div>
                     <div class="local-rotation-indicator" id="localRotationIndicator"></div>
                     <div class="matrix-rotation-indicator" id="matrixIndicator">↻ 90°</div>
                 </div>
             </div>
             
+            <!-- Zone de rotation DROITE (transparente) -->
             <div class="rotation-zone rotation-zone-right" id="rotationZoneRight"></div>
         </div>
     </div>
     
+    <!-- Zone info supprimée pour centrer la matrice -->
+    
     <div class="bottom-menu">
         <div class="controls">
             <button class="icon-btn" onclick="resetGame()">↺</button>
-            <div class="control-item">
+            <div class="control-item slider-large">
                 <label>📐</label>
-                <input type="range" id="sizePastille" min="8" max="40" value="24" oninput="updateSizes()" class="slider-sm">
-                <span class="control-value" id="sizeValue">24</span>
-            </div>
-            <div class="control-item crown-bg">
-                <label>🔘</label>
-                <input type="range" id="crownRotSpeed" min="100" max="2000" value="800" step="50" oninput="updateCrownRotSpeed()" class="slider-sm">
-                <span class="control-value" id="crownRotSpeedValue">800</span>
-            </div>
-            <div class="control-item crown-bg">
-                <label>🎯</label>
-                <input type="range" id="crownMoves" min="0" max="5" value="0" oninput="updateCrownMoves()" class="slider-xs">
-                <span class="control-value" id="crownMovesValue">∞</span>
+                <input type="range" id="sizePastille" min="10" max="50" value="32" oninput="updateSizes()" class="slider-touch">
+                <span class="control-value" id="sizeValue">32</span>
             </div>
         </div>
-        
-        <div class="controls">
-            <div class="control-item diag-bg">
-                <label>⟳</label>
-                <input type="range" id="contRotSpeed" min="200" max="2000" value="800" step="50" oninput="updateContRotSpeed()" class="slider-sm">
-                <span class="control-value" id="contRotSpeedValue">800</span>
-            </div>
-            <div class="control-item diag-bg">
-                <label>🎯</label>
-                <input type="range" id="diag2x2Moves" min="0" max="5" value="0" oninput="updateDiag2x2Moves()" class="slider-xs">
-                <span class="control-value" id="diag2x2MovesValue">∞</span>
-            </div>
-            <div class="control-item diag-bg">
-                <label>⤡</label>
-                <input type="range" id="diagSensitivity" min="10" max="90" value="20" step="1" oninput="updateDiagSensitivity()" class="slider-xs">
-                <span class="control-value" id="diagSensValue">20%</span>
+        <div class="controls diagonal-controls">
+            <div class="control-item slider-xl">
+                <label title="Zone de détection diagonale">⤡ Zone</label>
+                <input type="range" id="diagSensitivity" min="10" max="90" value="50" step="1" oninput="updateDiagSensitivity()" class="slider-touch">
+                <span class="control-value" id="diagSensValue">50%</span>
             </div>
         </div>
-        
+        <div class="controls diagonal-controls">
+            <div class="control-item slider-xl">
+                <label title="Vitesse de rotation continue">⟳ Vitesse</label>
+                <input type="range" id="contRotSpeed" min="500" max="1500" value="500" step="50" oninput="updateContRotSpeed()" class="slider-touch">
+                <span class="control-value" id="contRotSpeedValue">500ms</span>
+            </div>
+        </div>
         <div class="controls">
-            <div class="control-item matrix-bg">
+            <div class="control-item rotation-controls">
                 <label>🔄</label>
-                <input type="range" id="matrixRotSpeed" min="200" max="2000" value="800" step="50" oninput="updateMatrixRotSpeed()" class="slider-sm">
-                <span class="control-value" id="matrixRotSpeedValue">800</span>
+                <input type="range" id="rotationSpeed" min="100" max="1000" value="400" oninput="updateRotationSpeed()" style="width:60px;">
+                <span class="control-value" id="rotationSpeedValue">0.4s</span>
             </div>
-            <div class="control-item matrix-bg">
-                <label>🎯</label>
-                <input type="range" id="matrixMoves" min="0" max="5" value="0" oninput="updateMatrixMoves()" class="slider-xs">
-                <span class="control-value" id="matrixMovesValue">∞</span>
+            <button onclick="testMatrixRotation(1)">Test ↻</button>
+            <button onclick="testMatrixRotation(-1)">Test ↺</button>
+        </div>
+        <div class="controls">
+            <div class="control-item">
+                <label>Align:</label>
+                <button class="option-btn" id="align3Btn" onclick="setAlignMin(3)">3</button>
+                <button class="option-btn" id="align4Btn" onclick="setAlignMin(4)">4</button>
+                <button class="option-btn active" id="align2x2Btn" onclick="toggleSquareMatch()">2×2</button>
             </div>
-            <button class="option-btn" id="align3Btn" onclick="setAlignMin(3)">3</button>
-            <button class="option-btn" id="align4Btn" onclick="setAlignMin(4)">4</button>
-            <button class="option-btn active" id="align2x2Btn" onclick="toggleSquareMatch()">2×2</button>
-            <label class="toggle-switch" title="Diag"><input type="checkbox" id="diagAlignEnabled" checked onchange="toggleDiagAlign()"><span class="toggle-slider"></span></label>
-            <label class="toggle-switch" title="Rails"><input type="checkbox" id="showRails" checked onchange="toggleRails()"><span class="toggle-slider"></span></label>
-            <label class="toggle-switch" title="Gravité"><input type="checkbox" id="gravityEnabled" onchange="toggleGravity()"><span class="toggle-slider"></span></label>
+            <div class="control-item">
+                <label>Diag:</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="diagAlignEnabled" checked onchange="toggleDiagAlign()">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+        <div class="controls">
+            <div class="control-item"><label>Rails:</label><label class="toggle-switch"><input type="checkbox" id="showRails" checked onchange="toggleRails()"><span class="toggle-slider"></span></label></div>
+            <div class="control-item">
+                <label>Gravité:</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="gravityEnabled" checked onchange="toggleGravity()">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+        <div class="legend">
+            <div class="legend-item"><div class="legend-dot" style="background:#3498db;"></div><span>Bleu</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#f1c40f;"></div><span>Jaune</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#e74c3c;"></div><span>Rouge</span></div>
         </div>
     </div>
     
     <script>
         let canvasSize=520,cx=260,cy=260,padding,cellSize;
-        const gridSize=8; // 8x8
+        const gridSize=7;
         
         function updateDimensions(){
             const ga=document.getElementById('gameArea');
             canvasSize=ga.offsetWidth;
             cx=canvasSize/2;
             cy=canvasSize/2;
-            padding=canvasSize*0.04;
+            padding=canvasSize*0.05;
             cellSize=(canvasSize-2*padding)/gridSize;
             updateRailPositions();
         }
         
         function updateRailPositions(){
-            // Pour 8x8: 4 couronnes
             const c0 = (padding + cellSize * 0.5) / canvasSize * 100;
             const c1 = (padding + cellSize * 1.5) / canvasSize * 100;
             const c2 = (padding + cellSize * 2.5) / canvasSize * 100;
-            const c3 = (padding + cellSize * 3.5) / canvasSize * 100;
             
             const rail1 = document.querySelector('.rail-c1');
             const rail2 = document.querySelector('.rail-c2');
             const rail3 = document.querySelector('.rail-c3');
-            const rail4 = document.querySelector('.rail-c4');
             
             if(rail1) { rail1.style.top = c0+'%'; rail1.style.left = c0+'%'; rail1.style.right = c0+'%'; rail1.style.bottom = c0+'%'; }
             if(rail2) { rail2.style.top = c1+'%'; rail2.style.left = c1+'%'; rail2.style.right = c1+'%'; rail2.style.bottom = c1+'%'; }
             if(rail3) { rail3.style.top = c2+'%'; rail3.style.left = c2+'%'; rail3.style.right = c2+'%'; rail3.style.bottom = c2+'%'; }
-            if(rail4) { rail4.style.top = c3+'%'; rail4.style.left = c3+'%'; rail4.style.right = c3+'%'; rail4.style.bottom = c3+'%'; }
         }
         
-        // POSITIONS POUR GRILLE 8x8 - 4 COURONNES
-        // C1 (couronne extérieure): 28 positions sur le bord
-        const c1Positions=[
-            [0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],  // haut (0-7)
-            [1,7],[2,7],[3,7],[4,7],[5,7],[6,7],[7,7],        // droite (8-14)
-            [7,6],[7,5],[7,4],[7,3],[7,2],[7,1],[7,0],        // bas (15-21)
-            [6,0],[5,0],[4,0],[3,0],[2,0],[1,0]               // gauche (22-27)
-        ];
+        const c1Positions=[[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[1,6],[2,6],[3,6],[4,6],[5,6],[6,6],[6,5],[6,4],[6,3],[6,2],[6,1],[6,0],[5,0],[4,0],[3,0],[2,0],[1,0]];
+        const c2Positions=[[1,1],[1,2],[1,3],[1,4],[1,5],[2,5],[3,5],[4,5],[5,5],[5,4],[5,3],[5,2],[5,1],[4,1],[3,1],[2,1]];
+        const c3Positions=[[2,2],[2,3],[2,4],[3,4],[4,4],[4,3],[4,2],[3,2]];
+        const crownPositions=[c1Positions,c2Positions,c3Positions];
+        const crowns=[{count:24},{count:16},{count:8}];
         
-        // C2 (couronne 2): 20 positions
-        const c2Positions=[
-            [1,1],[1,2],[1,3],[1,4],[1,5],[1,6],  // haut (0-5)
-            [2,6],[3,6],[4,6],[5,6],[6,6],        // droite (6-10)
-            [6,5],[6,4],[6,3],[6,2],[6,1],        // bas (11-15)
-            [5,1],[4,1],[3,1],[2,1]               // gauche (16-19)
-        ];
-        
-        // C3 (couronne 3): 12 positions
-        const c3Positions=[
-            [2,2],[2,3],[2,4],[2,5],  // haut (0-3)
-            [3,5],[4,5],[5,5],        // droite (4-6)
-            [5,4],[5,3],[5,2],        // bas (7-9)
-            [4,2],[3,2]               // gauche (10-11)
-        ];
-        
-        // C4 (couronne intérieure): 4 positions au centre
-        const c4Positions=[
-            [3,3],[3,4],  // haut (0-1)
-            [4,4],[4,3]   // bas (2-3)
-        ];
-        
-        const crownPositions=[c1Positions, c2Positions, c3Positions, c4Positions];
-        const crowns=[{count:28}, {count:20}, {count:12}, {count:4}];
-        
-        // Indices des coins pour chaque couronne
         const cornerIndices = [
-            [0, 7, 14, 21],   // C1: coins de la grille 8x8
-            [0, 5, 10, 15],   // C2: coins du carré intérieur
-            [0, 3, 6, 9],     // C3: coins
-            [0, 1, 2, 3]      // C4: les 4 positions sont toutes des "coins"
+            [0, 6, 12, 18],
+            [0, 4, 8, 12],
+            [0, 2, 4, 6]
         ];
         
         function isCornerPosition(crown, index) {
@@ -374,39 +441,30 @@
             return cornerIndices[crown].includes(actualIndex);
         }
         
-        let sizePastille = 24;
-        let sizeAncrage = 48;
-        let radiusPastille = 15;
+        // DÉFAUT: taille 32
+        let sizePastille = 32;
+        let sizeAncrage = 64; // 2x sizePastille
+        let radiusPastille = 15; // Fixe
         
-        let data=[[],[],[],[]],offsets=[0,0,0,0];
-        const pastilleColors=["#3498db","#f1c40f","#e74c3c"];
+        let data=[[],[],[]],offsets=[0,0,0];
+        let centerData = null;
+        const pastilleColors=["#ffffff","#000000"]; // 0=blanc, 1=noir
         let isLocalRotating = false;
         
         // ============ PARAMÈTRES DE JEU ============
         
+        // DÉFAUT: alignMinLength = 0 (désactivé), squareMatchEnabled = true (2x2 actif)
         let alignMinLength = 0;
         let squareMatchEnabled = true;
-        let diagAlignEnabled = true;
-        let gravityEnabled = false;
+        let diagAlignEnabled = true; // Toggle pour les diagonales dans findAlignments
+        let rotationDuration = 400;
+        let gravityEnabled = true;
         
-        // ============ PARAMÈTRES ROTATION MATRICE ============
-        let matrixRotationDuration = 800;
-        let matrixMovesMax = 0;
-        let matrixMovesRemaining = 0;
-        
-        // ============ PARAMÈTRES ROTATION COURONNES ============
-        let crownRotationSpeed = 800;
-        let crownMovesMax = 0;
-        
-        // ============ PARAMÈTRES ROTATION 2x2 ============
-        let diagSensitivity = 20;
-        let continuousRotationSpeed = 800;
-        let diag2x2MovesMax = 0;
-        let diag2x2MovesRemaining = 0;
+        // ============ PARAMÈTRES DIAGONAUX ============
+        let diagSensitivity = 50;
+        let continuousRotationSpeed = 500;
         let continuousRotationState = null;
         let continuousRotationTimer = null;
-        
-        // ============ FONCTIONS DE MISE À JOUR DES CONTRÔLES ============
         
         function updateDiagSensitivity() {
             diagSensitivity = parseInt(document.getElementById('diagSensitivity').value);
@@ -418,103 +476,10 @@
             document.getElementById('contRotSpeedValue').textContent = continuousRotationSpeed + 'ms';
         }
         
-        function updateDiag2x2Moves() {
-            const newMax = parseInt(document.getElementById('diag2x2Moves').value);
-            if (newMax > diag2x2MovesMax) {
-                diag2x2MovesRemaining += (newMax - diag2x2MovesMax);
-            } else if (newMax < diag2x2MovesRemaining) {
-                diag2x2MovesRemaining = newMax;
-            }
-            diag2x2MovesMax = newMax;
-            
-            if (diag2x2MovesMax === 0) {
-                document.getElementById('diag2x2MovesValue').textContent = '∞';
-            } else {
-                document.getElementById('diag2x2MovesValue').textContent = diag2x2MovesRemaining;
-            }
-        }
-        
-        function updateDiag2x2Display() {
-            if (diag2x2MovesMax === 0) {
-                document.getElementById('diag2x2MovesValue').textContent = '∞';
-            } else {
-                document.getElementById('diag2x2MovesValue').textContent = diag2x2MovesRemaining;
-            }
-        }
-        
-        function updateMatrixRotSpeed() {
-            matrixRotationDuration = parseInt(document.getElementById('matrixRotSpeed').value);
-            document.getElementById('matrixRotSpeedValue').textContent = matrixRotationDuration + 'ms';
-            document.documentElement.style.setProperty('--rotation-duration', matrixRotationDuration + 'ms');
-        }
-        
-        function updateMatrixMoves() {
-            const newMax = parseInt(document.getElementById('matrixMoves').value);
-            if (newMax > matrixMovesMax) {
-                matrixMovesRemaining += (newMax - matrixMovesMax);
-            } else if (newMax < matrixMovesRemaining) {
-                matrixMovesRemaining = newMax;
-            }
-            matrixMovesMax = newMax;
-            
-            if (matrixMovesMax === 0) {
-                document.getElementById('matrixMovesValue').textContent = '∞';
-            } else {
-                document.getElementById('matrixMovesValue').textContent = matrixMovesRemaining;
-            }
-        }
-        
-        function updateMatrixDisplay() {
-            if (matrixMovesMax === 0) {
-                document.getElementById('matrixMovesValue').textContent = '∞';
-            } else {
-                document.getElementById('matrixMovesValue').textContent = matrixMovesRemaining;
-            }
-        }
-        
-        function canUseDiag2x2Move() {
-            if (diag2x2MovesMax === 0) return true;
-            return diag2x2MovesRemaining > 0;
-        }
-        
-        function useDiag2x2Move() {
-            if (diag2x2MovesMax === 0) return;
-            diag2x2MovesRemaining--;
-            updateDiag2x2Display();
-        }
-        
-        function canUseMatrixMove() {
-            if (matrixMovesMax === 0) return true;
-            return matrixMovesRemaining > 0;
-        }
-        
-        function useMatrixMove() {
-            if (matrixMovesMax === 0) return;
-            matrixMovesRemaining--;
-            updateMatrixDisplay();
-        }
-        
         function stopContinuousRotation() {
             if (continuousRotationTimer) { clearTimeout(continuousRotationTimer); continuousRotationTimer = null; }
             continuousRotationState = null;
-            document.getElementById('localRotationIndicator').classList.remove('visible', 'continuous');
             setTimeout(() => vanishAlignedPastilles(), 100);
-        }
-        
-        // ============ FONCTIONS ROTATION COURONNES ============
-        
-        function updateCrownRotSpeed() {
-            crownRotationSpeed = parseInt(document.getElementById('crownRotSpeed').value);
-            document.getElementById('crownRotSpeedValue').textContent = crownRotationSpeed + 'ms';
-        }
-        
-        function updateCrownMoves() {
-            crownMovesMax = parseInt(document.getElementById('crownMoves').value);
-            document.getElementById('crownMovesValue').textContent = crownMovesMax === 0 ? '∞' : crownMovesMax;
-        }
-        
-        function updateCrownDisplay() {
-            document.getElementById('crownMovesValue').textContent = crownMovesMax === 0 ? '∞' : crownMovesMax;
         }
         
         // ============ ROTATION MATRICIELLE ============
@@ -530,9 +495,10 @@
             diagAlignEnabled = document.getElementById('diagAlignEnabled').checked;
         }
         
-        function toggleRails() {
-            const show = document.getElementById('showRails').checked;
-            document.querySelectorAll('.rail').forEach(r => r.style.display = show ? 'block' : 'none');
+        function updateRotationSpeed() {
+            rotationDuration = parseInt(document.getElementById('rotationSpeed').value);
+            document.getElementById('rotationSpeedValue').textContent = (rotationDuration / 1000).toFixed(1) + 's';
+            document.documentElement.style.setProperty('--rotation-duration', rotationDuration + 'ms');
         }
         
         function testMatrixRotation(direction) {
@@ -542,14 +508,7 @@
         function rotateMatrix(direction) {
             if (isMatrixRotating) return;
             
-            if (!canUseMatrixMove()) {
-                playBlockedSound();
-                return;
-            }
-            
             isMatrixRotating = true;
-            useMatrixMove();
-            
             const rotationAngle = direction * 90;
             
             const indicator = document.getElementById('matrixIndicator');
@@ -557,9 +516,13 @@
             indicator.classList.add('visible');
             
             const gameArea = document.getElementById('gameArea');
+            const centerSun = document.getElementById('centerSun');
             
-            gameArea.style.transition = `transform ${matrixRotationDuration}ms cubic-bezier(0.4, 0, 0.2, 1)`;
+            gameArea.style.transition = `transform ${rotationDuration}ms cubic-bezier(0.4, 0, 0.2, 1)`;
             gameArea.style.transform = `rotate(${rotationAngle}deg)`;
+            
+            centerSun.style.transition = `transform ${rotationDuration}ms cubic-bezier(0.4, 0, 0.2, 1)`;
+            centerSun.style.transform = `translate(-50%, -50%) rotate(${-rotationAngle}deg)`;
             
             document.querySelectorAll('.pastille').forEach(p => {
                 p.classList.add('counter-rotating');
@@ -570,6 +533,7 @@
             
             setTimeout(() => {
                 gameArea.style.transition = 'none';
+                centerSun.style.transition = 'none';
                 document.querySelectorAll('.pastille').forEach(p => {
                     p.style.transition = 'none';
                 });
@@ -579,6 +543,7 @@
                 transposeDataForRotation(direction);
                 
                 gameArea.style.transform = 'rotate(0deg)';
+                centerSun.style.transform = 'translate(-50%, -50%)';
                 document.querySelectorAll('.pastille').forEach(p => {
                     p.style.transform = 'rotate(0deg)';
                     p.classList.remove('counter-rotating');
@@ -589,6 +554,7 @@
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
                         gameArea.style.transition = '';
+                        centerSun.style.transition = '';
                         document.querySelectorAll('.pastille').forEach(p => {
                             p.style.transition = '';
                         });
@@ -607,13 +573,13 @@
                     setTimeout(() => vanishAlignedPastilles(), 50);
                 }
                 
-            }, matrixRotationDuration + 50);
+            }, rotationDuration + 50);
         }
         
         function transposeDataForRotation(direction) {
             const gridData = [];
             
-            for (let c = 0; c < 4; c++) {
+            for (let c = 0; c < 3; c++) {
                 for (let i = 0; i < data[c].length; i++) {
                     if (data[c][i] && data[c][i].value !== null) {
                         const [row, col] = getGridPosition(c, i);
@@ -621,47 +587,73 @@
                             color: data[c][i].value,
                             row, col,
                             anchor: data[c][i].anchor,
-                            elem: data[c][i].elem
+                            elem: data[c][i].elem,
+                            isCenter: false
                         });
                     }
                 }
             }
             
-            for (let c = 0; c < 4; c++) {
+            if (centerData && centerData.value !== null) {
+                gridData.push({
+                    color: centerData.value,
+                    row: 3, col: 3,
+                    isCenter: true
+                });
+            }
+            
+            for (let c = 0; c < 3; c++) {
                 for (let i = 0; i < data[c].length; i++) {
                     data[c][i] = null;
                 }
             }
+            centerData = null;
             
             for (const item of gridData) {
                 let newRow, newCol;
                 
-                // Rotation pour grille 8x8 (indices 0-7)
                 if (direction > 0) {
                     newRow = item.col;
-                    newCol = 7 - item.row;
+                    newCol = 6 - item.row;
                 } else {
-                    newRow = 7 - item.col;
+                    newRow = 6 - item.col;
                     newCol = item.row;
                 }
                 
-                const target = findCrownIndexForGridPosition(newRow, newCol);
-                
-                if (target) {
-                    data[target.crown][target.index] = {
-                        value: item.color,
-                        anchor: item.anchor,
-                        elem: item.elem
-                    };
-                    item.anchor.dataset.crown = target.crown;
-                    item.anchor.dataset.index = target.index;
-                    positionPastille(item.anchor, target.crown, target.index);
+                if (newRow === 3 && newCol === 3) {
+                    centerData = { value: item.color };
+                    if (!item.isCenter && item.anchor) {
+                        item.anchor.remove();
+                    }
+                } else {
+                    const target = findCrownIndexForGridPosition(newRow, newCol);
+                    
+                    if (target) {
+                        if (item.isCenter) {
+                            const {anchor, elem} = createPastille(item.color, target.crown, target.index);
+                            data[target.crown][target.index] = { value: item.color, anchor, elem };
+                            positionPastille(anchor, target.crown, target.index);
+                        } else {
+                            data[target.crown][target.index] = {
+                                value: item.color,
+                                anchor: item.anchor,
+                                elem: item.elem
+                            };
+                            item.anchor.dataset.crown = target.crown;
+                            item.anchor.dataset.index = target.index;
+                            positionPastille(item.anchor, target.crown, target.index);
+                        }
+                    }
                 }
             }
+            
+            updateCenterDisplay();
         }
         
         function findCrownIndexForGridPosition(row, col) {
-            for (let c = 0; c < 4; c++) {
+            if (row === 3 && col === 3) return null;
+            
+            for (let c = 0; c < 3; c++) {
                 const positions = crownPositions[c];
                 const offset = Math.round(offsets[c]);
                 
@@ -763,9 +755,9 @@
         // ============ GRAVITÉ VERS LE BAS ============
         
         function applyDownwardGravity() {
-            const grid = Array(8).fill(null).map(() => Array(8).fill(null));
+            const grid = Array(7).fill(null).map(() => Array(7).fill(null));
             
-            for (let c = 0; c < 4; c++) {
+            for (let c = 0; c < 3; c++) {
                 for (let i = 0; i < data[c].length; i++) {
                     if (data[c][i] && data[c][i].value !== null) {
                         const [row, col] = getGridPosition(c, i);
@@ -774,17 +766,25 @@
                             anchor: data[c][i].anchor,
                             elem: data[c][i].elem,
                             crown: c,
-                            index: i
+                            index: i,
+                            isCenter: false
                         };
                     }
                 }
             }
             
+            if (centerData && centerData.value !== null) {
+                grid[3][3] = {
+                    color: centerData.value,
+                    isCenter: true
+                };
+            }
+            
             let moved = false;
             
-            for (let col = 0; col < 8; col++) {
+            for (let col = 0; col < 7; col++) {
                 const squaresInColumn = [];
-                for (let row = 0; row < 8; row++) {
+                for (let row = 0; row < 7; row++) {
                     if (grid[row][col]) {
                         squaresInColumn.push({ ...grid[row][col], originalRow: row });
                     }
@@ -793,90 +793,68 @@
                 if (squaresInColumn.length === 0) continue;
                 
                 const availablePositions = [];
-                for (let row = 7; row >= 0; row--) {
-                    const target = findCrownIndexForGridPosition(row, col);
-                    if (target) {
-                        availablePositions.push({ row, col, crown: target.crown, index: target.index });
+                for (let row = 6; row >= 0; row--) {
+                    if (row === 3 && col === 3) {
+                        availablePositions.push({ row: 3, col: 3, isCenter: true });
+                    } else {
+                        const target = findCrownIndexForGridPosition(row, col);
+                        if (target) {
+                            availablePositions.push({ row, col, ...target, isCenter: false });
+                        }
                     }
                 }
                 
-                availablePositions.reverse();
+                for (const square of squaresInColumn) {
+                    if (!square.isCenter && data[square.crown] && data[square.crown][square.index]) {
+                        data[square.crown][square.index] = null;
+                    }
+                }
+                if (col === 3 && grid[3][3] && grid[3][3].isCenter) {
+                    centerData = null;
+                }
                 
-                for (let i = 0; i < squaresInColumn.length; i++) {
-                    const sq = squaresInColumn[i];
-                    const newPos = availablePositions[availablePositions.length - squaresInColumn.length + i];
+                for (let i = 0; i < squaresInColumn.length && i < availablePositions.length; i++) {
+                    const square = squaresInColumn[squaresInColumn.length - 1 - i];
+                    const pos = availablePositions[i];
                     
-                    if (!newPos) continue;
-                    
-                    if (newPos.row !== sq.originalRow) {
+                    if (pos.row !== square.originalRow) {
                         moved = true;
-                        
-                        data[sq.crown][sq.index] = null;
-                        
-                        data[newPos.crown][newPos.index] = {
-                            value: sq.color,
-                            anchor: sq.anchor,
-                            elem: sq.elem
-                        };
-                        sq.anchor.dataset.crown = newPos.crown;
-                        sq.anchor.dataset.index = newPos.index;
-                        positionPastille(sq.anchor, newPos.crown, newPos.index);
+                    }
+                    
+                    if (pos.isCenter) {
+                        centerData = { value: square.color };
+                        if (!square.isCenter && square.anchor) {
+                            square.anchor.remove();
+                        }
+                    } else {
+                        if (square.isCenter) {
+                            const {anchor, elem} = createPastille(square.color, pos.crown, pos.index);
+                            data[pos.crown][pos.index] = { value: square.color, anchor, elem };
+                            positionPastille(anchor, pos.crown, pos.index);
+                        } else {
+                            data[pos.crown][pos.index] = {
+                                value: square.color,
+                                anchor: square.anchor,
+                                elem: square.elem
+                            };
+                            square.anchor.dataset.crown = pos.crown;
+                            square.anchor.dataset.index = pos.index;
+                            positionPastille(square.anchor, pos.crown, pos.index);
+                        }
                     }
                 }
             }
+            
+            updateCenterDisplay();
             
             if (moved) {
                 playGravitySound();
             }
-        }
-        
-        // ============ PASTILLES ============
-        
-        function updateSizes(){
-            sizePastille = parseInt(document.getElementById('sizePastille').value);
-            sizeAncrage = sizePastille * 2;
-            document.getElementById('sizeValue').textContent = sizePastille;
-            document.querySelectorAll('.pastille').forEach(p => {
-                p.style.width = sizePastille + 'px';
-                p.style.height = sizePastille + 'px';
-            });
-            document.querySelectorAll('.pastille-anchor').forEach(a => {
-                a.style.width = sizeAncrage + 'px';
-                a.style.height = sizeAncrage + 'px';
-            });
-        }
-        
-        function createPastille(color, crown, index){
-            const anchor = document.createElement('div');
-            anchor.className = 'pastille-anchor';
-            anchor.style.cssText = `position:absolute;width:${sizeAncrage}px;height:${sizeAncrage}px;display:flex;align-items:center;justify-content:center;pointer-events:none;`;
-            anchor.dataset.crown = crown;
-            anchor.dataset.index = index;
             
-            const elem = document.createElement('div');
-            elem.className = 'pastille';
-            elem.style.cssText = `width:${sizePastille}px;height:${sizePastille}px;background:${pastilleColors[color]};pointer-events:auto;`;
-            
-            anchor.appendChild(elem);
-            document.getElementById('gameArea').appendChild(anchor);
-            return {anchor, elem};
+            return moved;
         }
         
-        function positionPastille(anchor, crown, index){
-            const pos = getPositionOnSquare(crown, index);
-            anchor.style.left = (pos.x - sizeAncrage/2) + 'px';
-            anchor.style.top = (pos.y - sizeAncrage/2) + 'px';
-        }
-        
-        function updateAllPositions(){
-            for(let c=0;c<4;c++){
-                for(let i=0;i<data[c].length;i++){
-                    if(data[c][i] && data[c][i].anchor){
-                        positionPastille(data[c][i].anchor, c, i);
-                    }
-                }
-            }
-        }
+        // ============ ROTATION LOCALE 2x2 (DIAGONALE) ============
         
         function gridToPixel(row, col) {
             return {
@@ -886,90 +864,205 @@
         }
         
         function getColorAt(row, col) {
+            if (row === 3 && col === 3) {
+                return centerData && centerData.value !== null ? centerData.value : null;
+            }
             const target = findCrownIndexForGridPosition(row, col);
             if (!target) return null;
-            
             const d = data[target.crown][target.index];
-            return d ? d.value : null;
+            return d && d.value !== null ? d.value : null;
         }
         
         function setColorAt(row, col, color) {
+            if (row === 3 && col === 3) {
+                if (color !== null) {
+                    centerData = { value: color };
+                } else {
+                    centerData = null;
+                }
+                return;
+            }
             const target = findCrownIndexForGridPosition(row, col);
             if (!target) return;
             
-            const {anchor, elem} = createPastille(color, target.crown, target.index);
-            data[target.crown][target.index] = { value: color, anchor, elem };
-            positionPastille(anchor, target.crown, target.index);
-        }
-        
-        function removePastilleAt(row, col) {
-            const target = findCrownIndexForGridPosition(row, col);
-            if (target && data[target.crown][target.index]) {
-                const d = data[target.crown][target.index];
-                if (d.elem) {
-                    d.elem.classList.add('vanishing');
-                    setTimeout(() => {
-                        if (d.anchor) d.anchor.remove();
-                    }, 500);
-                } else if (d.anchor) {
-                    d.anchor.remove();
+            if (color !== null) {
+                if (data[target.crown][target.index] && data[target.crown][target.index].anchor) {
+                    data[target.crown][target.index].value = color;
+                    data[target.crown][target.index].elem.style.background = pastilleColors[color];
+                    // Mettre à jour le liseré
+                    data[target.crown][target.index].elem.style.border = color === 0 ? '2px solid #000000' : 'none';
+                } else {
+                    const {anchor, elem} = createPastille(color, target.crown, target.index);
+                    data[target.crown][target.index] = { value: color, anchor, elem };
+                    positionPastille(anchor, target.crown, target.index);
+                }
+            } else {
+                if (data[target.crown][target.index] && data[target.crown][target.index].anchor) {
+                    data[target.crown][target.index].anchor.remove();
                 }
                 data[target.crown][target.index] = null;
             }
         }
         
-        // ============ ROTATION DIAGONALE 2x2 ============
+        // ============ NOUVELLE MÉCANIQUE : ROTATION DIAGONALE ============
         
-        function calculateDiagonalRotationGroup(sourceRow, sourceCol, diagDirection) {
-            let topRow, topCol;
+        // Les 9 zones 3x3 fixes (topRow, topCol)
+        const FIXED_ZONES = [
+            { topRow: 0, topCol: 0, pivot: [1, 1] },  // Zone 0
+            { topRow: 0, topCol: 2, pivot: [1, 3] },  // Zone 1
+            { topRow: 0, topCol: 4, pivot: [1, 5] },  // Zone 2
+            { topRow: 2, topCol: 0, pivot: [3, 1] },  // Zone 3
+            { topRow: 2, topCol: 2, pivot: [3, 3] },  // Zone 4 (centre grille)
+            { topRow: 2, topCol: 4, pivot: [3, 5] },  // Zone 5
+            { topRow: 4, topCol: 0, pivot: [5, 1] },  // Zone 6
+            { topRow: 4, topCol: 2, pivot: [5, 3] },  // Zone 7
+            { topRow: 4, topCol: 4, pivot: [5, 5] }   // Zone 8
+        ];
+        
+        // Vérifie si une position est un pivot (ne doit pas déclencher de rotation)
+        function isPivotPosition(row, col) {
+            return FIXED_ZONES.some(z => z.pivot[0] === row && z.pivot[1] === col);
+        }
+        
+        // Trouve la zone 3x3 fixe correspondant à une position et une direction
+        function findZoneForPosition(row, col, diagDirection) {
+            // Trouver toutes les zones auxquelles cette cellule appartient
+            const matchingZones = FIXED_ZONES.filter(zone => {
+                return row >= zone.topRow && row <= zone.topRow + 2 &&
+                       col >= zone.topCol && col <= zone.topCol + 2;
+            });
             
-            switch(diagDirection) {
-                case 'upRight':
-                    topRow = sourceRow - 1;
-                    topCol = sourceCol;
-                    break;
-                case 'upLeft':
-                    topRow = sourceRow - 1;
-                    topCol = sourceCol - 1;
-                    break;
-                case 'downRight':
-                    topRow = sourceRow;
-                    topCol = sourceCol;
-                    break;
-                case 'downLeft':
-                    topRow = sourceRow;
-                    topCol = sourceCol - 1;
-                    break;
-                default:
-                    return null;
+            if (matchingZones.length === 0) return null;
+            if (matchingZones.length === 1) return matchingZones[0];
+            
+            // Si plusieurs zones, choisir selon la direction du swipe
+            // upRight -> zone en haut à droite
+            // upLeft -> zone en haut à gauche
+            // downRight -> zone en bas à droite
+            // downLeft -> zone en bas à gauche
+            
+            let bestZone = matchingZones[0];
+            for (const zone of matchingZones) {
+                const zoneCenterRow = zone.topRow + 1;
+                const zoneCenterCol = zone.topCol + 1;
+                
+                switch(diagDirection) {
+                    case 'upRight':
+                        if (zoneCenterRow <= bestZone.topRow + 1 && zoneCenterCol >= bestZone.topCol + 1) {
+                            bestZone = zone;
+                        }
+                        break;
+                    case 'upLeft':
+                        if (zoneCenterRow <= bestZone.topRow + 1 && zoneCenterCol <= bestZone.topCol + 1) {
+                            bestZone = zone;
+                        }
+                        break;
+                    case 'downRight':
+                        if (zoneCenterRow >= bestZone.topRow + 1 && zoneCenterCol >= bestZone.topCol + 1) {
+                            bestZone = zone;
+                        }
+                        break;
+                    case 'downLeft':
+                        if (zoneCenterRow >= bestZone.topRow + 1 && zoneCenterCol <= bestZone.topCol + 1) {
+                            bestZone = zone;
+                        }
+                        break;
+                }
             }
             
-            // Limites pour grille 8x8
-            if (topRow < 0 || topRow > 6 || topCol < 0 || topCol > 6) {
+            return bestZone;
+        }
+        
+        function calculateDiagonalRotationGroup(sourceRow, sourceCol, diagDirection) {
+            // Les pivots ne déclenchent pas de rotation
+            if (isPivotPosition(sourceRow, sourceCol)) {
                 return null;
             }
             
+            const zone = findZoneForPosition(sourceRow, sourceCol, diagDirection);
+            if (!zone) return null;
+            
+            const { topRow, topCol } = zone;
+            
+            // 9 positions du groupe 3x3 :
+            // [0] [1] [2]
+            // [3] [4] [5]   <- [4] = centre (pivot fixe)
+            // [6] [7] [8]
             return {
                 topRow, topCol,
                 positions: [
-                    [topRow, topCol],
-                    [topRow, topCol + 1],
-                    [topRow + 1, topCol],
-                    [topRow + 1, topCol + 1]
+                    [topRow, topCol],         // 0 - coin haut-gauche
+                    [topRow, topCol + 1],     // 1 - haut-centre
+                    [topRow, topCol + 2],     // 2 - coin haut-droite
+                    [topRow + 1, topCol],     // 3 - milieu-gauche
+                    [topRow + 1, topCol + 1], // 4 - CENTRE (pivot)
+                    [topRow + 1, topCol + 2], // 5 - milieu-droite
+                    [topRow + 2, topCol],     // 6 - coin bas-gauche
+                    [topRow + 2, topCol + 1], // 7 - bas-centre
+                    [topRow + 2, topCol + 2]  // 8 - coin bas-droite
                 ],
-                centerX: padding + (topCol + 1) * cellSize,
-                centerY: padding + (topRow + 1) * cellSize
+                centerX: padding + (topCol + 1.5) * cellSize,
+                centerY: padding + (topRow + 1.5) * cellSize
             };
         }
         
-        function getDiagonalRotationDirection(diagDirection) {
-            switch(diagDirection) {
-                case 'upRight': return false;
-                case 'downLeft': return true;
-                case 'downRight': return false;
-                case 'upLeft': return true;
-                default: return true;
+        function getDiagonalRotationDirection(diagDirection, sourceRow, sourceCol, zone) {
+            // Logique cadran téléphonique : le sens dépend de la position dans la zone
+            // true = horaire (clockwise), false = anti-horaire
+            
+            // Position relative dans la zone 3x3
+            const relRow = sourceRow - zone.topRow; // 0, 1, ou 2
+            const relCol = sourceCol - zone.topCol; // 0, 1, ou 2
+            
+            // Position 1 : haut-centre (relRow=0, relCol=1)
+            if (relRow === 0 && relCol === 1) {
+                if (diagDirection === 'downLeft') return false;  // anti-horaire
+                if (diagDirection === 'downRight') return true;  // horaire
             }
+            
+            // Position 2 : milieu-gauche (relRow=1, relCol=0)
+            // Réagit uniquement aux gestes vers la droite
+            if (relRow === 1 && relCol === 0) {
+                if (diagDirection === 'upRight') return true;     // horaire
+                if (diagDirection === 'downRight') return false;  // anti-horaire
+            }
+            
+            // Position 3 : milieu-droite (relRow=1, relCol=2)
+            // Réagit uniquement aux gestes vers la gauche
+            if (relRow === 1 && relCol === 2) {
+                if (diagDirection === 'upLeft') return false;     // anti-horaire
+                if (diagDirection === 'downLeft') return true;    // horaire
+            }
+            
+            // Position 4 : bas-centre (relRow=2, relCol=1)
+            if (relRow === 2 && relCol === 1) {
+                if (diagDirection === 'upLeft') return true;     // horaire
+                if (diagDirection === 'upRight') return false;   // anti-horaire
+            }
+            
+            // Coins : logique standard
+            // Coin haut-gauche (0,0)
+            if (relRow === 0 && relCol === 0) {
+                if (diagDirection === 'downRight') return true;  // horaire
+            }
+            
+            // Coin haut-droite (0,2)
+            if (relRow === 0 && relCol === 2) {
+                if (diagDirection === 'downLeft') return false;  // anti-horaire
+            }
+            
+            // Coin bas-gauche (2,0)
+            if (relRow === 2 && relCol === 0) {
+                if (diagDirection === 'upRight') return false;   // anti-horaire
+            }
+            
+            // Coin bas-droite (2,2)
+            if (relRow === 2 && relCol === 2) {
+                if (diagDirection === 'upLeft') return true;     // horaire
+            }
+            
+            // Défaut (ne devrait pas arriver)
+            return true;
         }
         
         function detectDiagonalDirection(dx, dy) {
@@ -979,6 +1072,8 @@
             if (absDx < 5 || absDy < 5) return null;
             const ratio = absDx / absDy;
             
+            // Seuils basés sur diagSensitivity (10-90)
+            // 50 = équilibré (ratio 0.3-3.0 original)
             const minRatio = 0.7 - (diagSensitivity / 100) * 0.6;
             const maxRatio = 1.4 + (diagSensitivity / 100) * 8.6;
             
@@ -993,52 +1088,99 @@
         }
         
         function getAvailableDiagonalDirections(row, col) {
-            const available = [];
+            // Les pivots ne déclenchent aucune rotation
+            if (isPivotPosition(row, col)) {
+                return [];
+            }
             
-            // Limites ajustées pour grille 8x8
-            if (row >= 1 && col <= 6) available.push('upRight');
-            if (row >= 1 && col >= 1) available.push('upLeft');
-            if (row <= 6 && col <= 6) available.push('downRight');
-            if (row <= 6 && col >= 1) available.push('downLeft');
-            
-            return available;
+            // Pour toutes les autres positions, toutes les directions sont possibles
+            // La fonction findZoneForPosition déterminera la zone appropriée
+            return ['upRight', 'upLeft', 'downRight', 'downLeft'];
         }
         
         function executeLocalRotation(group, clockwise, callback) {
             if (isLocalRotating) return;
             isLocalRotating = true;
             
-            const indicator = document.getElementById('localRotationIndicator');
-            indicator.style.left = (group.centerX - cellSize) + 'px';
-            indicator.style.top = (group.centerY - cellSize) + 'px';
-            indicator.style.width = (cellSize * 2 - 4) + 'px';
-            indicator.style.height = (cellSize * 2 - 4) + 'px';
-            indicator.classList.add('visible');
-            if (continuousRotationState) indicator.classList.add('continuous');
-            
             playLocalRotationSound();
             
-            const cells = group.positions.map(([r, c]) => {
+            // Vérifier si le centre de la grille (3,3) fait partie du groupe
+            const gridCenterInGroup = group.positions.some(([r, c]) => r === 3 && c === 3);
+            
+            // Élever le z-index du centre pendant l'animation si nécessaire
+            const centerSun = document.getElementById('centerSun');
+            if (gridCenterInGroup) {
+                centerSun.style.zIndex = '50';
+            }
+            
+            // Récupérer les données des 9 cellules
+            const cells = group.positions.map(([r, c], idx) => {
                 const color = getColorAt(r, c);
                 let anchor = null;
-                const target = findCrownIndexForGridPosition(r, c);
-                if (target && data[target.crown][target.index]) {
-                    anchor = data[target.crown][target.index].anchor;
-                    if (anchor) anchor.classList.add('rotating');
+                if (r !== 3 || c !== 3) {
+                    const target = findCrownIndexForGridPosition(r, c);
+                    if (target && data[target.crown][target.index]) {
+                        anchor = data[target.crown][target.index].anchor;
+                        // Élever le z-index pendant l'animation (sauf pour le pivot central du 3x3)
+                        if (anchor && idx !== 4) anchor.classList.add('rotating');
+                    }
                 }
-                return { row: r, col: c, color, anchor, startPos: gridToPixel(r, c) };
+                return { row: r, col: c, color, anchor, startPos: gridToPixel(r, c), posIndex: idx };
             });
             
-            const newIndices = clockwise ? [2, 0, 3, 1] : [1, 3, 0, 2];
+            // Indices de permutation pour rotation 3x3 :
+            // Les 8 cellules périphériques tournent, le centre (index 4) reste fixe
+            // Positions: 0,1,2,3,4,5,6,7,8
+            // Périphérie dans l'ordre horaire: 0 -> 1 -> 2 -> 5 -> 8 -> 7 -> 6 -> 3 -> 0
+            // 
+            // Horaire: chaque position reçoit la valeur de la position précédente dans le cycle
+            // Anti-horaire: chaque position reçoit la valeur de la position suivante dans le cycle
+            const peripheryOrder = [0, 1, 2, 5, 8, 7, 6, 3]; // ordre horaire du cycle
             
-            for (let i = 0; i < 4; i++) {
+            // Calculer les nouvelles positions
+            // newIndices[i] = où la cellule i doit aller
+            const newIndices = [0, 1, 2, 3, 4, 5, 6, 7, 8]; // par défaut, chaque position reste
+            
+            for (let i = 0; i < peripheryOrder.length; i++) {
+                const currentPos = peripheryOrder[i];
+                const nextPos = peripheryOrder[(i + 1) % peripheryOrder.length];
+                const prevPos = peripheryOrder[(i - 1 + peripheryOrder.length) % peripheryOrder.length];
+                
+                if (clockwise) {
+                    // En horaire, la cellule à currentPos va à nextPos
+                    newIndices[currentPos] = nextPos;
+                } else {
+                    // En anti-horaire, la cellule à currentPos va à prevPos
+                    newIndices[currentPos] = prevPos;
+                }
+            }
+            // Le centre (4) reste à sa place
+            newIndices[4] = 4;
+            
+            // Assigner les positions de destination
+            for (let i = 0; i < 9; i++) {
                 const targetIdx = newIndices[i];
                 cells[i].endPos = gridToPixel(group.positions[targetIdx][0], group.positions[targetIdx][1]);
                 cells[i].targetRow = group.positions[targetIdx][0];
                 cells[i].targetCol = group.positions[targetIdx][1];
             }
             
-            const duration = continuousRotationState ? continuousRotationSpeed * 0.7 : continuousRotationSpeed * 0.5;
+            // Animer aussi le centre de la grille s'il fait partie du groupe (mais PAS s'il est le pivot 3x3)
+            let gridCenterStartPos = null;
+            let gridCenterEndPos = null;
+            if (gridCenterInGroup) {
+                for (let i = 0; i < 9; i++) {
+                    if (cells[i].row === 3 && cells[i].col === 3 && i !== 4) {
+                        // Le centre de la grille (3,3) n'est PAS le pivot du 3x3, donc il bouge
+                        gridCenterStartPos = cells[i].startPos;
+                        gridCenterEndPos = cells[i].endPos;
+                        break;
+                    }
+                }
+            }
+            
+            // Durée d'animation : 70% du temps total en mode continu, 180ms en mode simple
+            const duration = continuousRotationState ? continuousRotationSpeed * 0.7 : 180;
             const startTime = performance.now();
             
             function animate(currentTime) {
@@ -1046,6 +1188,9 @@
                 const eased = 1 - Math.pow(1 - progress, 3);
                 
                 for (const cell of cells) {
+                    // Le pivot central (index 4) ne bouge pas
+                    if (cell.posIndex === 4) continue;
+                    
                     if (cell.anchor) {
                         const x = cell.startPos.x + (cell.endPos.x - cell.startPos.x) * eased;
                         const y = cell.startPos.y + (cell.endPos.y - cell.startPos.y) * eased;
@@ -1054,130 +1199,134 @@
                     }
                 }
                 
+                // Animer le centre de la grille visuellement (s'il bouge)
+                if (gridCenterStartPos && gridCenterEndPos) {
+                    const ccx = gridCenterStartPos.x + (gridCenterEndPos.x - gridCenterStartPos.x) * eased;
+                    const ccy = gridCenterStartPos.y + (gridCenterEndPos.y - gridCenterStartPos.y) * eased;
+                    // Convertir en pourcentage pour le positionnement du centre
+                    const leftPercent = (ccx / canvasSize) * 100;
+                    const topPercent = (ccy / canvasSize) * 100;
+                    centerSun.style.left = leftPercent + '%';
+                    centerSun.style.top = topPercent + '%';
+                }
+                
                 if (progress < 1) {
                     requestAnimationFrame(animate);
                 } else {
-                    finishLocalRotation(group, cells, newIndices, callback);
+                    finishLocalRotation(group, cells, newIndices, gridCenterInGroup, callback);
                 }
             }
             
             requestAnimationFrame(animate);
         }
         
-        function finishLocalRotation(group, cells, newIndices, callback) {
-            const newColors = [null, null, null, null];
-            for (let i = 0; i < 4; i++) {
+        function finishLocalRotation(group, cells, newIndices, gridCenterInGroup, callback) {
+            const newColors = [null, null, null, null, null, null, null, null, null];
+            for (let i = 0; i < 9; i++) {
                 newColors[newIndices[i]] = cells[i].color;
             }
             
+            // Retirer la classe rotating et remettre z-index normal
             for (const cell of cells) {
                 if (cell.anchor) {
                     cell.anchor.classList.remove('rotating');
                 }
             }
             
-            for (let i = 0; i < 4; i++) {
-                const [r, c] = group.positions[i];
+            for (const [r, c] of group.positions) {
+                if (r === 3 && c === 3) continue;
                 const target = findCrownIndexForGridPosition(r, c);
-                if (target) {
+                if (target && data[target.crown][target.index] && data[target.crown][target.index].anchor) {
+                    data[target.crown][target.index].anchor.remove();
                     data[target.crown][target.index] = null;
                 }
             }
             
-            for (let i = 0; i < 4; i++) {
+            if (gridCenterInGroup) {
+                centerData = null;
+            }
+            
+            for (let i = 0; i < 9; i++) {
                 const [r, c] = group.positions[i];
-                const target = findCrownIndexForGridPosition(r, c);
-                if (target && newColors[i] !== null) {
-                    const sourceIdx = newIndices.indexOf(i);
-                    const sourceCell = cells[sourceIdx];
-                    
-                    if (sourceCell.anchor) {
-                        data[target.crown][target.index] = {
-                            value: newColors[i],
-                            anchor: sourceCell.anchor,
-                            elem: sourceCell.anchor.querySelector('.pastille')
-                        };
-                        sourceCell.anchor.dataset.crown = target.crown;
-                        sourceCell.anchor.dataset.index = target.index;
-                        positionPastille(sourceCell.anchor, target.crown, target.index);
-                    }
+                if (newColors[i] !== null) {
+                    setColorAt(r, c, newColors[i]);
                 }
             }
             
-            if (!continuousRotationState) {
-                document.getElementById('localRotationIndicator').classList.remove('visible');
-            }
+            // Remettre le centre à sa position normale (50%, 50%) et z-index
+            const centerSun = document.getElementById('centerSun');
+            centerSun.style.left = '50%';
+            centerSun.style.top = '50%';
+            centerSun.style.zIndex = '10';
+            
+            updateCenterDisplay();
             
             isLocalRotating = false;
             
-            if (callback) callback();
-            
-            if (!continuousRotationState) {
+            if (callback) {
+                callback();
+            } else {
                 setTimeout(() => vanishAlignedPastilles(), 100);
             }
         }
         
         function attemptDiagonalRotation(row, col, dx, dy) {
             const diagDirection = detectDiagonalDirection(dx, dy);
-            if (!diagDirection) return false;
-            
-            const available = getAvailableDiagonalDirections(row, col);
-            if (!available.includes(diagDirection)) return false;
-            
-            const group = calculateDiagonalRotationGroup(row, col, diagDirection);
-            if (!group) return false;
-            
-            const colors = group.positions.map(([r, c]) => getColorAt(r, c));
-            const filledCount = colors.filter(c => c !== null).length;
-            
-            if (filledCount < 2) return false;
-            
-            if (!canUseDiag2x2Move()) {
+            if (!diagDirection) {
                 playBlockedSound();
                 return false;
             }
             
-            useDiag2x2Move();
-            
-            const clockwise = getDiagonalRotationDirection(diagDirection);
-            
-            continuousRotationState = {
-                row, col,
-                diagDirection,
-                group
-            };
-            
-            executeLocalRotation(group, clockwise, () => {
-                if (continuousRotationState) {
-                    continuousRotationTimer = setTimeout(executeContinuousStep, continuousRotationSpeed * 0.3);
-                }
-            });
-            
-            return true;
-        }
-        
-        function executeContinuousStep() {
-            if (!continuousRotationState) return;
-            
-            if (!canUseDiag2x2Move()) {
-                stopContinuousRotation();
+            const availableDirections = getAvailableDiagonalDirections(row, col);
+            if (!availableDirections.includes(diagDirection)) {
                 playBlockedSound();
-                return;
+                return false;
             }
             
-            const grp = continuousRotationState.group;
-            const colors = grp.positions.map(([r, c]) => getColorAt(r, c));
-            const cnt = colors.filter(c => c !== null).length;
-            if (cnt < 2) { stopContinuousRotation(); return; }
+            const group = calculateDiagonalRotationGroup(row, col, diagDirection);
+            if (!group) {
+                playBlockedSound();
+                return false;
+            }
             
-            useDiag2x2Move();
+            // Compter les cellules remplies (sur les 9 positions)
+            let filledCount = 0;
+            for (const [r, c] of group.positions) {
+                if (getColorAt(r, c) !== null) filledCount++;
+            }
             
-            const cw = getDiagonalRotationDirection(continuousRotationState.diagDirection);
-            executeLocalRotation(grp, cw, () => {
-                if (continuousRotationState) {
-                    continuousRotationTimer = setTimeout(executeContinuousStep, continuousRotationSpeed * 0.3);
-                }
-            });
+            // Au moins 2 pastilles pour que la rotation ait un sens
+            if (filledCount < 2) {
+                playBlockedSound();
+                return false;
+            }
+            
+            const clockwise = getDiagonalRotationDirection(diagDirection, row, col, group);
+            
+            // Démarrer la rotation continue
+            continuousRotationState = { row, col, diagDirection, group };
+            
+            function executeContinuousStep() {
+                if (!continuousRotationState) return;
+                
+                const grp = continuousRotationState.group;
+                if (!grp) { stopContinuousRotation(); return; }
+                
+                let cnt = 0;
+                for (const [r, c] of grp.positions) { if (getColorAt(r, c) !== null) cnt++; }
+                if (cnt < 2) { stopContinuousRotation(); return; }
+                
+                const cw = getDiagonalRotationDirection(continuousRotationState.diagDirection, continuousRotationState.row, continuousRotationState.col, grp);
+                executeLocalRotation(grp, cw, () => {
+                    if (continuousRotationState) {
+                        // Petit délai de 30% du temps pour laisser respirer entre les rotations
+                        continuousRotationTimer = setTimeout(executeContinuousStep, continuousRotationSpeed * 0.3);
+                    }
+                });
+            }
+            
+            executeContinuousStep();
+            return true;
         }
         
         function playLocalRotationSound() {
@@ -1192,35 +1341,48 @@
             o.start(); o.stop(audioCtx.currentTime + 0.18);
         }
         
-        // ============ MATRICE INITIALE 8x8 ============
+        // ============ MATRICE INITIALE FIXE ============
         
         const INITIAL_GRID = [
-            [0, 1, 2, 0, 1, 2, 0, 1],
-            [1, 2, 0, 1, 2, 0, 1, 2],
-            [2, 0, 1, 2, 0, 1, 2, 0],
-            [0, 1, 2, 0, 1, 2, 0, 1],
-            [1, 2, 0, 1, 2, 0, 1, 2],
-            [2, 0, 1, 2, 0, 1, 2, 0],
-            [0, 1, 2, 0, 1, 2, 0, 1],
-            [1, 2, 0, 1, 2, 0, 1, 2]
+            [1, 1, 1, 1, 1, 1, 1],  // Rangée 0: noirs
+            [1, 1, 1, 1, 1, 1, 1],  // Rangée 1: noirs
+            [1, 1, 1, 1, 1, 1, 1],  // Rangée 2: noirs
+            [null, null, null, null, null, null, null],  // Rangée 3: vide (milieu)
+            [0, 0, 0, 0, 0, 0, 0],  // Rangée 4: blancs
+            [0, 0, 0, 0, 0, 0, 0],  // Rangée 5: blancs
+            [0, 0, 0, 0, 0, 0, 0]   // Rangée 6: blancs
         ];
         
         function loadInitialGrid() {
             document.querySelectorAll('.pastille-anchor').forEach(el => el.remove());
-            data = [[], [], [], []];
-            offsets = [0, 0, 0, 0];
+            data = [[], [], []];
+            offsets = [0, 0, 0];
+            centerData = null;
             
-            for (let c = 0; c < 4; c++) {
+            // Centre vide (rangée 3 col 3)
+            const centerValue = INITIAL_GRID[3][3];
+            if (centerValue !== null) {
+                centerData = { value: centerValue };
+            }
+            
+            for (let c = 0; c < 3; c++) {
                 const positions = crownPositions[c];
                 for (let i = 0; i < positions.length; i++) {
                     const [row, col] = positions[i];
+                    if (row === 3 && col === 3) continue;
                     
                     const color = INITIAL_GRID[row][col];
-                    const {anchor, elem} = createPastille(color, c, i);
-                    data[c][i] = { value: color, anchor, elem };
-                    positionPastille(anchor, c, i);
+                    if (color === null) {
+                        data[c][i] = null;
+                    } else {
+                        const {anchor, elem} = createPastille(color, c, i);
+                        data[c][i] = { value: color, anchor, elem };
+                        positionPastille(anchor, c, i);
+                    }
                 }
             }
+            
+            updateCenterDisplay();
         }
         
         // ============ AUDIO ============
@@ -1256,12 +1418,12 @@
             const o=audioCtx.createOscillator(),g=audioCtx.createGain();
             o.connect(g);g.connect(audioCtx.destination);
             o.frequency.setValueAtTime(220,audioCtx.currentTime);
-            o.frequency.exponentialRampToValueAtTime(440,audioCtx.currentTime + matrixRotationDuration/1000);
+            o.frequency.exponentialRampToValueAtTime(440,audioCtx.currentTime + rotationDuration/1000);
             o.type='sine';
             g.gain.setValueAtTime(0.2,audioCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime + matrixRotationDuration/1000);
+            g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime + rotationDuration/1000);
             o.start(audioCtx.currentTime);
-            o.stop(audioCtx.currentTime + matrixRotationDuration/1000);
+            o.stop(audioCtx.currentTime + rotationDuration/1000);
         }
         
         // ============ GRID & ALIGNMENT ============
@@ -1283,9 +1445,13 @@
         }
         
         function buildGrid() {
-            const grid = Array(8).fill(null).map(() => Array(8).fill(null));
+            const grid = Array(7).fill(null).map(() => Array(7).fill(null));
             
-            for (let c = 0; c < 4; c++) {
+            if (centerData && centerData.value !== null) {
+                grid[3][3] = { type: 'center', color: centerData.value };
+            }
+            
+            for (let c = 0; c < 3; c++) {
                 for (let i = 0; i < data[c].length; i++) {
                     if (!data[c][i] || data[c][i].value === null) continue;
                     const [row, col] = getGridPosition(c, i);
@@ -1299,13 +1465,14 @@
             const grid = buildGrid();
             const alignments = [];
             
-            const directions = [[0, 1], [1, 0]];
+            // Directions: horizontal, vertical, et diagonales seulement si activées
+            const directions = [[0, 1], [1, 0]]; // H et V toujours
             if (diagAlignEnabled) {
-                directions.push([1, 1], [1, -1]);
+                directions.push([1, 1], [1, -1]); // Diagonales si activées
             }
             
-            for (let row = 0; row < 8; row++) {
-                for (let col = 0; col < 8; col++) {
+            for (let row = 0; row < 7; row++) {
+                for (let col = 0; col < 7; col++) {
                     if (!grid[row][col] || grid[row][col].color === null) continue;
                     const startColor = grid[row][col].color;
                     
@@ -1313,7 +1480,7 @@
                         const line = [{ row, col, ...grid[row][col] }];
                         let r = row + dr, c = col + dc;
                         
-                        while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+                        while (r >= 0 && r < 7 && c >= 0 && c < 7) {
                             if (grid[r][c] && grid[r][c].color === startColor) {
                                 line.push({ row: r, col: c, ...grid[r][c] });
                                 r += dr; c += dc;
@@ -1336,8 +1503,8 @@
             const grid = buildGrid();
             const squares = [];
             
-            for (let row = 0; row < 7; row++) {
-                for (let col = 0; col < 7; col++) {
+            for (let row = 0; row < 6; row++) {
+                for (let col = 0; col < 6; col++) {
                     const topLeft = grid[row][col];
                     const topRight = grid[row][col + 1];
                     const bottomLeft = grid[row + 1][col];
@@ -1356,7 +1523,7 @@
                             { row: row + 1, col: col + 1, ...bottomRight }
                         ];
                         
-                        const key = cells.map(c => `${c.row},${c.col}`).sort().join('|');
+                        const key = cells.map(p => `${p.row},${p.col}`).sort().join('|');
                         if (!squares.find(s => s.key === key)) {
                             squares.push({ cells, color: topLeft.color, key });
                         }
@@ -1367,95 +1534,199 @@
         }
         
         function vanishAlignedPastilles() {
-            let toVanish = new Set();
+            const alignments = alignMinLength > 0 ? findAlignments(alignMinLength) : [];
+            const squareMatches = squareMatchEnabled ? findSquareMatches() : [];
+            const allMatches = [...alignments, ...squareMatches];
             
-            if (alignMinLength >= 3) {
-                const alignments = findAlignments(alignMinLength);
-                for (const alignment of alignments) {
-                    for (const cell of alignment.cells) {
-                        toVanish.add(`${cell.row},${cell.col}`);
+            if (allMatches.length === 0) return false;
+            
+            playVanishSound();
+            
+            const toVanish = new Set();
+            let centerVanishes = false;
+            
+            for (const match of allMatches) {
+                for (const cell of match.cells) {
+                    if (cell.type === 'crown') {
+                        toVanish.add(`${cell.crown}-${cell.index}`);
+                    } else if (cell.type === 'center') {
+                        centerVanishes = true;
                     }
                 }
             }
             
-            if (squareMatchEnabled) {
-                const squares = findSquareMatches();
-                for (const square of squares) {
-                    for (const cell of square.cells) {
-                        toVanish.add(`${cell.row},${cell.col}`);
-                    }
+            for (const key of toVanish) {
+                const [crown, index] = key.split('-').map(Number);
+                if (data[crown][index] && data[crown][index].elem) {
+                    data[crown][index].elem.classList.add('vanishing');
+                    data[crown][index].value = null;
                 }
             }
             
-            if (toVanish.size > 0) {
-                playVanishSound();
+            if (centerVanishes && centerData) {
+                const sun = document.getElementById('centerSun');
+                sun.classList.add('vanishing');
+                centerData = null;
+                
+                setTimeout(() => {
+                    sun.classList.remove('vanishing');
+                    updateCenterDisplay();
+                }, 500);
+            }
+            
+            setTimeout(() => {
                 for (const key of toVanish) {
-                    const [row, col] = key.split(',').map(Number);
-                    removePastilleAt(row, col);
+                    const [crown, index] = key.split('-').map(Number);
+                    if (data[crown][index] && data[crown][index].anchor) {
+                        data[crown][index].anchor.remove();
+                        data[crown][index] = null;
+                    }
+                }
+            }, 500);
+            
+            return true;
+        }
+        
+        // ============ PASTILLES ============
+        
+        function createPastille(colorIdx, crown, index){
+            const anchor = document.createElement('div');
+            anchor.className = 'pastille-anchor';
+            anchor.style.cssText = `position:absolute;width:${sizeAncrage}px;height:${sizeAncrage}px;display:flex;align-items:center;justify-content:center;`;
+            anchor.dataset.crown = crown;
+            anchor.dataset.index = index;
+            
+            const elem = document.createElement('div');
+            elem.className = 'pastille';
+            // Liseré noir pour les blancs (colorIdx === 0)
+            const borderStyle = colorIdx === 0 ? 'border: 2px solid #000000;' : '';
+            elem.style.cssText = `width:${sizePastille}px;height:${sizePastille}px;border-radius:${radiusPastille}%;background:${pastilleColors[colorIdx]};position:relative;${borderStyle}`;
+            anchor.appendChild(elem);
+            document.getElementById('gameArea').appendChild(anchor);
+            return {anchor, elem};
+        }
+        
+        function positionPastille(anchor, crown, index){
+            const pos = getPositionOnSquare(crown, index);
+            anchor.style.left = (pos.x - sizeAncrage/2) + 'px';
+            anchor.style.top = (pos.y - sizeAncrage/2) + 'px';
+        }
+        
+        function updateAllPositions(){
+            for(let c = 0; c < 3; c++) {
+                for(let i = 0; i < data[c].length; i++) {
+                    if(data[c][i] && data[c][i].anchor) {
+                        positionPastille(data[c][i].anchor, c, i);
+                    }
                 }
             }
+        }
+        
+        function updateCenterDisplay(){
+            const sun = document.getElementById('centerSun');
+            sun.style.width = sizePastille + 'px';
+            sun.style.height = sizePastille + 'px';
+            sun.style.borderRadius = radiusPastille + '%';
+            
+            if (centerData && centerData.value !== null) {
+                sun.style.background = pastilleColors[centerData.value];
+                sun.style.opacity = '1';
+                sun.style.boxShadow = '0 2px 6px rgba(0,0,0,0.3)';
+                sun.style.cursor = 'grab';
+                sun.style.display = 'block';
+                // Liseré noir pour les blancs
+                sun.style.border = centerData.value === 0 ? '2px solid #000000' : 'none';
+            } else {
+                sun.style.display = 'none'; /* Cacher complètement quand vide */
+            }
+        }
+        
+        function updateSizes(){
+            sizePastille = parseInt(document.getElementById('sizePastille').value);
+            sizeAncrage = sizePastille * 2;
+            radiusPastille = 15;
+            
+            document.getElementById('sizeValue').textContent = sizePastille;
+            
+            for(let c = 0; c < 3; c++) {
+                for(let i = 0; i < data[c].length; i++) {
+                    if(!data[c][i]) continue;
+                    const {anchor, elem} = data[c][i];
+                    if(anchor && elem) {
+                        anchor.style.width = sizeAncrage + 'px';
+                        anchor.style.height = sizeAncrage + 'px';
+                        elem.style.width = sizePastille + 'px';
+                        elem.style.height = sizePastille + 'px';
+                        elem.style.borderRadius = radiusPastille + '%';
+                    }
+                }
+            }
+            
+            updateCenterDisplay();
+            updateAllPositions();
+        }
+        
+        function toggleRails(){
+            document.querySelectorAll('.rail').forEach(r => 
+                r.style.opacity = document.getElementById('showRails').checked ? '1' : '0'
+            );
         }
         
         // ============ DRAG HANDLING ============
         
         let activeDrag = null;
+        function getAngle(x, y){ return Math.atan2(y - cy, x - cx); }
         
-        function getAngle(x, y) {
-            return Math.atan2(y - cy, x - cx);
-        }
-        
-        function findPastilleAt(x, y) {
-            for (let c = 0; c < 4; c++) {
-                for (let i = 0; i < data[c].length; i++) {
-                    if (!data[c][i]) continue;
-                    const pos = getPositionOnSquare(c, i);
-                    const dx = x - pos.x, dy = y - pos.y;
-                    if (Math.sqrt(dx*dx + dy*dy) < sizeAncrage/2) {
-                        return { crown: c, index: i, posX: pos.x, posY: pos.y };
-                    }
-                }
-            }
-            return null;
-        }
-        
-        function handleStart(e) {
-            initAudio();
-            if (continuousRotationState) {
-                stopContinuousRotation();
-                return;
-            }
+        function handleStart(e){
+            if (isMatrixRotating || isLocalRotating) return;
             
-            const rect = document.getElementById('gameArea').getBoundingClientRect();
-            const touch = e.touches ? e.touches[0] : e;
-            const px = touch.clientX, py = touch.clientY;
+            const target = e.target, ga = document.getElementById('gameArea'), rect = ga.getBoundingClientRect();
+            const px = e.touches ? e.touches[0].clientX : e.clientX;
+            const py = e.touches ? e.touches[0].clientY : e.clientY;
             const x = px - rect.left, y = py - rect.top;
+            initAudio();
             
-            const hit = findPastilleAt(x, y);
-            
-            if (hit) {
-                const [row, col] = getGridPosition(hit.crown, hit.index);
-                activeDrag = {
-                    type: 'detect',
-                    crown: hit.crown,
-                    index: hit.index,
-                    row: row,
-                    col: col,
-                    startX: x,
-                    startY: y,
-                    posX: hit.posX,
-                    posY: hit.posY
-                };
+            if(target.id === 'centerSun'){
+                if(!centerData || centerData.value === null){
+                    e.preventDefault(); return;
+                }
+                activeDrag = {type:'diagonal', row: 3, col: 3, startX:x, startY:y, isCenter: true};
+                target.classList.add('dragging');
+                e.preventDefault(); return;
             }
             
-            e.preventDefault();
+            let anchor = null;
+            if(target.classList.contains('pastille')) anchor = target.parentElement;
+            else if(target.classList.contains('pastille-anchor')) anchor = target;
+            
+            if(anchor){
+                const crown = parseInt(anchor.dataset.crown), index = parseInt(anchor.dataset.index);
+                if(!data[crown][index] || data[crown][index].value === null) return;
+                
+                const [row, col] = getGridPosition(crown, index);
+                const pos = getPositionOnSquare(crown, index);
+                
+                activeDrag = {
+                    type: 'detect', 
+                    anchor, 
+                    crown, 
+                    index, 
+                    row, 
+                    col,
+                    startX: x, 
+                    startY: y, 
+                    posX: pos.x, 
+                    posY: pos.y
+                };
+                e.preventDefault();
+            }
         }
         
-        function handleMove(e) {
-            if (!activeDrag) return;
-            
-            const rect = document.getElementById('gameArea').getBoundingClientRect();
-            const touch = e.touches ? e.touches[0] : e;
-            const px = touch.clientX, py = touch.clientY;
+        function handleMove(e){
+            if(!activeDrag || isMatrixRotating || isLocalRotating) return;
+            const ga = document.getElementById('gameArea'), rect = ga.getBoundingClientRect();
+            const px = e.touches ? e.touches[0].clientX : e.clientX;
+            const py = e.touches ? e.touches[0].clientY : e.clientY;
             const x = px - rect.left, y = py - rect.top;
             const dx = x - activeDrag.startX, dy = y - activeDrag.startY, dist = Math.sqrt(dx*dx + dy*dy);
             
@@ -1468,6 +1739,7 @@
                 if (diagDirection) {
                     attemptDiagonalRotation(row, col, dx, dy);
                     activeDrag = null;
+                    document.getElementById('centerSun').classList.remove('dragging');
                 } else {
                     if (activeDrag.type === 'detect' && activeDrag.crown !== undefined) {
                         const radialDirX = activeDrag.posX - cx, radialDirY = activeDrag.posY - cy;
@@ -1480,9 +1752,7 @@
                             activeDrag.type = 'crownRotation';
                             activeDrag.startAngle = getAngle(x, y);
                             activeDrag.startOffset = offsets[activeDrag.crown];
-                            activeDrag.startSnap = Math.round(offsets[activeDrag.crown]);
-                            activeDrag.movesUsed = 0;
-                            const railClass = ['rail-c1','rail-c2','rail-c3','rail-c4'][activeDrag.crown];
+                            const railClass = ['rail-c1','rail-c2','rail-c3'][activeDrag.crown];
                             const rail = document.querySelector('.' + railClass);
                             if(rail) rail.classList.add('dragging');
                         }
@@ -1497,41 +1767,9 @@
                 if(deltaAngle < -Math.PI) deltaAngle += 2*Math.PI;
                 const count = crowns[activeDrag.crown].count;
                 const deltaPositions = (deltaAngle / (2*Math.PI)) * count;
-                const targetSnap = Math.round(activeDrag.startOffset + deltaPositions);
-                
-                const wantedMoves = Math.abs(targetSnap - activeDrag.startSnap);
-                
-                let allowedSnap;
-                if (crownMovesMax > 0 && wantedMoves > crownMovesMax) {
-                    const direction = targetSnap > activeDrag.startSnap ? 1 : -1;
-                    allowedSnap = activeDrag.startSnap + (direction * crownMovesMax);
-                    if (!activeDrag.locked) {
-                        activeDrag.locked = true;
-                        activeDrag.lockedSnap = allowedSnap;
-                    }
-                } else if (activeDrag.locked) {
-                    allowedSnap = activeDrag.lockedSnap;
-                } else {
-                    allowedSnap = targetSnap;
-                }
-                
-                if (!activeDrag.locked) {
-                    const currentSnapPos = Math.round(offsets[activeDrag.crown]);
-                    if (allowedSnap !== currentSnapPos) {
-                        const newMoves = Math.abs(allowedSnap - activeDrag.startSnap);
-                        if (newMoves > activeDrag.movesUsed) {
-                            playTick();
-                            activeDrag.movesUsed = newMoves;
-                        }
-                    }
-                }
-                
-                const currentOffset = offsets[activeDrag.crown];
-                const diff = allowedSnap - currentOffset;
-                
-                const lerpFactor = Math.min(1, 16 / (crownRotationSpeed * 0.3));
-                offsets[activeDrag.crown] = currentOffset + diff * lerpFactor;
-                
+                const oldSnap = Math.round(offsets[activeDrag.crown]);
+                offsets[activeDrag.crown] = activeDrag.startOffset + deltaPositions;
+                if(Math.round(offsets[activeDrag.crown]) !== oldSnap) playTick();
                 updateAllPositions();
             }
             
@@ -1539,6 +1777,7 @@
         }
         
         function handleEnd(e){
+            // Arrêter la rotation continue si active
             if (continuousRotationState) {
                 stopContinuousRotation();
             }
@@ -1547,14 +1786,14 @@
             
             if(activeDrag.type === 'crownRotation'){
                 const crown = activeDrag.crown, count = crowns[crown].count;
-                const railClass = ['rail-c1','rail-c2','rail-c3','rail-c4'][crown];
+                const railClass = ['rail-c1','rail-c2','rail-c3'][crown];
                 const rail = document.querySelector('.' + railClass);
-                if(rail){ rail.classList.remove('dragging'); rail.classList.add('snapping'); setTimeout(() => rail.classList.remove('snapping'), crownRotationSpeed + 100); }
+                if(rail){ rail.classList.remove('dragging'); rail.classList.add('snapping'); setTimeout(() => rail.classList.remove('snapping'), 300); }
                 const targetOffset = Math.round(offsets[crown]) % count;
                 const startOffset = offsets[crown], startTime = performance.now();
                 
                 function animSnap(t){
-                    const p = Math.min((t - startTime) / crownRotationSpeed, 1), eased = 1 - Math.pow(1-p, 3);
+                    const p = Math.min((t - startTime) / 150, 1), eased = 1 - Math.pow(1-p, 3);
                     offsets[crown] = startOffset + (targetOffset - startOffset) * eased;
                     updateAllPositions();
                     if(p < 1) requestAnimationFrame(animSnap);
@@ -1566,6 +1805,7 @@
                 requestAnimationFrame(animSnap);
             }
             
+            document.getElementById('centerSun').classList.remove('dragging');
             activeDrag = null;
         }
         
@@ -1574,28 +1814,22 @@
         function resetGame(){
             stopContinuousRotation();
             isLocalRotating = false;
-            document.getElementById('localRotationIndicator').classList.remove('visible', 'continuous');
             
             const gameArea = document.getElementById('gameArea');
+            const centerSun = document.getElementById('centerSun');
             gameArea.style.transform = 'rotate(0deg)';
-            
-            matrixMovesRemaining = matrixMovesMax;
-            diag2x2MovesRemaining = diag2x2MovesMax;
-            updateMatrixDisplay();
-            updateDiag2x2Display();
+            centerSun.style.transform = 'translate(-50%, -50%)';
+            centerSun.style.left = '50%';
+            centerSun.style.top = '50%';
             
             loadInitialGrid();
         }
         
         function init(){
             updateDimensions();
-            updateMatrixRotSpeed();
-            updateContRotSpeed();
+            updateRotationSpeed();
             updateDiagSensitivity();
-            updateDiag2x2Moves();
-            updateMatrixMoves();
-            updateCrownRotSpeed();
-            updateCrownMoves();
+            updateContRotSpeed();
             loadInitialGrid();
             initMatrixRotationZones();
         }
@@ -1609,6 +1843,7 @@
         document.addEventListener('touchmove', handleMove, {passive: false});
         document.addEventListener('mouseup', handleEnd);
         document.addEventListener('touchend', handleEnd);
+        document.addEventListener('touchcancel', handleEnd);
         
         init();
     </script>
