@@ -83,25 +83,11 @@
             box-shadow: 0 0 15px rgba(255, 165, 0, 0.4);
         }
         
-        .slider-xl { flex: 1; min-width: 180px; max-width: 280px; }
-        .diagonal-controls {
-            background: rgba(255, 165, 0, 0.1);
-            padding: 6px 10px;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 165, 0, 0.3);
-        }
-        .matrix-controls {
-            background: rgba(100, 100, 255, 0.1);
-            padding: 6px 10px;
-            border-radius: 10px;
-            border: 1px solid rgba(100, 100, 255, 0.3);
-        }
-        .crown-controls {
-            background: rgba(50, 200, 100, 0.1);
-            padding: 6px 10px;
-            border-radius: 10px;
-            border: 1px solid rgba(50, 200, 100, 0.3);
-        }
+        .slider-sm { width: 60px; }
+        .slider-xs { width: 40px; }
+        .crown-bg { background: rgba(50, 200, 100, 0.15) !important; }
+        .diag-bg { background: rgba(255, 165, 0, 0.15) !important; }
+        .matrix-bg { background: rgba(100, 100, 255, 0.15) !important; }
         
         .pastille { 
             position: absolute; 
@@ -135,96 +121,90 @@
         .matrix-rotation-indicator { display: none; }
         
         .bottom-menu { 
-            display: flex; flex-direction: column; gap: 6px; padding: 10px; 
-            background: #ffffff; border-radius: 15px 15px 0 0; 
+            display: flex; flex-direction: column; gap: 4px; padding: 6px 8px; 
+            background: #ffffff; border-radius: 12px 12px 0 0; 
             width: 100%; max-width: 100%;
             flex-shrink: 0;
             margin-top: auto;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.08);
         }
-        .controls { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; align-items: center; }
-        .control-item { background: rgba(100,100,150,0.1); padding: 4px 8px; border-radius: 12px; display: flex; align-items: center; gap: 4px; font-size: 0.7em; color: #333; }
-        .control-value { min-width: 20px; text-align: center; font-weight: bold; color: #667eea; }
-        button { padding: 6px 12px; font-size: 0.75em; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
+        .controls { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; align-items: center; }
+        .control-item { background: rgba(100,100,150,0.1); padding: 2px 5px; border-radius: 8px; display: flex; align-items: center; gap: 2px; font-size: 0.65em; color: #333; }
+        .control-value { min-width: 18px; text-align: center; font-weight: bold; color: #667eea; font-size: 0.9em; }
+        button { padding: 4px 8px; font-size: 0.7em; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
         button:active { transform: scale(0.95); }
         
         .icon-btn {
-            padding: 8px 12px;
-            font-size: 1.1em;
-            min-width: 40px;
+            padding: 5px 10px;
+            font-size: 1em;
+            min-width: 32px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 12px;
+            border-radius: 8px;
             cursor: pointer;
         }
         .icon-btn:active { transform: scale(0.95); }
         
-        .slider-large { flex: 1; min-width: 100px; max-width: 150px; }
-        
-        .slider-touch {
+        .slider-touch, input[type="range"] {
             -webkit-appearance: none;
             appearance: none;
-            width: 100%;
-            height: 24px;
+            height: 18px;
             background: transparent;
             cursor: pointer;
             touch-action: pan-x;
         }
         
-        .slider-touch::-webkit-slider-runnable-track {
+        .slider-touch::-webkit-slider-runnable-track, input[type="range"]::-webkit-slider-runnable-track {
             width: 100%;
-            height: 12px;
-            background: rgba(100,100,150,0.15);
-            border-radius: 6px;
+            height: 8px;
+            background: rgba(100,100,150,0.2);
+            border-radius: 4px;
         }
         
-        .slider-touch::-webkit-slider-thumb {
+        .slider-touch::-webkit-slider-thumb, input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 28px;
-            height: 28px;
+            width: 18px;
+            height: 18px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 50%;
             cursor: pointer;
-            margin-top: -8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            margin-top: -5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         }
         
-        .slider-touch::-moz-range-track {
+        .slider-touch::-moz-range-track, input[type="range"]::-moz-range-track {
             width: 100%;
-            height: 12px;
-            background: rgba(100,100,150,0.15);
-            border-radius: 6px;
+            height: 8px;
+            background: rgba(100,100,150,0.2);
+            border-radius: 4px;
         }
         
-        .slider-touch::-moz-range-thumb {
-            width: 28px;
-            height: 28px;
+        .slider-touch::-moz-range-thumb, input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 50%;
             cursor: pointer;
             border: none;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         }
         
-        .toggle-switch { position: relative; width: 32px; height: 18px; }
+        .toggle-switch { position: relative; width: 28px; height: 16px; }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
-        .toggle-slider { position: absolute; cursor: pointer; inset: 0; background-color: rgba(100,100,150,0.2); border-radius: 18px; }
-        .toggle-slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        .toggle-slider { position: absolute; cursor: pointer; inset: 0; background-color: rgba(100,100,150,0.2); border-radius: 16px; }
+        .toggle-slider:before { position: absolute; content: ""; height: 10px; width: 10px; left: 3px; bottom: 3px; background-color: white; border-radius: 50%; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
         input:checked + .toggle-slider { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        input:checked + .toggle-slider:before { transform: translateX(14px); }
-        .legend { display: flex; gap: 6px; font-size: 0.6em; flex-wrap: wrap; justify-content: center; color: #333; }
-        .legend-item { display: flex; align-items: center; gap: 3px; }
-        .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+        input:checked + .toggle-slider:before { transform: translateX(12px); }
         
         .option-btn {
-            padding: 4px 10px;
-            font-size: 0.7em;
+            padding: 3px 8px;
+            font-size: 0.65em;
             background: rgba(100,100,150,0.15);
             color: #333;
-            border: 2px solid transparent;
-            border-radius: 8px;
+            border: none;
+            border-radius: 6px;
             cursor: pointer;
             transition: all 0.2s;
         }
@@ -232,39 +212,6 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             font-weight: bold;
-        }
-        
-        .moves-counter {
-            display: flex;
-            align-items: center;
-            gap: 3px;
-            font-size: 0.8em;
-            font-weight: bold;
-        }
-        .moves-counter .count {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 2px 8px;
-            border-radius: 10px;
-            min-width: 30px;
-            text-align: center;
-        }
-        .moves-counter .count.warning {
-            background: linear-gradient(135deg, #f39c12 0%, #e74c3c 100%);
-        }
-        .moves-counter .count.exhausted {
-            background: #95a5a6;
-        }
-        .moves-counter .infinity {
-            font-size: 1.2em;
-        }
-        
-        .section-title {
-            font-size: 0.65em;
-            color: #888;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 2px;
         }
     </style>
 </head>
@@ -291,104 +238,58 @@
     <div class="bottom-menu">
         <div class="controls">
             <button class="icon-btn" onclick="resetGame()">↺</button>
-            <div class="control-item slider-large">
+            <div class="control-item">
                 <label>📐</label>
-                <input type="range" id="sizePastille" min="8" max="40" value="24" oninput="updateSizes()" class="slider-touch">
+                <input type="range" id="sizePastille" min="8" max="40" value="24" oninput="updateSizes()" class="slider-sm">
                 <span class="control-value" id="sizeValue">24</span>
             </div>
-        </div>
-        
-        <!-- CONTRÔLES ROTATION COURONNES -->
-        <div class="controls crown-controls">
-            <span class="section-title">Rotation Couronnes (glisser tangentiel)</span>
-        </div>
-        <div class="controls crown-controls">
-            <div class="control-item slider-xl">
-                <label title="Vitesse de rotation couronnes">🔘 Vitesse</label>
-                <input type="range" id="crownRotSpeed" min="100" max="2000" value="800" step="50" oninput="updateCrownRotSpeed()" class="slider-touch">
-                <span class="control-value" id="crownRotSpeedValue">800ms</span>
+            <div class="control-item crown-bg">
+                <label>🔘</label>
+                <input type="range" id="crownRotSpeed" min="100" max="2000" value="800" step="50" oninput="updateCrownRotSpeed()" class="slider-sm">
+                <span class="control-value" id="crownRotSpeedValue">800</span>
             </div>
-            <div class="control-item">
-                <label title="Nombre de coups couronnes">🎯 Coups</label>
-                <input type="range" id="crownMoves" min="0" max="5" value="0" oninput="updateCrownMoves()" style="width:60px;">
+            <div class="control-item crown-bg">
+                <label>🎯</label>
+                <input type="range" id="crownMoves" min="0" max="5" value="0" oninput="updateCrownMoves()" class="slider-xs">
                 <span class="control-value" id="crownMovesValue">∞</span>
             </div>
         </div>
         
-        <!-- CONTRÔLES ROTATION 2x2 -->
-        <div class="controls diagonal-controls">
-            <span class="section-title">Rotation 2×2</span>
-        </div>
-        <div class="controls diagonal-controls">
-            <div class="control-item slider-xl">
-                <label title="Vitesse de rotation 2x2">⟳ Vitesse</label>
-                <input type="range" id="contRotSpeed" min="200" max="2000" value="800" step="50" oninput="updateContRotSpeed()" class="slider-touch">
-                <span class="control-value" id="contRotSpeedValue">800ms</span>
+        <div class="controls">
+            <div class="control-item diag-bg">
+                <label>⟳</label>
+                <input type="range" id="contRotSpeed" min="200" max="2000" value="800" step="50" oninput="updateContRotSpeed()" class="slider-sm">
+                <span class="control-value" id="contRotSpeedValue">800</span>
             </div>
-            <div class="control-item">
-                <label title="Nombre de coups 2x2">🎯 Coups</label>
-                <input type="range" id="diag2x2Moves" min="0" max="5" value="0" oninput="updateDiag2x2Moves()" style="width:60px;">
+            <div class="control-item diag-bg">
+                <label>🎯</label>
+                <input type="range" id="diag2x2Moves" min="0" max="5" value="0" oninput="updateDiag2x2Moves()" class="slider-xs">
                 <span class="control-value" id="diag2x2MovesValue">∞</span>
             </div>
-        </div>
-        <div class="controls diagonal-controls">
-            <div class="control-item slider-xl">
-                <label title="Zone de détection diagonale">⤡ Zone</label>
-                <input type="range" id="diagSensitivity" min="10" max="90" value="20" step="1" oninput="updateDiagSensitivity()" class="slider-touch">
+            <div class="control-item diag-bg">
+                <label>⤡</label>
+                <input type="range" id="diagSensitivity" min="10" max="90" value="20" step="1" oninput="updateDiagSensitivity()" class="slider-xs">
                 <span class="control-value" id="diagSensValue">20%</span>
             </div>
         </div>
         
-        <!-- CONTRÔLES ROTATION MATRICE -->
-        <div class="controls matrix-controls">
-            <span class="section-title">Rotation Matrice (swipe latéral)</span>
-        </div>
-        <div class="controls matrix-controls">
-            <div class="control-item slider-xl">
-                <label title="Vitesse de rotation matrice">🔄 Vitesse</label>
-                <input type="range" id="matrixRotSpeed" min="200" max="2000" value="800" step="50" oninput="updateMatrixRotSpeed()" class="slider-touch">
-                <span class="control-value" id="matrixRotSpeedValue">800ms</span>
+        <div class="controls">
+            <div class="control-item matrix-bg">
+                <label>🔄</label>
+                <input type="range" id="matrixRotSpeed" min="200" max="2000" value="800" step="50" oninput="updateMatrixRotSpeed()" class="slider-sm">
+                <span class="control-value" id="matrixRotSpeedValue">800</span>
             </div>
-            <div class="control-item">
-                <label title="Nombre de coups matrice">🎯 Coups</label>
-                <input type="range" id="matrixMoves" min="0" max="5" value="0" oninput="updateMatrixMoves()" style="width:60px;">
+            <div class="control-item matrix-bg">
+                <label>🎯</label>
+                <input type="range" id="matrixMoves" min="0" max="5" value="0" oninput="updateMatrixMoves()" class="slider-xs">
                 <span class="control-value" id="matrixMovesValue">∞</span>
             </div>
-        </div>
-        <div class="controls matrix-controls">
-            <button onclick="testMatrixRotation(1)">Test ↻</button>
-            <button onclick="testMatrixRotation(-1)">Test ↺</button>
-        </div>
-        
-        <div class="controls">
-            <div class="control-item">
-                <label>Align:</label>
-                <button class="option-btn" id="align3Btn" onclick="setAlignMin(3)">3</button>
-                <button class="option-btn" id="align4Btn" onclick="setAlignMin(4)">4</button>
-                <button class="option-btn active" id="align2x2Btn" onclick="toggleSquareMatch()">2×2</button>
-            </div>
-            <div class="control-item">
-                <label>Diag:</label>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="diagAlignEnabled" checked onchange="toggleDiagAlign()">
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
-        </div>
-        <div class="controls">
-            <div class="control-item"><label>Rails:</label><label class="toggle-switch"><input type="checkbox" id="showRails" checked onchange="toggleRails()"><span class="toggle-slider"></span></label></div>
-            <div class="control-item">
-                <label>Gravité:</label>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="gravityEnabled" onchange="toggleGravity()">
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
-        </div>
-        <div class="legend">
-            <div class="legend-item"><div class="legend-dot" style="background:#3498db;"></div><span>Bleu</span></div>
-            <div class="legend-item"><div class="legend-dot" style="background:#f1c40f;"></div><span>Jaune</span></div>
-            <div class="legend-item"><div class="legend-dot" style="background:#e74c3c;"></div><span>Rouge</span></div>
+            <button class="option-btn" id="align3Btn" onclick="setAlignMin(3)">3</button>
+            <button class="option-btn" id="align4Btn" onclick="setAlignMin(4)">4</button>
+            <button class="option-btn active" id="align2x2Btn" onclick="toggleSquareMatch()">2×2</button>
+            <label class="toggle-switch" title="Diag"><input type="checkbox" id="diagAlignEnabled" checked onchange="toggleDiagAlign()"><span class="toggle-slider"></span></label>
+            <label class="toggle-switch" title="Rails"><input type="checkbox" id="showRails" checked onchange="toggleRails()"><span class="toggle-slider"></span></label>
+            <label class="toggle-switch" title="Gravité"><input type="checkbox" id="gravityEnabled" onchange="toggleGravity()"><span class="toggle-slider"></span></label>
         </div>
     </div>
     
