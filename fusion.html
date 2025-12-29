@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fusion Square v9 - Rotation 3×3</title>
+    <title>Fusion Square v8.4 - Sans rotation couronnes</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; overflow: hidden; touch-action: none; }
@@ -12,7 +12,7 @@
             background: #ffffff; 
             min-height: 100vh; min-height: -webkit-fill-available;
             display: flex; flex-direction: column; align-items: center;
-            justify-content: center; /* Centrage vertical */
+            justify-content: center;
         }
         
         .top-zone {
@@ -25,19 +25,17 @@
             width: 100%;
         }
         
-        /* Conteneur principal avec zones de rotation */
         .main-game-wrapper {
             display: flex;
-            align-items: stretch; /* Les zones s'étirent sur toute la hauteur */
+            align-items: stretch;
             justify-content: center;
             gap: 0;
-            height: min(90vw, 50vh); /* Hauteur fixe pour les zones */
+            height: min(90vw, 50vh);
         }
         
-        /* Zones de rotation latérales - transparentes, hauteur étendue */
         .rotation-zone {
             width: 50px;
-            height: 100%; /* Prend toute la hauteur disponible */
+            height: 100%;
             min-height: min(85vw, 45vh);
             display: flex;
             flex-direction: column;
@@ -46,34 +44,18 @@
             cursor: grab;
             user-select: none;
             position: relative;
-            /* Totalement transparent */
-        }
-        
-        .rotation-zone:hover {
-            /* Pas de changement visuel au hover */
         }
         
         .rotation-zone.active {
             cursor: grabbing;
-            /* Pas de fond au touch */
         }
         
-        .rotation-zone-left {
-            /* Rien */
-        }
-        
-        .rotation-zone-right {
-            /* Rien */
-        }
-        
-        /* Indicateurs cachés */
         .rotation-indicator,
         .rotation-arrow {
             display: none;
         }
         
         .game-container { 
-            /* Conteneur invisible - plus de fond blanc arrondi */
             position: relative; 
             overflow: visible;
         }
@@ -82,13 +64,8 @@
             position: relative; 
             width: min(85vw, 45vh); 
             height: min(85vw, 45vh);
-            /* Plus de fond ni bordure - transparent */
             overflow: visible;
             transition: transform var(--rotation-duration, 0.4s) cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .game-area.rotating {
-            /* Animation gérée par JS */
         }
         
         .rail { position: absolute; border: 2px dashed rgba(100,100,100,0.4); pointer-events: none; z-index: 2; }
@@ -123,21 +100,17 @@
         .rail-c2 { top: 24.3%; left: 24.3%; right: 24.3%; bottom: 24.3%; }
         .rail-c3 { top: 37.1%; left: 37.1%; right: 37.1%; bottom: 37.1%; }
         
-        /* CENTRE: z-index réduit pour ne pas masquer les animations */
         .center-sun { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
             border-radius: 15%; 
             box-shadow: 0 2px 6px rgba(0,0,0,0.3); 
             cursor: grab; 
-            z-index: 10; /* Même niveau que les pastilles */
+            z-index: 10;
             transition: transform var(--rotation-duration, 0.4s) cubic-bezier(0.4, 0, 0.2, 1);
         }
         .center-sun.dragging { transform: translate(-50%, -50%) scale(1.15); box-shadow: 0 0 15px rgba(0,0,0,0.4); z-index: 100; }
         .center-sun.arriving { animation: arriveCenter 0.4s ease-out forwards; }
         .center-sun.vanishing { animation: vanishCenter 0.5s ease-out forwards; }
-        .center-sun.counter-rotating {
-            /* Contre-rotation appliquée par JS */
-        }
         
         @keyframes arriveCenter {
             0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
@@ -165,7 +138,6 @@
             transition: transform var(--rotation-duration, 0.4s) cubic-bezier(0.4, 0, 0.2, 1);
         }
         
-        /* Pastille en rotation locale : z-index élevé pendant l'animation */
         .pastille-anchor.rotating {
             z-index: 50;
         }
@@ -182,21 +154,16 @@
             100% { transform: scale(1); opacity: 1; }
         }
         
-        /* Indicateur de rotation de matrice - SUPPRIMÉ */
         .matrix-rotation-indicator {
             display: none;
         }
-        /* Style visible supprimé */
         
-        /* Zone d'information supprimée pour centrer la matrice */
-        
-        /* Menu en bas */
         .bottom-menu { 
             display: flex; flex-direction: column; gap: 6px; padding: 10px; 
             background: #ffffff; border-radius: 15px 15px 0 0; 
             width: 100%; max-width: 100%;
             flex-shrink: 0;
-            margin-top: auto; /* Pousse le menu en bas */
+            margin-top: auto;
             box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
         }
         .controls { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; align-items: center; }
@@ -205,7 +172,6 @@
         button { padding: 6px 12px; font-size: 0.75em; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
         button:active { transform: scale(0.95); }
         
-        /* Boutons icônes compacts */
         .icon-btn {
             padding: 8px 12px;
             font-size: 1.1em;
@@ -218,7 +184,6 @@
         }
         .icon-btn:active { transform: scale(0.95); }
         
-        /* Sliders tactiles optimisés pour iPhone */
         .slider-large {
             flex: 1;
             min-width: 100px;
@@ -281,7 +246,6 @@
         .legend-item { display: flex; align-items: center; gap: 3px; }
         .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
         
-        /* Boutons options */
         .option-btn {
             padding: 4px 10px;
             font-size: 0.7em;
@@ -298,7 +262,6 @@
             font-weight: bold;
         }
         
-        /* Section rotation matrix */
         .rotation-controls {
             background: rgba(100, 100, 255, 0.1);
             padding: 4px 8px;
@@ -309,7 +272,6 @@
 <body>
     <div class="top-zone">
         <div class="main-game-wrapper">
-            <!-- Zone de rotation GAUCHE (transparente) -->
             <div class="rotation-zone rotation-zone-left" id="rotationZoneLeft"></div>
             
             <div class="game-container">
@@ -323,12 +285,9 @@
                 </div>
             </div>
             
-            <!-- Zone de rotation DROITE (transparente) -->
             <div class="rotation-zone rotation-zone-right" id="rotationZoneRight"></div>
         </div>
     </div>
-    
-    <!-- Zone info supprimée pour centrer la matrice -->
     
     <div class="bottom-menu">
         <div class="controls">
@@ -388,9 +347,9 @@
             </div>
         </div>
         <div class="legend">
-            <div class="legend-item"><div class="legend-dot" style="background:#3498db;"></div><span>Bleu</span></div>
-            <div class="legend-item"><div class="legend-dot" style="background:#f1c40f;"></div><span>Jaune</span></div>
-            <div class="legend-item"><div class="legend-dot" style="background:#e74c3c;"></div><span>Rouge</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#3498db;"></div><span>Bleu (16)</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#f1c40f;"></div><span>Jaune (16)</span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#e74c3c;"></div><span>Rouge (16)</span></div>
         </div>
     </div>
     
@@ -441,26 +400,21 @@
             return cornerIndices[crown].includes(actualIndex);
         }
         
-        // DÉFAUT: taille 32
         let sizePastille = 32;
-        let sizeAncrage = 64; // 2x sizePastille
-        let radiusPastille = 15; // Fixe
+        let sizeAncrage = 64;
+        let radiusPastille = 15;
         
         let data=[[],[],[]],offsets=[0,0,0];
         let centerData = null;
         const pastilleColors=["#3498db","#f1c40f","#e74c3c"];
         let isLocalRotating = false;
         
-        // ============ PARAMÈTRES DE JEU ============
-        
-        // DÉFAUT: alignMinLength = 0 (désactivé), squareMatchEnabled = true (2x2 actif)
         let alignMinLength = 0;
         let squareMatchEnabled = true;
-        let diagAlignEnabled = true; // Toggle pour les diagonales dans findAlignments
+        let diagAlignEnabled = true;
         let rotationDuration = 400;
         let gravityEnabled = true;
         
-        // ============ PARAMÈTRES DIAGONAUX ============
         let diagSensitivity = 50;
         let continuousRotationSpeed = 500;
         let continuousRotationState = null;
@@ -479,10 +433,9 @@
         function stopContinuousRotation() {
             if (continuousRotationTimer) { clearTimeout(continuousRotationTimer); continuousRotationTimer = null; }
             continuousRotationState = null;
+            document.getElementById('localRotationIndicator').classList.remove('visible', 'continuous');
             setTimeout(() => vanishAlignedPastilles(), 100);
         }
-        
-        // ============ ROTATION MATRICIELLE ============
         
         let isMatrixRotating = false;
         let matrixRotationDrag = null;
@@ -752,8 +705,6 @@
             document.getElementById('align2x2Btn').classList.toggle('active', squareMatchEnabled);
         }
         
-        // ============ GRAVITÉ VERS LE BAS ============
-        
         function applyDownwardGravity() {
             const grid = Array(7).fill(null).map(() => Array(7).fill(null));
             
@@ -854,8 +805,6 @@
             return moved;
         }
         
-        // ============ ROTATION LOCALE 2x2 (DIAGONALE) ============
-        
         function gridToPixel(row, col) {
             return {
                 x: padding + col * cellSize + cellSize / 2,
@@ -902,453 +851,196 @@
             }
         }
         
-        // ============ NOUVELLE MÉCANIQUE : ROTATION DIAGONALE ============
-        
-        // Les 9 zones 3x3 fixes (topRow, topCol)
-        const FIXED_ZONES = [
-            { topRow: 0, topCol: 0, pivot: [1, 1] },  // Zone 0
-            { topRow: 0, topCol: 2, pivot: [1, 3] },  // Zone 1
-            { topRow: 0, topCol: 4, pivot: [1, 5] },  // Zone 2
-            { topRow: 2, topCol: 0, pivot: [3, 1] },  // Zone 3
-            { topRow: 2, topCol: 2, pivot: [3, 3] },  // Zone 4 (centre grille)
-            { topRow: 2, topCol: 4, pivot: [3, 5] },  // Zone 5
-            { topRow: 4, topCol: 0, pivot: [5, 1] },  // Zone 6
-            { topRow: 4, topCol: 2, pivot: [5, 3] },  // Zone 7
-            { topRow: 4, topCol: 4, pivot: [5, 5] }   // Zone 8
-        ];
-        
-        // Vérifie si une position est un pivot (ne doit pas déclencher de rotation)
-        function isPivotPosition(row, col) {
-            return FIXED_ZONES.some(z => z.pivot[0] === row && z.pivot[1] === col);
-        }
-        
-        // Trouve la zone 3x3 fixe correspondant à une position et une direction
-        function findZoneForPosition(row, col, diagDirection) {
-            // Trouver toutes les zones auxquelles cette cellule appartient
-            const matchingZones = FIXED_ZONES.filter(zone => {
-                return row >= zone.topRow && row <= zone.topRow + 2 &&
-                       col >= zone.topCol && col <= zone.topCol + 2;
-            });
-            
-            if (matchingZones.length === 0) return null;
-            if (matchingZones.length === 1) return matchingZones[0];
-            
-            // Si plusieurs zones, choisir selon la direction du swipe
-            // upRight -> zone en haut à droite
-            // upLeft -> zone en haut à gauche
-            // downRight -> zone en bas à droite
-            // downLeft -> zone en bas à gauche
-            
-            let bestZone = matchingZones[0];
-            for (const zone of matchingZones) {
-                const zoneCenterRow = zone.topRow + 1;
-                const zoneCenterCol = zone.topCol + 1;
-                
-                switch(diagDirection) {
-                    case 'upRight':
-                        if (zoneCenterRow <= bestZone.topRow + 1 && zoneCenterCol >= bestZone.topCol + 1) {
-                            bestZone = zone;
-                        }
-                        break;
-                    case 'upLeft':
-                        if (zoneCenterRow <= bestZone.topRow + 1 && zoneCenterCol <= bestZone.topCol + 1) {
-                            bestZone = zone;
-                        }
-                        break;
-                    case 'downRight':
-                        if (zoneCenterRow >= bestZone.topRow + 1 && zoneCenterCol >= bestZone.topCol + 1) {
-                            bestZone = zone;
-                        }
-                        break;
-                    case 'downLeft':
-                        if (zoneCenterRow >= bestZone.topRow + 1 && zoneCenterCol <= bestZone.topCol + 1) {
-                            bestZone = zone;
-                        }
-                        break;
-                }
-            }
-            
-            return bestZone;
-        }
-        
-        function calculateDiagonalRotationGroup(sourceRow, sourceCol, diagDirection) {
-            // Les pivots ne déclenchent pas de rotation
-            if (isPivotPosition(sourceRow, sourceCol)) {
-                return null;
-            }
-            
-            const zone = findZoneForPosition(sourceRow, sourceCol, diagDirection);
-            if (!zone) return null;
-            
-            const { topRow, topCol } = zone;
-            
-            // 9 positions du groupe 3x3 :
-            // [0] [1] [2]
-            // [3] [4] [5]   <- [4] = centre (pivot fixe)
-            // [6] [7] [8]
-            return {
-                topRow, topCol,
-                positions: [
-                    [topRow, topCol],         // 0 - coin haut-gauche
-                    [topRow, topCol + 1],     // 1 - haut-centre
-                    [topRow, topCol + 2],     // 2 - coin haut-droite
-                    [topRow + 1, topCol],     // 3 - milieu-gauche
-                    [topRow + 1, topCol + 1], // 4 - CENTRE (pivot)
-                    [topRow + 1, topCol + 2], // 5 - milieu-droite
-                    [topRow + 2, topCol],     // 6 - coin bas-gauche
-                    [topRow + 2, topCol + 1], // 7 - bas-centre
-                    [topRow + 2, topCol + 2]  // 8 - coin bas-droite
-                ],
-                centerX: padding + (topCol + 1.5) * cellSize,
-                centerY: padding + (topRow + 1.5) * cellSize
-            };
-        }
-        
-        function getDiagonalRotationDirection(diagDirection, sourceRow, sourceCol, zone) {
-            // Logique cadran téléphonique : le sens dépend de la position dans la zone
-            // true = horaire (clockwise), false = anti-horaire
-            
-            // Position relative dans la zone 3x3
-            const relRow = sourceRow - zone.topRow; // 0, 1, ou 2
-            const relCol = sourceCol - zone.topCol; // 0, 1, ou 2
-            
-            // Position 1 : haut-centre (relRow=0, relCol=1)
-            if (relRow === 0 && relCol === 1) {
-                if (diagDirection === 'downLeft') return false;  // anti-horaire
-                if (diagDirection === 'downRight') return true;  // horaire
-            }
-            
-            // Position 2 : milieu-gauche (relRow=1, relCol=0)
-            // Réagit uniquement aux gestes vers la droite
-            if (relRow === 1 && relCol === 0) {
-                if (diagDirection === 'upRight') return true;     // horaire
-                if (diagDirection === 'downRight') return false;  // anti-horaire
-            }
-            
-            // Position 3 : milieu-droite (relRow=1, relCol=2)
-            // Réagit uniquement aux gestes vers la gauche
-            if (relRow === 1 && relCol === 2) {
-                if (diagDirection === 'upLeft') return false;     // anti-horaire
-                if (diagDirection === 'downLeft') return true;    // horaire
-            }
-            
-            // Position 4 : bas-centre (relRow=2, relCol=1)
-            if (relRow === 2 && relCol === 1) {
-                if (diagDirection === 'upLeft') return true;     // horaire
-                if (diagDirection === 'upRight') return false;   // anti-horaire
-            }
-            
-            // Coins : logique standard
-            // Coin haut-gauche (0,0)
-            if (relRow === 0 && relCol === 0) {
-                if (diagDirection === 'downRight') return true;  // horaire
-            }
-            
-            // Coin haut-droite (0,2)
-            if (relRow === 0 && relCol === 2) {
-                if (diagDirection === 'downLeft') return false;  // anti-horaire
-            }
-            
-            // Coin bas-gauche (2,0)
-            if (relRow === 2 && relCol === 0) {
-                if (diagDirection === 'upRight') return false;   // anti-horaire
-            }
-            
-            // Coin bas-droite (2,2)
-            if (relRow === 2 && relCol === 2) {
-                if (diagDirection === 'upLeft') return true;     // horaire
-            }
-            
-            // Défaut (ne devrait pas arriver)
-            return true;
-        }
-        
         function detectDiagonalDirection(dx, dy) {
-            const absDx = Math.abs(dx);
-            const absDy = Math.abs(dy);
+            const absDx = Math.abs(dx), absDy = Math.abs(dy);
+            const threshold = diagSensitivity / 100;
+            const minRatio = threshold;
+            const maxRatio = 1 / threshold;
             
-            if (absDx < 5 || absDy < 5) return null;
-            const ratio = absDx / absDy;
+            if (absDx < 5 && absDy < 5) return null;
             
-            // Seuils basés sur diagSensitivity (10-90)
-            // 50 = équilibré (ratio 0.3-3.0 original)
-            const minRatio = 0.7 - (diagSensitivity / 100) * 0.6;
-            const maxRatio = 1.4 + (diagSensitivity / 100) * 8.6;
+            const ratio = absDx / (absDy + 0.001);
             
-            if (ratio < minRatio || ratio > maxRatio) return null;
-            
-            if (dy < 0 && dx > 0) return 'upRight';
-            if (dy < 0 && dx < 0) return 'upLeft';
-            if (dy > 0 && dx > 0) return 'downRight';
-            if (dy > 0 && dx < 0) return 'downLeft';
+            if (ratio >= minRatio && ratio <= maxRatio) {
+                if (dx > 0 && dy > 0) return 'SE';
+                if (dx > 0 && dy < 0) return 'NE';
+                if (dx < 0 && dy > 0) return 'SW';
+                if (dx < 0 && dy < 0) return 'NW';
+            }
             
             return null;
         }
         
-        function getAvailableDiagonalDirections(row, col) {
-            // Les pivots ne déclenchent aucune rotation
-            if (isPivotPosition(row, col)) {
-                return [];
+        function get2x2Cells(row, col, direction) {
+            let cells;
+            switch(direction) {
+                case 'NE': cells = [[row-1, col], [row-1, col+1], [row, col+1], [row, col]]; break;
+                case 'SE': cells = [[row, col], [row, col+1], [row+1, col+1], [row+1, col]]; break;
+                case 'SW': cells = [[row, col-1], [row, col], [row+1, col], [row+1, col-1]]; break;
+                case 'NW': cells = [[row-1, col-1], [row-1, col], [row, col], [row, col-1]]; break;
+                default: return null;
             }
             
-            // Pour toutes les autres positions, toutes les directions sont possibles
-            // La fonction findZoneForPosition déterminera la zone appropriée
-            return ['upRight', 'upLeft', 'downRight', 'downLeft'];
-        }
-        
-        function executeLocalRotation(group, clockwise, callback) {
-            if (isLocalRotating) return;
-            isLocalRotating = true;
-            
-            playLocalRotationSound();
-            
-            // Vérifier si le centre de la grille (3,3) fait partie du groupe
-            const gridCenterInGroup = group.positions.some(([r, c]) => r === 3 && c === 3);
-            
-            // Élever le z-index du centre pendant l'animation si nécessaire
-            const centerSun = document.getElementById('centerSun');
-            if (gridCenterInGroup) {
-                centerSun.style.zIndex = '50';
+            for (const [r, c] of cells) {
+                if (r < 0 || r > 6 || c < 0 || c > 6) return null;
             }
             
-            // Récupérer les données des 9 cellules
-            const cells = group.positions.map(([r, c], idx) => {
-                const color = getColorAt(r, c);
-                let anchor = null;
-                if (r !== 3 || c !== 3) {
-                    const target = findCrownIndexForGridPosition(r, c);
-                    if (target && data[target.crown][target.index]) {
-                        anchor = data[target.crown][target.index].anchor;
-                        // Élever le z-index pendant l'animation (sauf pour le pivot central du 3x3)
-                        if (anchor && idx !== 4) anchor.classList.add('rotating');
-                    }
-                }
-                return { row: r, col: c, color, anchor, startPos: gridToPixel(r, c), posIndex: idx };
-            });
-            
-            // Indices de permutation pour rotation 3x3 :
-            // Les 8 cellules périphériques tournent, le centre (index 4) reste fixe
-            // Positions: 0,1,2,3,4,5,6,7,8
-            // Périphérie dans l'ordre horaire: 0 -> 1 -> 2 -> 5 -> 8 -> 7 -> 6 -> 3 -> 0
-            // 
-            // Horaire: chaque position reçoit la valeur de la position précédente dans le cycle
-            // Anti-horaire: chaque position reçoit la valeur de la position suivante dans le cycle
-            const peripheryOrder = [0, 1, 2, 5, 8, 7, 6, 3]; // ordre horaire du cycle
-            
-            // Calculer les nouvelles positions
-            // newIndices[i] = où la cellule i doit aller
-            const newIndices = [0, 1, 2, 3, 4, 5, 6, 7, 8]; // par défaut, chaque position reste
-            
-            for (let i = 0; i < peripheryOrder.length; i++) {
-                const currentPos = peripheryOrder[i];
-                const nextPos = peripheryOrder[(i + 1) % peripheryOrder.length];
-                const prevPos = peripheryOrder[(i - 1 + peripheryOrder.length) % peripheryOrder.length];
-                
-                if (clockwise) {
-                    // En horaire, la cellule à currentPos va à nextPos
-                    newIndices[currentPos] = nextPos;
-                } else {
-                    // En anti-horaire, la cellule à currentPos va à prevPos
-                    newIndices[currentPos] = prevPos;
-                }
-            }
-            // Le centre (4) reste à sa place
-            newIndices[4] = 4;
-            
-            // Assigner les positions de destination
-            for (let i = 0; i < 9; i++) {
-                const targetIdx = newIndices[i];
-                cells[i].endPos = gridToPixel(group.positions[targetIdx][0], group.positions[targetIdx][1]);
-                cells[i].targetRow = group.positions[targetIdx][0];
-                cells[i].targetCol = group.positions[targetIdx][1];
-            }
-            
-            // Animer aussi le centre de la grille s'il fait partie du groupe (mais PAS s'il est le pivot 3x3)
-            let gridCenterStartPos = null;
-            let gridCenterEndPos = null;
-            if (gridCenterInGroup) {
-                for (let i = 0; i < 9; i++) {
-                    if (cells[i].row === 3 && cells[i].col === 3 && i !== 4) {
-                        // Le centre de la grille (3,3) n'est PAS le pivot du 3x3, donc il bouge
-                        gridCenterStartPos = cells[i].startPos;
-                        gridCenterEndPos = cells[i].endPos;
-                        break;
-                    }
-                }
-            }
-            
-            // Durée d'animation : 70% du temps total en mode continu, 180ms en mode simple
-            const duration = continuousRotationState ? continuousRotationSpeed * 0.7 : 180;
-            const startTime = performance.now();
-            
-            function animate(currentTime) {
-                const progress = Math.min((currentTime - startTime) / duration, 1);
-                const eased = 1 - Math.pow(1 - progress, 3);
-                
-                for (const cell of cells) {
-                    // Le pivot central (index 4) ne bouge pas
-                    if (cell.posIndex === 4) continue;
-                    
-                    if (cell.anchor) {
-                        const x = cell.startPos.x + (cell.endPos.x - cell.startPos.x) * eased;
-                        const y = cell.startPos.y + (cell.endPos.y - cell.startPos.y) * eased;
-                        cell.anchor.style.left = (x - sizeAncrage/2) + 'px';
-                        cell.anchor.style.top = (y - sizeAncrage/2) + 'px';
-                    }
-                }
-                
-                // Animer le centre de la grille visuellement (s'il bouge)
-                if (gridCenterStartPos && gridCenterEndPos) {
-                    const ccx = gridCenterStartPos.x + (gridCenterEndPos.x - gridCenterStartPos.x) * eased;
-                    const ccy = gridCenterStartPos.y + (gridCenterEndPos.y - gridCenterStartPos.y) * eased;
-                    // Convertir en pourcentage pour le positionnement du centre
-                    const leftPercent = (ccx / canvasSize) * 100;
-                    const topPercent = (ccy / canvasSize) * 100;
-                    centerSun.style.left = leftPercent + '%';
-                    centerSun.style.top = topPercent + '%';
-                }
-                
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
-                } else {
-                    finishLocalRotation(group, cells, newIndices, gridCenterInGroup, callback);
-                }
-            }
-            
-            requestAnimationFrame(animate);
-        }
-        
-        function finishLocalRotation(group, cells, newIndices, gridCenterInGroup, callback) {
-            const newColors = [null, null, null, null, null, null, null, null, null];
-            for (let i = 0; i < 9; i++) {
-                newColors[newIndices[i]] = cells[i].color;
-            }
-            
-            // Retirer la classe rotating et remettre z-index normal
-            for (const cell of cells) {
-                if (cell.anchor) {
-                    cell.anchor.classList.remove('rotating');
-                }
-            }
-            
-            for (const [r, c] of group.positions) {
-                if (r === 3 && c === 3) continue;
-                const target = findCrownIndexForGridPosition(r, c);
-                if (target && data[target.crown][target.index] && data[target.crown][target.index].anchor) {
-                    data[target.crown][target.index].anchor.remove();
-                    data[target.crown][target.index] = null;
-                }
-            }
-            
-            if (gridCenterInGroup) {
-                centerData = null;
-            }
-            
-            for (let i = 0; i < 9; i++) {
-                const [r, c] = group.positions[i];
-                if (newColors[i] !== null) {
-                    setColorAt(r, c, newColors[i]);
-                }
-            }
-            
-            // Remettre le centre à sa position normale (50%, 50%) et z-index
-            const centerSun = document.getElementById('centerSun');
-            centerSun.style.left = '50%';
-            centerSun.style.top = '50%';
-            centerSun.style.zIndex = '10';
-            
-            updateCenterDisplay();
-            
-            isLocalRotating = false;
-            
-            if (callback) {
-                callback();
-            } else {
-                setTimeout(() => vanishAlignedPastilles(), 100);
-            }
+            return cells;
         }
         
         function attemptDiagonalRotation(row, col, dx, dy) {
-            const diagDirection = detectDiagonalDirection(dx, dy);
-            if (!diagDirection) {
-                playBlockedSound();
-                return false;
-            }
+            const direction = detectDiagonalDirection(dx, dy);
+            if (!direction) return;
             
-            const availableDirections = getAvailableDiagonalDirections(row, col);
-            if (!availableDirections.includes(diagDirection)) {
-                playBlockedSound();
-                return false;
-            }
+            const cells = get2x2Cells(row, col, direction);
+            if (!cells) return;
             
-            const group = calculateDiagonalRotationGroup(row, col, diagDirection);
-            if (!group) {
-                playBlockedSound();
-                return false;
-            }
+            const colors = cells.map(([r, c]) => getColorAt(r, c));
             
-            // Compter les cellules remplies (sur les 9 positions)
-            let filledCount = 0;
-            for (const [r, c] of group.positions) {
-                if (getColorAt(r, c) !== null) filledCount++;
-            }
+            const clockwise = (direction === 'NE' || direction === 'SW');
             
-            // Au moins 2 pastilles pour que la rotation ait un sens
-            if (filledCount < 2) {
-                playBlockedSound();
-                return false;
-            }
+            performLocalRotation(cells, colors, clockwise, true);
+        }
+        
+        function performLocalRotation(cells, colors, clockwise, continuous = false) {
+            if (isLocalRotating) return;
+            isLocalRotating = true;
             
-            const clockwise = getDiagonalRotationDirection(diagDirection, row, col, group);
+            const indicator = document.getElementById('localRotationIndicator');
+            const minRow = Math.min(...cells.map(c => c[0]));
+            const maxRow = Math.max(...cells.map(c => c[0]));
+            const minCol = Math.min(...cells.map(c => c[1]));
+            const maxCol = Math.max(...cells.map(c => c[1]));
             
-            // Démarrer la rotation continue
-            continuousRotationState = { row, col, diagDirection, group };
+            const topLeft = gridToPixel(minRow, minCol);
+            const bottomRight = gridToPixel(maxRow, maxCol);
             
-            function executeContinuousStep() {
-                if (!continuousRotationState) return;
-                
-                const grp = continuousRotationState.group;
-                if (!grp) { stopContinuousRotation(); return; }
-                
-                let cnt = 0;
-                for (const [r, c] of grp.positions) { if (getColorAt(r, c) !== null) cnt++; }
-                if (cnt < 2) { stopContinuousRotation(); return; }
-                
-                const cw = getDiagonalRotationDirection(continuousRotationState.diagDirection, continuousRotationState.row, continuousRotationState.col, grp);
-                executeLocalRotation(grp, cw, () => {
-                    if (continuousRotationState) {
-                        // Petit délai de 30% du temps pour laisser respirer entre les rotations
-                        continuousRotationTimer = setTimeout(executeContinuousStep, continuousRotationSpeed * 0.3);
+            indicator.style.left = (topLeft.x - cellSize/2 - 5) + 'px';
+            indicator.style.top = (topLeft.y - cellSize/2 - 5) + 'px';
+            indicator.style.width = (bottomRight.x - topLeft.x + cellSize + 10) + 'px';
+            indicator.style.height = (bottomRight.y - topLeft.y + cellSize + 10) + 'px';
+            indicator.classList.add('visible');
+            if (continuous) indicator.classList.add('continuous');
+            
+            const elements = [];
+            const centerX = (topLeft.x + bottomRight.x) / 2;
+            const centerY = (topLeft.y + bottomRight.y) / 2;
+            
+            for (const [r, c] of cells) {
+                if (r === 3 && c === 3) {
+                    const sun = document.getElementById('centerSun');
+                    if (centerData && centerData.value !== null) {
+                        elements.push({ type: 'center', elem: sun, row: r, col: c });
                     }
-                });
+                } else {
+                    const target = findCrownIndexForGridPosition(r, c);
+                    if (target && data[target.crown][target.index]) {
+                        const d = data[target.crown][target.index];
+                        if (d.anchor) {
+                            d.anchor.classList.add('rotating');
+                            elements.push({ type: 'crown', anchor: d.anchor, elem: d.elem, row: r, col: c, crown: target.crown, index: target.index });
+                        }
+                    }
+                }
             }
             
-            executeContinuousStep();
-            return true;
+            const rotationAngle = clockwise ? 90 : -90;
+            const startTime = performance.now();
+            
+            function animateRotation(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / rotationDuration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                const currentAngle = rotationAngle * eased;
+                
+                for (const el of elements) {
+                    const pos = gridToPixel(el.row, el.col);
+                    const relX = pos.x - centerX;
+                    const relY = pos.y - centerY;
+                    const rad = currentAngle * Math.PI / 180;
+                    const newRelX = relX * Math.cos(rad) - relY * Math.sin(rad);
+                    const newRelY = relX * Math.sin(rad) + relY * Math.cos(rad);
+                    const newX = centerX + newRelX;
+                    const newY = centerY + newRelY;
+                    
+                    if (el.type === 'center') {
+                        el.elem.style.left = newX + 'px';
+                        el.elem.style.top = newY + 'px';
+                        el.elem.style.transform = `translate(-50%, -50%) rotate(${-currentAngle}deg)`;
+                    } else {
+                        el.anchor.style.left = (newX - sizeAncrage/2) + 'px';
+                        el.anchor.style.top = (newY - sizeAncrage/2) + 'px';
+                        el.elem.style.transform = `rotate(${-currentAngle}deg)`;
+                    }
+                }
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animateRotation);
+                } else {
+                    finishRotation();
+                }
+            }
+            
+            function finishRotation() {
+                let newColors;
+                if (clockwise) {
+                    newColors = [colors[3], colors[0], colors[1], colors[2]];
+                } else {
+                    newColors = [colors[1], colors[2], colors[3], colors[0]];
+                }
+                
+                for (let i = 0; i < cells.length; i++) {
+                    const [r, c] = cells[i];
+                    setColorAt(r, c, newColors[i]);
+                }
+                
+                updateCenterDisplay();
+                
+                for (const el of elements) {
+                    if (el.type === 'crown' && el.anchor) {
+                        el.anchor.classList.remove('rotating');
+                        el.elem.style.transform = '';
+                    }
+                }
+                
+                const sun = document.getElementById('centerSun');
+                sun.style.left = '50%';
+                sun.style.top = '50%';
+                sun.style.transform = 'translate(-50%, -50%)';
+                
+                updateAllPositions();
+                
+                playLocalRotationSound();
+                
+                isLocalRotating = false;
+                
+                if (continuous) {
+                    continuousRotationState = { cells, clockwise };
+                    continuousRotationTimer = setTimeout(() => {
+                        if (continuousRotationState) {
+                            const currentColors = cells.map(([r, c]) => getColorAt(r, c));
+                            performLocalRotation(cells, currentColors, clockwise, true);
+                        }
+                    }, continuousRotationSpeed);
+                } else {
+                    indicator.classList.remove('visible', 'continuous');
+                    setTimeout(() => vanishAlignedPastilles(), 100);
+                }
+            }
+            
+            requestAnimationFrame(animateRotation);
         }
         
-        function playLocalRotationSound() {
-            if(!audioCtx) return;
-            const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-            o.connect(g); g.connect(audioCtx.destination);
-            o.frequency.setValueAtTime(400, audioCtx.currentTime);
-            o.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.15);
-            o.type = 'triangle';
-            g.gain.setValueAtTime(0.25, audioCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.18);
-            o.start(); o.stop(audioCtx.currentTime + 0.18);
-        }
-        
-        // ============ MATRICE INITIALE FIXE ============
-        
+        // INITIAL_GRID: 48 carrés (16 par couleur), centre VIDE (null)
+        // Grille 7x7 avec distribution équilibrée
         const INITIAL_GRID = [
             [0, 1, 2, 0, 1, 2, 0],
             [1, 2, 0, 1, 2, 0, 1],
             [2, 0, 1, 2, 0, 1, 2],
-            [0, 1, 2, 1, 2, 0, 1],
-            [1, 2, 0, 2, 1, 2, 0],
-            [2, 0, 1, 0, 2, 0, 1],
-            [0, 1, 2, 1, 0, 1, 2]
+            [0, 1, 2, null, 1, 2, 0],  // Centre vide (null)
+            [1, 2, 0, 2, 0, 1, 2],
+            [2, 0, 1, 0, 1, 2, 0],
+            [0, 1, 2, 1, 2, 0, 1]
         ];
         
         function loadInitialGrid() {
@@ -1357,18 +1049,21 @@
             offsets = [0, 0, 0];
             centerData = null;
             
-            centerData = { value: INITIAL_GRID[3][3] };
+            // Centre vide - pas de centerData
+            // centerData reste null
             
             for (let c = 0; c < 3; c++) {
                 const positions = crownPositions[c];
                 for (let i = 0; i < positions.length; i++) {
                     const [row, col] = positions[i];
-                    if (row === 3 && col === 3) continue;
+                    if (row === 3 && col === 3) continue; // Sauter le centre
                     
                     const color = INITIAL_GRID[row][col];
-                    const {anchor, elem} = createPastille(color, c, i);
-                    data[c][i] = { value: color, anchor, elem };
-                    positionPastille(anchor, c, i);
+                    if (color !== null) {
+                        const {anchor, elem} = createPastille(color, c, i);
+                        data[c][i] = { value: color, anchor, elem };
+                        positionPastille(anchor, c, i);
+                    }
                 }
             }
             
@@ -1415,6 +1110,17 @@
             o.start(audioCtx.currentTime);
             o.stop(audioCtx.currentTime + rotationDuration/1000);
         }
+        function playLocalRotationSound(){
+            if(!audioCtx)return;
+            const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+            o.connect(g);g.connect(audioCtx.destination);
+            o.frequency.setValueAtTime(440,audioCtx.currentTime);
+            o.frequency.exponentialRampToValueAtTime(660,audioCtx.currentTime+0.15);
+            o.type='sine';
+            g.gain.setValueAtTime(0.15,audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.15);
+            o.start(audioCtx.currentTime);o.stop(audioCtx.currentTime+0.15);
+        }
         
         // ============ GRID & ALIGNMENT ============
         
@@ -1451,103 +1157,114 @@
             return grid;
         }
         
-        function findAlignments(minLength) {
+        function findAlignments(){
             const grid = buildGrid();
-            const alignments = [];
+            const aligned=new Set();
+            let centerVanishes = false;
             
-            // Directions: horizontal, vertical, et diagonales seulement si activées
-            const directions = [[0, 1], [1, 0]]; // H et V toujours
-            if (diagAlignEnabled) {
-                directions.push([1, 1], [1, -1]); // Diagonales si activées
-            }
-            
-            for (let row = 0; row < 7; row++) {
-                for (let col = 0; col < 7; col++) {
-                    if (!grid[row][col] || grid[row][col].color === null) continue;
-                    const startColor = grid[row][col].color;
-                    
-                    for (const [dr, dc] of directions) {
-                        const line = [{ row, col, ...grid[row][col] }];
-                        let r = row + dr, c = col + dc;
-                        
-                        while (r >= 0 && r < 7 && c >= 0 && c < 7) {
-                            if (grid[r][c] && grid[r][c].color === startColor) {
-                                line.push({ row: r, col: c, ...grid[r][c] });
-                                r += dr; c += dc;
-                            } else break;
+            // Alignements en ligne (min 3 ou 4)
+            if (alignMinLength >= 3) {
+                // Horizontal
+                for(let r=0;r<7;r++){
+                    let start=0;
+                    while(start<7){
+                        const cell = grid[r][start];
+                        if(!cell || cell.color === null){ start++; continue; }
+                        let end=start+1;
+                        while(end<7 && grid[r][end] && grid[r][end].color===cell.color) end++;
+                        if(end-start>=alignMinLength){
+                            for(let c=start;c<end;c++){
+                                const g = grid[r][c];
+                                if (g.type === 'center') centerVanishes = true;
+                                else aligned.add(`${g.crown}-${g.index}`);
+                            }
                         }
-                        
-                        if (line.length >= minLength) {
-                            const key = line.map(p => `${p.row},${p.col}`).sort().join('|');
-                            if (!alignments.find(a => a.key === key)) {
-                                alignments.push({ cells: line, color: startColor, key });
+                        start=end;
+                    }
+                }
+                // Vertical
+                for(let c=0;c<7;c++){
+                    let start=0;
+                    while(start<7){
+                        const cell = grid[start][c];
+                        if(!cell || cell.color === null){ start++; continue; }
+                        let end=start+1;
+                        while(end<7 && grid[end][c] && grid[end][c].color===cell.color) end++;
+                        if(end-start>=alignMinLength){
+                            for(let r=start;r<end;r++){
+                                const g = grid[r][c];
+                                if (g.type === 'center') centerVanishes = true;
+                                else aligned.add(`${g.crown}-${g.index}`);
+                            }
+                        }
+                        start=end;
+                    }
+                }
+                // Diagonales (si activé)
+                if (diagAlignEnabled) {
+                    // Diagonale ↘
+                    for(let startR=0;startR<=7-alignMinLength;startR++){
+                        for(let startC=0;startC<=7-alignMinLength;startC++){
+                            const cell = grid[startR][startC];
+                            if(!cell || cell.color === null) continue;
+                            let len=1;
+                            while(startR+len<7 && startC+len<7 && grid[startR+len][startC+len] && grid[startR+len][startC+len].color===cell.color) len++;
+                            if(len>=alignMinLength){
+                                for(let i=0;i<len;i++){
+                                    const g = grid[startR+i][startC+i];
+                                    if (g.type === 'center') centerVanishes = true;
+                                    else aligned.add(`${g.crown}-${g.index}`);
+                                }
+                            }
+                        }
+                    }
+                    // Diagonale ↙
+                    for(let startR=0;startR<=7-alignMinLength;startR++){
+                        for(let startC=alignMinLength-1;startC<7;startC++){
+                            const cell = grid[startR][startC];
+                            if(!cell || cell.color === null) continue;
+                            let len=1;
+                            while(startR+len<7 && startC-len>=0 && grid[startR+len][startC-len] && grid[startR+len][startC-len].color===cell.color) len++;
+                            if(len>=alignMinLength){
+                                for(let i=0;i<len;i++){
+                                    const g = grid[startR+i][startC-i];
+                                    if (g.type === 'center') centerVanishes = true;
+                                    else aligned.add(`${g.crown}-${g.index}`);
+                                }
                             }
                         }
                     }
                 }
             }
-            return alignments;
-        }
-        
-        function findSquareMatches() {
-            const grid = buildGrid();
-            const squares = [];
             
-            for (let row = 0; row < 6; row++) {
-                for (let col = 0; col < 6; col++) {
-                    const topLeft = grid[row][col];
-                    const topRight = grid[row][col + 1];
-                    const bottomLeft = grid[row + 1][col];
-                    const bottomRight = grid[row + 1][col + 1];
-                    
-                    if (topLeft && topRight && bottomLeft && bottomRight &&
-                        topLeft.color !== null &&
-                        topLeft.color === topRight.color &&
-                        topLeft.color === bottomLeft.color &&
-                        topLeft.color === bottomRight.color) {
-                        
-                        const cells = [
-                            { row, col, ...topLeft },
-                            { row, col: col + 1, ...topRight },
-                            { row: row + 1, col, ...bottomLeft },
-                            { row: row + 1, col: col + 1, ...bottomRight }
-                        ];
-                        
-                        const key = cells.map(p => `${p.row},${p.col}`).sort().join('|');
-                        if (!squares.find(s => s.key === key)) {
-                            squares.push({ cells, color: topLeft.color, key });
+            // Carrés 2x2
+            if (squareMatchEnabled) {
+                for(let r=0;r<6;r++){
+                    for(let c=0;c<6;c++){
+                        const tl=grid[r][c],tr=grid[r][c+1],bl=grid[r+1][c],br=grid[r+1][c+1];
+                        if(tl && tr && bl && br && 
+                           tl.color !== null && tl.color===tr.color && tl.color===bl.color && tl.color===br.color){
+                            [tl,tr,bl,br].forEach(g => {
+                                if (g.type === 'center') centerVanishes = true;
+                                else aligned.add(`${g.crown}-${g.index}`);
+                            });
                         }
                     }
                 }
             }
-            return squares;
+            
+            return { aligned, centerVanishes };
         }
         
-        function vanishAlignedPastilles() {
-            const alignments = alignMinLength > 0 ? findAlignments(alignMinLength) : [];
-            const squareMatches = squareMatchEnabled ? findSquareMatches() : [];
-            const allMatches = [...alignments, ...squareMatches];
-            
-            if (allMatches.length === 0) return false;
+        function vanishAlignedPastilles(){
+            const { aligned: toVanish, centerVanishes } = findAlignments();
+            if(toVanish.size === 0 && !centerVanishes) return false;
             
             playVanishSound();
             
-            const toVanish = new Set();
-            let centerVanishes = false;
-            
-            for (const match of allMatches) {
-                for (const cell of match.cells) {
-                    if (cell.type === 'crown') {
-                        toVanish.add(`${cell.crown}-${cell.index}`);
-                    } else if (cell.type === 'center') {
-                        centerVanishes = true;
-                    }
-                }
-            }
-            
-            for (const key of toVanish) {
+            for(const key of toVanish){
                 const [crown, index] = key.split('-').map(Number);
-                if (data[crown][index] && data[crown][index].elem) {
+                if(data[crown][index] && data[crown][index].elem){
                     data[crown][index].elem.classList.add('vanishing');
                     data[crown][index].value = null;
                 }
@@ -1623,7 +1340,7 @@
                 sun.style.cursor = 'grab';
                 sun.style.display = 'block';
             } else {
-                sun.style.display = 'none'; /* Cacher complètement quand vide */
+                sun.style.display = 'none';
             }
         }
         
@@ -1659,6 +1376,7 @@
         }
         
         // ============ DRAG HANDLING ============
+        // SANS rotation des couronnes C1, C2, C3
         
         let activeDrag = null;
         function getAngle(x, y){ return Math.atan2(y - cy, x - cx); }
@@ -1692,8 +1410,9 @@
                 const [row, col] = getGridPosition(crown, index);
                 const pos = getPositionOnSquare(crown, index);
                 
+                // Seulement type 'diagonal' - pas de rotation de couronne
                 activeDrag = {
-                    type: 'detect', 
+                    type: 'diagonal', 
                     anchor, 
                     crown, 
                     index, 
@@ -1716,7 +1435,8 @@
             const x = px - rect.left, y = py - rect.top;
             const dx = x - activeDrag.startX, dy = y - activeDrag.startY, dist = Math.sqrt(dx*dx + dy*dy);
             
-            if((activeDrag.type === 'diagonal' || activeDrag.type === 'detect') && dist > 15){
+            // Seulement rotation diagonale 2x2 - PAS de rotation de couronne
+            if(activeDrag.type === 'diagonal' && dist > 15){
                 const row = activeDrag.row !== undefined ? activeDrag.row : getGridPosition(activeDrag.crown, activeDrag.index)[0];
                 const col = activeDrag.col !== undefined ? activeDrag.col : getGridPosition(activeDrag.crown, activeDrag.index)[1];
                 
@@ -1726,70 +1446,21 @@
                     attemptDiagonalRotation(row, col, dx, dy);
                     activeDrag = null;
                     document.getElementById('centerSun').classList.remove('dragging');
-                } else {
-                    if (activeDrag.type === 'detect' && activeDrag.crown !== undefined) {
-                        const radialDirX = activeDrag.posX - cx, radialDirY = activeDrag.posY - cy;
-                        const radialLen = Math.sqrt(radialDirX*radialDirX + radialDirY*radialDirY);
-                        const tangentNormX = -radialDirY/radialLen, tangentNormY = radialDirX/radialLen;
-                        const dragNormX = dx/dist, dragNormY = dy/dist;
-                        const tangentProj = Math.abs(dragNormX*tangentNormX + dragNormY*tangentNormY);
-                        
-                        if (tangentProj > 0.7) {
-                            activeDrag.type = 'crownRotation';
-                            activeDrag.startAngle = getAngle(x, y);
-                            activeDrag.startOffset = offsets[activeDrag.crown];
-                            const railClass = ['rail-c1','rail-c2','rail-c3'][activeDrag.crown];
-                            const rail = document.querySelector('.' + railClass);
-                            if(rail) rail.classList.add('dragging');
-                        }
-                    }
                 }
-            }
-            
-            if(activeDrag && activeDrag.type === 'crownRotation'){
-                const currentAngle = getAngle(x, y);
-                let deltaAngle = currentAngle - activeDrag.startAngle;
-                if(deltaAngle > Math.PI) deltaAngle -= 2*Math.PI;
-                if(deltaAngle < -Math.PI) deltaAngle += 2*Math.PI;
-                const count = crowns[activeDrag.crown].count;
-                const deltaPositions = (deltaAngle / (2*Math.PI)) * count;
-                const oldSnap = Math.round(offsets[activeDrag.crown]);
-                offsets[activeDrag.crown] = activeDrag.startOffset + deltaPositions;
-                if(Math.round(offsets[activeDrag.crown]) !== oldSnap) playTick();
-                updateAllPositions();
+                // Pas de fallback vers rotation de couronne
             }
             
             e.preventDefault();
         }
         
         function handleEnd(e){
-            // Arrêter la rotation continue si active
             if (continuousRotationState) {
                 stopContinuousRotation();
             }
             
             if(!activeDrag) return;
             
-            if(activeDrag.type === 'crownRotation'){
-                const crown = activeDrag.crown, count = crowns[crown].count;
-                const railClass = ['rail-c1','rail-c2','rail-c3'][crown];
-                const rail = document.querySelector('.' + railClass);
-                if(rail){ rail.classList.remove('dragging'); rail.classList.add('snapping'); setTimeout(() => rail.classList.remove('snapping'), 300); }
-                const targetOffset = Math.round(offsets[crown]) % count;
-                const startOffset = offsets[crown], startTime = performance.now();
-                
-                function animSnap(t){
-                    const p = Math.min((t - startTime) / 150, 1), eased = 1 - Math.pow(1-p, 3);
-                    offsets[crown] = startOffset + (targetOffset - startOffset) * eased;
-                    updateAllPositions();
-                    if(p < 1) requestAnimationFrame(animSnap);
-                    else {
-                        offsets[crown] = targetOffset;
-                        setTimeout(() => vanishAlignedPastilles(), 100);
-                    }
-                }
-                requestAnimationFrame(animSnap);
-            }
+            // Pas de gestion de crownRotation
             
             document.getElementById('centerSun').classList.remove('dragging');
             activeDrag = null;
@@ -1800,6 +1471,7 @@
         function resetGame(){
             stopContinuousRotation();
             isLocalRotating = false;
+            document.getElementById('localRotationIndicator').classList.remove('visible', 'continuous');
             
             const gameArea = document.getElementById('gameArea');
             const centerSun = document.getElementById('centerSun');
@@ -1829,7 +1501,6 @@
         document.addEventListener('touchmove', handleMove, {passive: false});
         document.addEventListener('mouseup', handleEnd);
         document.addEventListener('touchend', handleEnd);
-        document.addEventListener('touchcancel', handleEnd);
         
         init();
     </script>
