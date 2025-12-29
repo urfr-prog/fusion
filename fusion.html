@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fusion Square v8.5 - 6×6</title>
+    <title>Fusion Square v8.5 - 8×8</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; overflow: hidden; touch-action: none; }
@@ -234,7 +234,6 @@
             font-weight: bold;
         }
         
-        /* Compteurs de coups */
         .moves-counter {
             display: flex;
             align-items: center;
@@ -260,7 +259,6 @@
             font-size: 1.2em;
         }
         
-        /* Section labels */
         .section-title {
             font-size: 0.65em;
             color: #888;
@@ -280,6 +278,7 @@
                     <div class="rail rail-c1"></div>
                     <div class="rail rail-c2"></div>
                     <div class="rail rail-c3"></div>
+                    <div class="rail rail-c4"></div>
                     <div class="local-rotation-indicator" id="localRotationIndicator"></div>
                     <div class="matrix-rotation-indicator" id="matrixIndicator">↻ 90°</div>
                 </div>
@@ -294,12 +293,12 @@
             <button class="icon-btn" onclick="resetGame()">↺</button>
             <div class="control-item slider-large">
                 <label>📐</label>
-                <input type="range" id="sizePastille" min="10" max="50" value="32" oninput="updateSizes()" class="slider-touch">
-                <span class="control-value" id="sizeValue">32</span>
+                <input type="range" id="sizePastille" min="8" max="40" value="24" oninput="updateSizes()" class="slider-touch">
+                <span class="control-value" id="sizeValue">24</span>
             </div>
         </div>
         
-        <!-- CONTRÔLES ROTATION COURONNES C1/C2/C3 -->
+        <!-- CONTRÔLES ROTATION COURONNES -->
         <div class="controls crown-controls">
             <span class="section-title">Rotation Couronnes (glisser tangentiel)</span>
         </div>
@@ -316,7 +315,7 @@
             </div>
         </div>
         
-        <!-- CONTRÔLES ROTATION 2x2 (Diagonale) -->
+        <!-- CONTRÔLES ROTATION 2x2 -->
         <div class="controls diagonal-controls">
             <span class="section-title">Rotation 2×2</span>
         </div>
@@ -340,7 +339,7 @@
             </div>
         </div>
         
-        <!-- CONTRÔLES ROTATION MATRICE (Grandes couronnes) -->
+        <!-- CONTRÔLES ROTATION MATRICE -->
         <div class="controls matrix-controls">
             <span class="section-title">Rotation Matrice (swipe latéral)</span>
         </div>
@@ -395,64 +394,76 @@
     
     <script>
         let canvasSize=520,cx=260,cy=260,padding,cellSize;
-        const gridSize=6; // CHANGÉ: 6x6 au lieu de 7x7
+        const gridSize=8; // 8x8
         
         function updateDimensions(){
             const ga=document.getElementById('gameArea');
             canvasSize=ga.offsetWidth;
             cx=canvasSize/2;
             cy=canvasSize/2;
-            padding=canvasSize*0.05;
+            padding=canvasSize*0.04;
             cellSize=(canvasSize-2*padding)/gridSize;
             updateRailPositions();
         }
         
         function updateRailPositions(){
-            // Pour 6x6: C1 autour du bord (0.5 cell), C2 à 1.5 cell, C3 à 2.5 cell du bord
+            // Pour 8x8: 4 couronnes
             const c0 = (padding + cellSize * 0.5) / canvasSize * 100;
             const c1 = (padding + cellSize * 1.5) / canvasSize * 100;
             const c2 = (padding + cellSize * 2.5) / canvasSize * 100;
+            const c3 = (padding + cellSize * 3.5) / canvasSize * 100;
             
             const rail1 = document.querySelector('.rail-c1');
             const rail2 = document.querySelector('.rail-c2');
             const rail3 = document.querySelector('.rail-c3');
+            const rail4 = document.querySelector('.rail-c4');
             
             if(rail1) { rail1.style.top = c0+'%'; rail1.style.left = c0+'%'; rail1.style.right = c0+'%'; rail1.style.bottom = c0+'%'; }
             if(rail2) { rail2.style.top = c1+'%'; rail2.style.left = c1+'%'; rail2.style.right = c1+'%'; rail2.style.bottom = c1+'%'; }
             if(rail3) { rail3.style.top = c2+'%'; rail3.style.left = c2+'%'; rail3.style.right = c2+'%'; rail3.style.bottom = c2+'%'; }
+            if(rail4) { rail4.style.top = c3+'%'; rail4.style.left = c3+'%'; rail4.style.right = c3+'%'; rail4.style.bottom = c3+'%'; }
         }
         
-        // POSITIONS POUR GRILLE 6x6
-        // C1 (couronne extérieure): 20 positions sur le bord
+        // POSITIONS POUR GRILLE 8x8 - 4 COURONNES
+        // C1 (couronne extérieure): 28 positions sur le bord
         const c1Positions=[
-            [0,0],[0,1],[0,2],[0,3],[0,4],[0,5],  // haut (0-5)
-            [1,5],[2,5],[3,5],[4,5],[5,5],        // droite (6-10)
-            [5,4],[5,3],[5,2],[5,1],[5,0],        // bas (11-15)
-            [4,0],[3,0],[2,0],[1,0]               // gauche (16-19)
+            [0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],  // haut (0-7)
+            [1,7],[2,7],[3,7],[4,7],[5,7],[6,7],[7,7],        // droite (8-14)
+            [7,6],[7,5],[7,4],[7,3],[7,2],[7,1],[7,0],        // bas (15-21)
+            [6,0],[5,0],[4,0],[3,0],[2,0],[1,0]               // gauche (22-27)
         ];
         
-        // C2 (couronne intermédiaire): 12 positions
+        // C2 (couronne 2): 20 positions
         const c2Positions=[
-            [1,1],[1,2],[1,3],[1,4],  // haut (0-3)
-            [2,4],[3,4],[4,4],        // droite (4-6)
-            [4,3],[4,2],[4,1],        // bas (7-9)
-            [3,1],[2,1]               // gauche (10-11)
+            [1,1],[1,2],[1,3],[1,4],[1,5],[1,6],  // haut (0-5)
+            [2,6],[3,6],[4,6],[5,6],[6,6],        // droite (6-10)
+            [6,5],[6,4],[6,3],[6,2],[6,1],        // bas (11-15)
+            [5,1],[4,1],[3,1],[2,1]               // gauche (16-19)
         ];
         
-        // C3 (couronne intérieure): 4 positions au centre
+        // C3 (couronne 3): 12 positions
         const c3Positions=[
-            [2,2],[2,3],  // haut (0-1)
-            [3,3],[3,2]   // bas (2-3)
+            [2,2],[2,3],[2,4],[2,5],  // haut (0-3)
+            [3,5],[4,5],[5,5],        // droite (4-6)
+            [5,4],[5,3],[5,2],        // bas (7-9)
+            [4,2],[3,2]               // gauche (10-11)
         ];
         
-        const crownPositions=[c1Positions,c2Positions,c3Positions];
-        const crowns=[{count:20},{count:12},{count:4}];
+        // C4 (couronne intérieure): 4 positions au centre
+        const c4Positions=[
+            [3,3],[3,4],  // haut (0-1)
+            [4,4],[4,3]   // bas (2-3)
+        ];
+        
+        const crownPositions=[c1Positions, c2Positions, c3Positions, c4Positions];
+        const crowns=[{count:28}, {count:20}, {count:12}, {count:4}];
         
         // Indices des coins pour chaque couronne
         const cornerIndices = [
-            [0, 5, 10, 15],  // C1: coins de la grille 6x6
-            [0, 3, 6, 9],    // C2: coins du carré intérieur
-            [0, 1, 2, 3]     // C3: les 4 positions sont toutes des "coins"
+            [0, 7, 14, 21],   // C1: coins de la grille 8x8
+            [0, 5, 10, 15],   // C2: coins du carré intérieur
+            [0, 3, 6, 9],     // C3: coins
+            [0, 1, 2, 3]      // C4: les 4 positions sont toutes des "coins"
         ];
         
         function isCornerPosition(crown, index) {
@@ -462,11 +473,11 @@
             return cornerIndices[crown].includes(actualIndex);
         }
         
-        let sizePastille = 32;
-        let sizeAncrage = 64;
+        let sizePastille = 24;
+        let sizeAncrage = 48;
         let radiusPastille = 15;
         
-        let data=[[],[],[]],offsets=[0,0,0];
+        let data=[[],[],[],[]],offsets=[0,0,0,0];
         const pastilleColors=["#3498db","#f1c40f","#e74c3c"];
         let isLocalRotating = false;
         
@@ -482,7 +493,7 @@
         let matrixMovesMax = 0;
         let matrixMovesRemaining = 0;
         
-        // ============ PARAMÈTRES ROTATION COURONNES C1/C2/C3 ============
+        // ============ PARAMÈTRES ROTATION COURONNES ============
         let crownRotationSpeed = 800;
         let crownMovesMax = 0;
         
@@ -701,7 +712,7 @@
         function transposeDataForRotation(direction) {
             const gridData = [];
             
-            for (let c = 0; c < 3; c++) {
+            for (let c = 0; c < 4; c++) {
                 for (let i = 0; i < data[c].length; i++) {
                     if (data[c][i] && data[c][i].value !== null) {
                         const [row, col] = getGridPosition(c, i);
@@ -715,7 +726,7 @@
                 }
             }
             
-            for (let c = 0; c < 3; c++) {
+            for (let c = 0; c < 4; c++) {
                 for (let i = 0; i < data[c].length; i++) {
                     data[c][i] = null;
                 }
@@ -724,12 +735,12 @@
             for (const item of gridData) {
                 let newRow, newCol;
                 
-                // Rotation pour grille 6x6 (indices 0-5)
+                // Rotation pour grille 8x8 (indices 0-7)
                 if (direction > 0) {
                     newRow = item.col;
-                    newCol = 5 - item.row;
+                    newCol = 7 - item.row;
                 } else {
-                    newRow = 5 - item.col;
+                    newRow = 7 - item.col;
                     newCol = item.row;
                 }
                 
@@ -749,7 +760,7 @@
         }
         
         function findCrownIndexForGridPosition(row, col) {
-            for (let c = 0; c < 3; c++) {
+            for (let c = 0; c < 4; c++) {
                 const positions = crownPositions[c];
                 const offset = Math.round(offsets[c]);
                 
@@ -851,9 +862,9 @@
         // ============ GRAVITÉ VERS LE BAS ============
         
         function applyDownwardGravity() {
-            const grid = Array(6).fill(null).map(() => Array(6).fill(null));
+            const grid = Array(8).fill(null).map(() => Array(8).fill(null));
             
-            for (let c = 0; c < 3; c++) {
+            for (let c = 0; c < 4; c++) {
                 for (let i = 0; i < data[c].length; i++) {
                     if (data[c][i] && data[c][i].value !== null) {
                         const [row, col] = getGridPosition(c, i);
@@ -870,9 +881,9 @@
             
             let moved = false;
             
-            for (let col = 0; col < 6; col++) {
+            for (let col = 0; col < 8; col++) {
                 const squaresInColumn = [];
-                for (let row = 0; row < 6; row++) {
+                for (let row = 0; row < 8; row++) {
                     if (grid[row][col]) {
                         squaresInColumn.push({ ...grid[row][col], originalRow: row });
                     }
@@ -881,7 +892,7 @@
                 if (squaresInColumn.length === 0) continue;
                 
                 const availablePositions = [];
-                for (let row = 5; row >= 0; row--) {
+                for (let row = 7; row >= 0; row--) {
                     const target = findCrownIndexForGridPosition(row, col);
                     if (target) {
                         availablePositions.push({ row, col, crown: target.crown, index: target.index });
@@ -957,7 +968,7 @@
         }
         
         function updateAllPositions(){
-            for(let c=0;c<3;c++){
+            for(let c=0;c<4;c++){
                 for(let i=0;i<data[c].length;i++){
                     if(data[c][i] && data[c][i].anchor){
                         positionPastille(data[c][i].anchor, c, i);
@@ -1032,8 +1043,8 @@
                     return null;
             }
             
-            // Limites pour grille 6x6
-            if (topRow < 0 || topRow > 4 || topCol < 0 || topCol > 4) {
+            // Limites pour grille 8x8
+            if (topRow < 0 || topRow > 6 || topCol < 0 || topCol > 6) {
                 return null;
             }
             
@@ -1083,11 +1094,11 @@
         function getAvailableDiagonalDirections(row, col) {
             const available = [];
             
-            // Limites ajustées pour grille 6x6
-            if (row >= 1 && col <= 4) available.push('upRight');
+            // Limites ajustées pour grille 8x8
+            if (row >= 1 && col <= 6) available.push('upRight');
             if (row >= 1 && col >= 1) available.push('upLeft');
-            if (row <= 4 && col <= 4) available.push('downRight');
-            if (row <= 4 && col >= 1) available.push('downLeft');
+            if (row <= 6 && col <= 6) available.push('downRight');
+            if (row <= 6 && col >= 1) available.push('downLeft');
             
             return available;
         }
@@ -1280,23 +1291,25 @@
             o.start(); o.stop(audioCtx.currentTime + 0.18);
         }
         
-        // ============ MATRICE INITIALE 6x6 ============
+        // ============ MATRICE INITIALE 8x8 ============
         
         const INITIAL_GRID = [
-            [0, 1, 2, 0, 1, 2],
-            [1, 2, 0, 1, 2, 0],
-            [2, 0, 1, 2, 0, 1],
-            [0, 1, 2, 0, 1, 2],
-            [1, 2, 0, 1, 2, 0],
-            [2, 0, 1, 2, 0, 1]
+            [0, 1, 2, 0, 1, 2, 0, 1],
+            [1, 2, 0, 1, 2, 0, 1, 2],
+            [2, 0, 1, 2, 0, 1, 2, 0],
+            [0, 1, 2, 0, 1, 2, 0, 1],
+            [1, 2, 0, 1, 2, 0, 1, 2],
+            [2, 0, 1, 2, 0, 1, 2, 0],
+            [0, 1, 2, 0, 1, 2, 0, 1],
+            [1, 2, 0, 1, 2, 0, 1, 2]
         ];
         
         function loadInitialGrid() {
             document.querySelectorAll('.pastille-anchor').forEach(el => el.remove());
-            data = [[], [], []];
-            offsets = [0, 0, 0];
+            data = [[], [], [], []];
+            offsets = [0, 0, 0, 0];
             
-            for (let c = 0; c < 3; c++) {
+            for (let c = 0; c < 4; c++) {
                 const positions = crownPositions[c];
                 for (let i = 0; i < positions.length; i++) {
                     const [row, col] = positions[i];
@@ -1369,9 +1382,9 @@
         }
         
         function buildGrid() {
-            const grid = Array(6).fill(null).map(() => Array(6).fill(null));
+            const grid = Array(8).fill(null).map(() => Array(8).fill(null));
             
-            for (let c = 0; c < 3; c++) {
+            for (let c = 0; c < 4; c++) {
                 for (let i = 0; i < data[c].length; i++) {
                     if (!data[c][i] || data[c][i].value === null) continue;
                     const [row, col] = getGridPosition(c, i);
@@ -1390,8 +1403,8 @@
                 directions.push([1, 1], [1, -1]);
             }
             
-            for (let row = 0; row < 6; row++) {
-                for (let col = 0; col < 6; col++) {
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
                     if (!grid[row][col] || grid[row][col].color === null) continue;
                     const startColor = grid[row][col].color;
                     
@@ -1399,7 +1412,7 @@
                         const line = [{ row, col, ...grid[row][col] }];
                         let r = row + dr, c = col + dc;
                         
-                        while (r >= 0 && r < 6 && c >= 0 && c < 6) {
+                        while (r >= 0 && r < 8 && c >= 0 && c < 8) {
                             if (grid[r][c] && grid[r][c].color === startColor) {
                                 line.push({ row: r, col: c, ...grid[r][c] });
                                 r += dr; c += dc;
@@ -1422,8 +1435,8 @@
             const grid = buildGrid();
             const squares = [];
             
-            for (let row = 0; row < 5; row++) {
-                for (let col = 0; col < 5; col++) {
+            for (let row = 0; row < 7; row++) {
+                for (let col = 0; col < 7; col++) {
                     const topLeft = grid[row][col];
                     const topRight = grid[row][col + 1];
                     const bottomLeft = grid[row + 1][col];
@@ -1491,7 +1504,7 @@
         }
         
         function findPastilleAt(x, y) {
-            for (let c = 0; c < 3; c++) {
+            for (let c = 0; c < 4; c++) {
                 for (let i = 0; i < data[c].length; i++) {
                     if (!data[c][i]) continue;
                     const pos = getPositionOnSquare(c, i);
@@ -1568,7 +1581,7 @@
                             activeDrag.startOffset = offsets[activeDrag.crown];
                             activeDrag.startSnap = Math.round(offsets[activeDrag.crown]);
                             activeDrag.movesUsed = 0;
-                            const railClass = ['rail-c1','rail-c2','rail-c3'][activeDrag.crown];
+                            const railClass = ['rail-c1','rail-c2','rail-c3','rail-c4'][activeDrag.crown];
                             const rail = document.querySelector('.' + railClass);
                             if(rail) rail.classList.add('dragging');
                         }
@@ -1633,7 +1646,7 @@
             
             if(activeDrag.type === 'crownRotation'){
                 const crown = activeDrag.crown, count = crowns[crown].count;
-                const railClass = ['rail-c1','rail-c2','rail-c3'][crown];
+                const railClass = ['rail-c1','rail-c2','rail-c3','rail-c4'][crown];
                 const rail = document.querySelector('.' + railClass);
                 if(rail){ rail.classList.remove('dragging'); rail.classList.add('snapping'); setTimeout(() => rail.classList.remove('snapping'), crownRotationSpeed + 100); }
                 const targetOffset = Math.round(offsets[crown]) % count;
