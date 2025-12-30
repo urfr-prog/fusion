@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fusion Square v8.6 - 6×6</title>
+    <title>Fusion Square v9.1 - 6×6 Experimental</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; overflow: hidden; touch-action: none; }
@@ -44,9 +44,14 @@
             cursor: grab;
             user-select: none;
             position: relative;
+            background: linear-gradient(to right, rgba(100,100,200,0.05), transparent);
         }
         
-        .rotation-zone.active { cursor: grabbing; }
+        .rotation-zone-right {
+            background: linear-gradient(to left, rgba(100,100,200,0.05), transparent);
+        }
+        
+        .rotation-zone.active { cursor: grabbing; background: rgba(100,100,200,0.15); }
         
         .game-container { position: relative; overflow: visible; }
         
@@ -55,12 +60,10 @@
             width: min(85vw, 45vh); 
             height: min(85vw, 45vh);
             overflow: visible;
+            background: #f5f5f5;
+            border-radius: 8px;
             transition: transform var(--rotation-duration, 0.4s) cubic-bezier(0.4, 0, 0.2, 1);
         }
-        
-        .rail { position: absolute; border: 2px dashed rgba(100,100,100,0.4); pointer-events: none; z-index: 2; }
-        .rail.dragging { border-color: #ffd700; border-style: solid; border-width: 3px; box-shadow: 0 0 15px rgba(255,215,0,0.4); }
-        .rail.snapping { border-color: #00ff88; border-style: solid; border-width: 3px; }
         
         .local-rotation-indicator {
             position: absolute;
@@ -73,16 +76,24 @@
             transition: opacity 0.15s;
         }
         .local-rotation-indicator.visible { opacity: 1; }
-        .local-rotation-indicator.continuous {
-            border-color: rgba(255, 165, 0, 0.9);
-            background: rgba(255, 165, 0, 0.15);
+        
+        .fusion-indicator {
+            position: absolute;
+            border: 3px solid rgba(255, 100, 100, 0.9);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 150;
+            opacity: 0;
+            background: rgba(255, 100, 100, 0.2);
+            transition: opacity 0.15s;
         }
+        .fusion-indicator.visible { opacity: 1; }
         
         .slider-sm { width: 60px; }
         .slider-xs { width: 40px; }
-        .crown-bg { background: rgba(50, 200, 100, 0.15) !important; }
-        .diag-bg { background: rgba(255, 165, 0, 0.15) !important; }
+        .rot-bg { background: rgba(100, 200, 100, 0.15) !important; }
         .matrix-bg { background: rgba(100, 100, 255, 0.15) !important; }
+        .fusion-bg { background: rgba(255, 100, 100, 0.15) !important; }
         
         .pastille { 
             position: absolute; 
@@ -92,15 +103,41 @@
             z-index: 10; 
             transition: opacity 0.1s, transform 0.1s;
         }
+        .pastille.color-0 { background: #ffffff; border: 2px solid #333; }
+        .pastille.color-1 { background: #888888; border: 2px solid #555; }
+        .pastille.color-2 { background: #222222; border: 2px solid #000; }
+        
         .pastille.vanishing { animation: vanish 0.5s ease-out forwards; pointer-events: none; }
+        .pastille.merging { animation: mergeAnim 0.4s ease-out; }
+        .pastille.absorbed { animation: absorbed 0.3s ease-in forwards; pointer-events: none; }
+        .pastille.flying { z-index: 100; }
         .pastille.counter-rotating { transition: transform var(--rotation-duration, 0.4s) cubic-bezier(0.4, 0, 0.2, 1); }
-        .pastille-anchor.rotating { z-index: 50; }
         
         @keyframes vanish { 
             0% { transform: scale(1); opacity: 1; }
             50% { transform: scale(1.3); opacity: 0.8; }
             100% { transform: scale(0); opacity: 0; }
         }
+        
+        @keyframes mergeAnim { 
+            0% { transform: scale(1); }
+            30% { transform: scale(1.5); }
+            60% { transform: scale(0.9); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes absorbed {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        
+        @keyframes noMatch {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .pastille.no-match { animation: noMatch 0.3s ease-in-out; }
         
         .bottom-menu { 
             display: flex; flex-direction: column; gap: 4px; padding: 6px 8px; 
@@ -137,79 +174,89 @@
         
         .option-btn { padding: 3px 8px; font-size: 0.65em; background: rgba(100,100,150,0.15); color: #333; border: none; border-radius: 6px; cursor: pointer; }
         .option-btn.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: bold; }
+        
+        .score-display {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #667eea;
+            padding: 4px 12px;
+            background: rgba(100,100,150,0.1);
+            border-radius: 8px;
+        }
+        
+        .help-text {
+            font-size: 0.6em;
+            color: #888;
+            text-align: center;
+            padding: 2px;
+        }
+        
+        /* Grille visuelle pour debug rotation 2x2 */
+        .grid-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 5;
+        }
     </style>
 </head>
 <body>
     <div class="top-zone">
         <div class="main-game-wrapper">
-            <div class="rotation-zone rotation-zone-left" id="rotationZoneLeft"></div>
+            <div class="rotation-zone rotation-zone-left" id="rotationZoneLeft">
+                <span style="writing-mode: vertical-rl; color: #aaa; font-size: 0.6em;">⟲ ROTATION</span>
+            </div>
             <div class="game-container">
                 <div class="game-area" id="gameArea">
-                    <div class="rail rail-c1"></div>
-                    <div class="rail rail-c2"></div>
-                    <div class="rail rail-c3"></div>
                     <div class="local-rotation-indicator" id="localRotationIndicator"></div>
+                    <div class="fusion-indicator" id="fusionIndicator1"></div>
+                    <div class="fusion-indicator" id="fusionIndicator2"></div>
                 </div>
             </div>
-            <div class="rotation-zone rotation-zone-right" id="rotationZoneRight"></div>
+            <div class="rotation-zone rotation-zone-right" id="rotationZoneRight">
+                <span style="writing-mode: vertical-rl; color: #aaa; font-size: 0.6em;">ROTATION ⟳</span>
+            </div>
         </div>
     </div>
     
     <div class="bottom-menu">
         <div class="controls">
             <button class="icon-btn" onclick="resetGame()">↺</button>
+            <div class="score-display">Score: <span id="scoreValue">0</span></div>
             <div class="control-item">
                 <label>📐</label>
-                <input type="range" id="sizePastille" min="10" max="50" value="32" oninput="updateSizes()" class="slider-sm">
-                <span class="control-value" id="sizeValue">32</span>
-            </div>
-            <div class="control-item crown-bg">
-                <label>🔘</label>
-                <input type="range" id="crownRotSpeed" min="100" max="2000" value="800" step="50" oninput="updateCrownRotSpeed()" class="slider-sm">
-                <span class="control-value" id="crownRotSpeedValue">800</span>
-            </div>
-            <div class="control-item crown-bg">
-                <label>🎯</label>
-                <input type="range" id="crownMoves" min="0" max="5" value="0" oninput="updateCrownMoves()" class="slider-xs">
-                <span class="control-value" id="crownMovesValue">∞</span>
+                <input type="range" id="sizePastille" min="10" max="50" value="38" oninput="updateSizes()" class="slider-sm">
+                <span class="control-value" id="sizeValue">38</span>
             </div>
         </div>
         
         <div class="controls">
-            <div class="control-item diag-bg">
-                <label>⟳</label>
-                <input type="range" id="contRotSpeed" min="200" max="2000" value="800" step="50" oninput="updateContRotSpeed()" class="slider-sm">
-                <span class="control-value" id="contRotSpeedValue">800</span>
+            <div class="control-item rot-bg">
+                <label>⟳ 2×2</label>
+                <input type="range" id="rotSpeed" min="100" max="600" value="200" step="50" oninput="updateRotSpeed()" class="slider-sm">
+                <span class="control-value" id="rotSpeedValue">200</span>
             </div>
-            <div class="control-item diag-bg">
-                <label>🎯</label>
-                <input type="range" id="diag2x2Moves" min="0" max="5" value="0" oninput="updateDiag2x2Moves()" class="slider-xs">
-                <span class="control-value" id="diag2x2MovesValue">∞</span>
+            <div class="control-item fusion-bg">
+                <label>↗ Fus</label>
+                <input type="range" id="fusionSpeed" min="100" max="600" value="200" step="50" oninput="updateFusionSpeed()" class="slider-sm">
+                <span class="control-value" id="fusionSpeedValue">200</span>
             </div>
-            <div class="control-item diag-bg">
-                <label>⤡</label>
-                <input type="range" id="diagSensitivity" min="10" max="90" value="20" oninput="updateDiagSensitivity()" class="slider-xs">
-                <span class="control-value" id="diagSensValue">20%</span>
+            <div class="control-item matrix-bg">
+                <label>🔄 90°</label>
+                <input type="range" id="matrixRotSpeed" min="200" max="1500" value="600" step="50" oninput="updateMatrixRotSpeed()" class="slider-sm">
+                <span class="control-value" id="matrixRotSpeedValue">600</span>
             </div>
         </div>
         
         <div class="controls">
-            <div class="control-item matrix-bg">
-                <label>🔄</label>
-                <input type="range" id="matrixRotSpeed" min="200" max="2000" value="800" step="50" oninput="updateMatrixRotSpeed()" class="slider-sm">
-                <span class="control-value" id="matrixRotSpeedValue">800</span>
-            </div>
-            <div class="control-item matrix-bg">
-                <label>🎯</label>
-                <input type="range" id="matrixMoves" min="0" max="5" value="0" oninput="updateMatrixMoves()" class="slider-xs">
-                <span class="control-value" id="matrixMovesValue">∞</span>
-            </div>
             <button class="option-btn" id="align3Btn" onclick="setAlignMin(3)">3</button>
             <button class="option-btn" id="align4Btn" onclick="setAlignMin(4)">4</button>
             <button class="option-btn active" id="align2x2Btn" onclick="toggleSquareMatch()">2×2</button>
-            <label class="toggle-switch" title="Diag"><input type="checkbox" id="diagAlignEnabled" checked onchange="toggleDiagAlign()"><span class="toggle-slider"></span></label>
-            <label class="toggle-switch" title="Rails"><input type="checkbox" id="showRails" checked onchange="toggleRails()"><span class="toggle-slider"></span></label>
-            <label class="toggle-switch" title="Gravité"><input type="checkbox" id="gravityEnabled" onchange="toggleGravity()"><span class="toggle-slider"></span></label>
+            <label class="toggle-switch" title="Diag Align"><input type="checkbox" id="diagAlignEnabled" checked onchange="toggleDiagAlign()"><span class="toggle-slider"></span></label>
+        </div>
+        
+        <div class="help-text">
+            ↔↕ sur pastille = Rotation 2×2 | ↗↘↙↖ = Fusion | Côtés = Rotation 90° + Gravité
         </div>
     </div>
     
@@ -218,43 +265,19 @@
         const gridSize = 6;
         let canvasSize, cx, cy, padding, cellSize;
         
-        // Positions des 3 couronnes pour grille 6x6 (36 cases total)
-        const c1Positions = [
-            [0,0],[0,1],[0,2],[0,3],[0,4],[0,5],  // haut (0-5)
-            [1,5],[2,5],[3,5],[4,5],[5,5],        // droite (6-10)
-            [5,4],[5,3],[5,2],[5,1],[5,0],        // bas (11-15)
-            [4,0],[3,0],[2,0],[1,0]               // gauche (16-19)
-        ]; // 20 positions
-        
-        const c2Positions = [
-            [1,1],[1,2],[1,3],[1,4],  // haut (0-3)
-            [2,4],[3,4],[4,4],        // droite (4-6)
-            [4,3],[4,2],[4,1],        // bas (7-9)
-            [3,1],[2,1]               // gauche (10-11)
-        ]; // 12 positions
-        
-        const c3Positions = [
-            [2,2],[2,3],  // haut (0-1)
-            [3,3],[3,2]   // bas (2-3)
-        ]; // 4 positions
-        
-        const crownPositions = [c1Positions, c2Positions, c3Positions];
-        const crowns = [{count:20}, {count:12}, {count:4}];
-        
         // ============ ÉTAT DU JEU ============
-        let data = [[],[],[]];
-        let offsets = [0,0,0];
-        let sizePastille = 32, sizeAncrage = 64;
-        const pastilleColors = ["#3498db", "#f1c40f", "#e74c3c"]; // Bleu, Jaune, Rouge
+        let grid = [];
+        let score = 0;
+        let isAnimating = false;
+        
+        let sizePastille = 38, sizeAncrage = 76;
         
         // Paramètres
-        let alignMinLength = 0, squareMatchEnabled = true, diagAlignEnabled = true, gravityEnabled = false;
-        let matrixRotationDuration = 800, matrixMovesMax = 0, matrixMovesRemaining = 0;
-        let crownRotationSpeed = 800, crownMovesMax = 0;
-        let diagSensitivity = 20, continuousRotationSpeed = 800;
-        let diag2x2MovesMax = 0, diag2x2MovesRemaining = 0;
+        let alignMinLength = 0, squareMatchEnabled = true, diagAlignEnabled = true;
+        let matrixRotationDuration = 600;
+        let rotationSpeed = 200;
+        let fusionSpeed = 200;
         let isLocalRotating = false, isMatrixRotating = false;
-        let continuousRotationState = null, continuousRotationTimer = null;
         let activeDrag = null, matrixRotationDrag = null;
         
         // ============ DIMENSIONS ============
@@ -265,19 +288,6 @@
             cy = canvasSize / 2;
             padding = canvasSize * 0.04;
             cellSize = (canvasSize - 2 * padding) / gridSize;
-            updateRailPositions();
-        }
-        
-        function updateRailPositions() {
-            const rails = ['.rail-c1', '.rail-c2', '.rail-c3'];
-            const railOffsets = [0.5, 1.5, 2.5];
-            rails.forEach((sel, i) => {
-                const r = document.querySelector(sel);
-                if (r) {
-                    const pct = (padding + cellSize * railOffsets[i]) / canvasSize * 100;
-                    r.style.top = r.style.left = r.style.right = r.style.bottom = pct + '%';
-                }
-            });
         }
         
         // ============ CONTRÔLES UI ============
@@ -287,45 +297,23 @@
             document.getElementById('sizeValue').textContent = sizePastille;
             document.querySelectorAll('.pastille').forEach(p => { p.style.width = p.style.height = sizePastille + 'px'; });
             document.querySelectorAll('.pastille-anchor').forEach(a => { a.style.width = a.style.height = sizeAncrage + 'px'; });
-            updateAllPositions();
+            updateAllVisualPositions();
         }
         
-        function updateCrownRotSpeed() {
-            crownRotationSpeed = parseInt(document.getElementById('crownRotSpeed').value);
-            document.getElementById('crownRotSpeedValue').textContent = crownRotationSpeed;
+        function updateRotSpeed() {
+            rotationSpeed = parseInt(document.getElementById('rotSpeed').value);
+            document.getElementById('rotSpeedValue').textContent = rotationSpeed;
         }
         
-        function updateCrownMoves() {
-            crownMovesMax = parseInt(document.getElementById('crownMoves').value);
-            document.getElementById('crownMovesValue').textContent = crownMovesMax === 0 ? '∞' : crownMovesMax;
-        }
-        
-        function updateContRotSpeed() {
-            continuousRotationSpeed = parseInt(document.getElementById('contRotSpeed').value);
-            document.getElementById('contRotSpeedValue').textContent = continuousRotationSpeed;
-        }
-        
-        function updateDiag2x2Moves() {
-            diag2x2MovesMax = parseInt(document.getElementById('diag2x2Moves').value);
-            diag2x2MovesRemaining = diag2x2MovesMax;
-            document.getElementById('diag2x2MovesValue').textContent = diag2x2MovesMax === 0 ? '∞' : diag2x2MovesRemaining;
-        }
-        
-        function updateDiagSensitivity() {
-            diagSensitivity = parseInt(document.getElementById('diagSensitivity').value);
-            document.getElementById('diagSensValue').textContent = diagSensitivity + '%';
+        function updateFusionSpeed() {
+            fusionSpeed = parseInt(document.getElementById('fusionSpeed').value);
+            document.getElementById('fusionSpeedValue').textContent = fusionSpeed;
         }
         
         function updateMatrixRotSpeed() {
             matrixRotationDuration = parseInt(document.getElementById('matrixRotSpeed').value);
             document.getElementById('matrixRotSpeedValue').textContent = matrixRotationDuration;
             document.documentElement.style.setProperty('--rotation-duration', matrixRotationDuration + 'ms');
-        }
-        
-        function updateMatrixMoves() {
-            matrixMovesMax = parseInt(document.getElementById('matrixMoves').value);
-            matrixMovesRemaining = matrixMovesMax;
-            document.getElementById('matrixMovesValue').textContent = matrixMovesMax === 0 ? '∞' : matrixMovesRemaining;
         }
         
         function setAlignMin(n) {
@@ -340,318 +328,396 @@
         }
         
         function toggleDiagAlign() { diagAlignEnabled = document.getElementById('diagAlignEnabled').checked; }
-        function toggleRails() { document.querySelectorAll('.rail').forEach(r => r.style.display = document.getElementById('showRails').checked ? 'block' : 'none'); }
-        function toggleGravity() { gravityEnabled = document.getElementById('gravityEnabled').checked; }
+        
+        function updateScore(points) {
+            score += points;
+            document.getElementById('scoreValue').textContent = score;
+        }
+        
+        // ============ GRILLE ET POSITIONS ============
+        function gridToPixel(row, col) {
+            return { 
+                x: padding + col * cellSize + cellSize / 2, 
+                y: padding + row * cellSize + cellSize / 2 
+            };
+        }
+        
+        function pixelToGrid(x, y) {
+            const col = Math.floor((x - padding) / cellSize);
+            const row = Math.floor((y - padding) / cellSize);
+            return { 
+                row: Math.max(0, Math.min(5, row)), 
+                col: Math.max(0, Math.min(5, col)) 
+            };
+        }
+        
+        function positionAnchorAt(anchor, row, col) {
+            const pos = gridToPixel(row, col);
+            anchor.style.left = (pos.x - sizeAncrage / 2) + 'px';
+            anchor.style.top = (pos.y - sizeAncrage / 2) + 'px';
+        }
+        
+        function updateAllVisualPositions() {
+            for (let row = 0; row < 6; row++) {
+                for (let col = 0; col < 6; col++) {
+                    if (grid[row][col]) {
+                        positionAnchorAt(grid[row][col].anchor, row, col);
+                    }
+                }
+            }
+        }
         
         // ============ PASTILLES ============
-        function createPastille(color, crown, index) {
+        function createPastille(color) {
             const anchor = document.createElement('div');
             anchor.className = 'pastille-anchor';
             anchor.style.cssText = `position:absolute;width:${sizeAncrage}px;height:${sizeAncrage}px;display:flex;align-items:center;justify-content:center;pointer-events:none;`;
-            anchor.dataset.crown = crown;
-            anchor.dataset.index = index;
             
             const elem = document.createElement('div');
-            elem.className = 'pastille';
-            elem.style.cssText = `width:${sizePastille}px;height:${sizePastille}px;background:${pastilleColors[color]};pointer-events:auto;`;
+            elem.className = `pastille color-${color}`;
+            elem.style.cssText = `width:${sizePastille}px;height:${sizePastille}px;pointer-events:auto;`;
             
             anchor.appendChild(elem);
             document.getElementById('gameArea').appendChild(anchor);
             return { anchor, elem };
         }
         
-        function positionPastille(anchor, crown, index) {
-            const pos = getPositionOnSquare(crown, index);
-            anchor.style.left = (pos.x - sizeAncrage / 2) + 'px';
-            anchor.style.top = (pos.y - sizeAncrage / 2) + 'px';
+        function createPastilleAt(row, col, color) {
+            const { anchor, elem } = createPastille(color);
+            grid[row][col] = { color, anchor, elem };
+            positionAnchorAt(anchor, row, col);
+            return grid[row][col];
         }
         
-        function updateAllPositions() {
-            for (let c = 0; c < 3; c++) {
-                for (let i = 0; i < data[c].length; i++) {
-                    if (data[c][i] && data[c][i].anchor) {
-                        positionPastille(data[c][i].anchor, c, i);
-                    }
-                }
+        function removePastilleAt(row, col, animate = true) {
+            const cell = grid[row][col];
+            if (!cell) return;
+            
+            if (animate && cell.elem) {
+                cell.elem.classList.add('vanishing');
+                setTimeout(() => { if (cell.anchor) cell.anchor.remove(); }, 500);
+            } else if (cell.anchor) {
+                cell.anchor.remove();
             }
-        }
-        
-        function getPositionOnSquare(crown, index) {
-            const positions = crownPositions[crown], count = positions.length;
-            const realIndex = ((index + offsets[crown]) % count + count) % count;
-            const idx1 = Math.floor(realIndex), idx2 = (idx1 + 1) % count, t = realIndex - idx1;
-            const [row1, col1] = positions[idx1], [row2, col2] = positions[idx2];
-            const row = row1 + (row2 - row1) * t, col = col1 + (col2 - col1) * t;
-            return { x: padding + col * cellSize + cellSize / 2, y: padding + row * cellSize + cellSize / 2 };
-        }
-        
-        function getGridPosition(crown, index) {
-            const positions = crownPositions[crown], count = positions.length;
-            const offsetIndex = Math.round(offsets[crown]);
-            return positions[((index + offsetIndex) % count + count) % count];
-        }
-        
-        function gridToPixel(row, col) {
-            return { x: padding + col * cellSize + cellSize / 2, y: padding + row * cellSize + cellSize / 2 };
+            grid[row][col] = null;
         }
         
         // ============ GRILLE INITIALE ============
-        const INITIAL_GRID = [
-            [0, 1, 2, 0, 1, 2],
-            [1, 2, 0, 1, 2, 0],
-            [2, 0, 1, 2, 0, 1],
-            [0, 1, 2, 0, 1, 2],
-            [1, 2, 0, 1, 2, 0],
-            [2, 0, 1, 2, 0, 1]
-        ];
+        function initGrid() {
+            grid = [];
+            for (let row = 0; row < 6; row++) {
+                grid[row] = [];
+                for (let col = 0; col < 6; col++) {
+                    grid[row][col] = null;
+                }
+            }
+        }
         
         function loadInitialGrid() {
             document.querySelectorAll('.pastille-anchor').forEach(el => el.remove());
-            data = [[], [], []];
-            offsets = [0, 0, 0];
-            
-            for (let c = 0; c < 3; c++) {
-                const positions = crownPositions[c];
-                for (let i = 0; i < positions.length; i++) {
-                    const [row, col] = positions[i];
-                    const color = INITIAL_GRID[row][col];
-                    const { anchor, elem } = createPastille(color, c, i);
-                    data[c][i] = { value: color, anchor, elem };
-                    positionPastille(anchor, c, i);
-                }
-            }
-        }
-        
-        // ============ RECHERCHE POSITION ============
-        // Trouve quelle couronne/index contient actuellement la position grille (row, col)
-        function findDataAtGridPosition(row, col) {
-            for (let c = 0; c < 3; c++) {
-                for (let i = 0; i < data[c].length; i++) {
-                    if (data[c][i] && data[c][i].value !== null) {
-                        const [r, co] = getGridPosition(c, i);
-                        if (r === row && co === col) {
-                            return { crown: c, index: i, data: data[c][i] };
-                        }
-                    }
-                }
-            }
-            return null;
-        }
-        
-        // Trouve quelle position de couronne correspond à une coordonnée grille
-        // Tient compte des offsets actuels des couronnes
-        function findCrownSlotAtCoord(row, col) {
-            for (let c = 0; c < 3; c++) {
-                const positions = crownPositions[c];
-                const offset = Math.round(offsets[c]);
-                
-                for (let i = 0; i < positions.length; i++) {
-                    const posIdx = ((i + offset) % positions.length + positions.length) % positions.length;
-                    const [r, co] = positions[posIdx];
-                    if (r === row && co === col) {
-                        return { crown: c, index: i };
-                    }
-                }
-            }
-            return null;
-        }
-        
-        function getColorAt(row, col) {
-            const found = findDataAtGridPosition(row, col);
-            return found ? found.data.value : null;
-        }
-        
-        // Fonction pour placer une couleur à une position de grille (crée une nouvelle pastille)
-        function setColorAt(row, col, color) {
-            const target = findCrownSlotAtCoord(row, col);
-            if (!target) {
-                console.error('setColorAt: position non trouvée', row, col);
-                return;
-            }
-            
-            const {anchor, elem} = createPastille(color, target.crown, target.index);
-            data[target.crown][target.index] = { value: color, anchor, elem };
-            positionPastille(anchor, target.crown, target.index);
-        }
-        
-        // ============ GRAVITÉ ============
-        function applyDownwardGravity() {
-            // D'abord, "figer" les positions actuelles en collectant les données
-            const currentPositions = [];
-            for (let c = 0; c < 3; c++) {
-                for (let i = 0; i < data[c].length; i++) {
-                    if (data[c][i] && data[c][i].value !== null) {
-                        const [row, col] = getGridPosition(c, i);
-                        currentPositions.push({
-                            color: data[c][i].value,
-                            anchor: data[c][i].anchor,
-                            elem: data[c][i].elem,
-                            row, col
-                        });
-                    }
-                }
-            }
-            
-            // Vider et réinitialiser les offsets
-            for (let c = 0; c < 3; c++) {
-                for (let i = 0; i < data[c].length; i++) {
-                    data[c][i] = null;
-                }
-            }
-            offsets = [0, 0, 0];
-            
-            // Replacer les pastilles à leurs positions actuelles (avec offset 0)
-            for (const p of currentPositions) {
-                const slot = findCrownSlotAtCoord(p.row, p.col);
-                if (slot) {
-                    data[slot.crown][slot.index] = { value: p.color, anchor: p.anchor, elem: p.elem };
-                    p.anchor.dataset.crown = slot.crown;
-                    p.anchor.dataset.index = slot.index;
-                }
-            }
-            
-            // Maintenant appliquer la gravité
-            let moved = false;
-            
-            for (let col = 0; col < 6; col++) {
-                // Collecter les pastilles dans cette colonne (de haut en bas)
-                const pastilles = [];
-                for (let row = 0; row < 6; row++) {
-                    const slot = findCrownSlotAtCoord(row, col);
-                    if (slot && data[slot.crown][slot.index]) {
-                        pastilles.push({
-                            ...data[slot.crown][slot.index],
-                            crown: slot.crown,
-                            index: slot.index,
-                            originalRow: row
-                        });
-                    }
-                }
-                
-                if (pastilles.length === 0) continue;
-                
-                // Trouver toutes les positions dans cette colonne (du bas vers le haut)
-                const slots = [];
-                for (let row = 5; row >= 0; row--) {
-                    const slot = findCrownSlotAtCoord(row, col);
-                    if (slot) slots.push({ row, col, ...slot });
-                }
-                slots.reverse(); // Du haut vers le bas
-                
-                // Prendre les N dernières positions (les plus basses)
-                const targetSlots = slots.slice(slots.length - pastilles.length);
-                
-                // Effacer les anciennes positions
-                for (const p of pastilles) {
-                    data[p.crown][p.index] = null;
-                }
-                
-                // Placer aux nouvelles positions
-                for (let i = 0; i < pastilles.length; i++) {
-                    const p = pastilles[i];
-                    const target = targetSlots[i];
-                    
-                    if (target.row !== p.originalRow) moved = true;
-                    
-                    data[target.crown][target.index] = { value: p.value, anchor: p.anchor, elem: p.elem };
-                    p.anchor.dataset.crown = target.crown;
-                    p.anchor.dataset.index = target.index;
-                    positionPastille(p.anchor, target.crown, target.index);
-                }
-            }
-            
-            if (moved) playGravitySound();
-        }
-        
-        // ============ SUPPRESSION / ALIGNEMENTS ============
-        function removePastilleAt(row, col) {
-            const found = findDataAtGridPosition(row, col);
-            if (found) {
-                if (found.data.elem) {
-                    found.data.elem.classList.add('vanishing');
-                    setTimeout(() => { if (found.data.anchor) found.data.anchor.remove(); }, 500);
-                }
-                data[found.crown][found.index] = null;
-            }
-        }
-        
-        function buildGrid() {
-            const grid = Array(6).fill(null).map(() => Array(6).fill(null));
-            for (let c = 0; c < 3; c++) {
-                for (let i = 0; i < data[c].length; i++) {
-                    if (!data[c][i] || data[c][i].value === null) continue;
-                    const [row, col] = getGridPosition(c, i);
-                    grid[row][col] = { crown: c, index: i, color: data[c][i].value };
-                }
-            }
-            return grid;
-        }
-        
-        function findAlignments(minLength) {
-            const grid = buildGrid();
-            const alignments = [];
-            const directions = [[0, 1], [1, 0]];
-            if (diagAlignEnabled) directions.push([1, 1], [1, -1]);
+            initGrid();
+            score = 0;
+            document.getElementById('scoreValue').textContent = '0';
             
             for (let row = 0; row < 6; row++) {
                 for (let col = 0; col < 6; col++) {
-                    if (!grid[row][col]) continue;
-                    const color = grid[row][col].color;
-                    
-                    for (const [dr, dc] of directions) {
-                        const line = [{ row, col }];
-                        let r = row + dr, c = col + dc;
-                        while (r >= 0 && r < 6 && c >= 0 && c < 6 && grid[r][c] && grid[r][c].color === color) {
-                            line.push({ row: r, col: c });
-                            r += dr; c += dc;
-                        }
-                        if (line.length >= minLength) {
-                            const key = line.map(p => `${p.row},${p.col}`).sort().join('|');
-                            if (!alignments.find(a => a.key === key)) alignments.push({ cells: line, key });
-                        }
-                    }
+                    const rand = Math.random();
+                    const color = rand < 0.5 ? 0 : (rand < 0.85 ? 1 : 2);
+                    createPastilleAt(row, col, color);
                 }
             }
-            return alignments;
         }
         
-        function findSquareMatches() {
-            const grid = buildGrid();
-            const squares = [];
-            for (let row = 0; row < 5; row++) {
-                for (let col = 0; col < 5; col++) {
-                    const tl = grid[row][col], tr = grid[row][col+1], bl = grid[row+1][col], br = grid[row+1][col+1];
-                    if (tl && tr && bl && br && tl.color === tr.color && tl.color === bl.color && tl.color === br.color) {
-                        const cells = [{row,col}, {row,col:col+1}, {row:row+1,col}, {row:row+1,col:col+1}];
-                        const key = cells.map(p => `${p.row},${p.col}`).sort().join('|');
-                        if (!squares.find(s => s.key === key)) squares.push({ cells, key });
-                    }
-                }
-            }
-            return squares;
+        // ============ UTILITAIRES ============
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
         }
         
-        function vanishAlignedPastilles() {
-            const toVanish = new Set();
-            if (alignMinLength >= 3) findAlignments(alignMinLength).forEach(a => a.cells.forEach(c => toVanish.add(`${c.row},${c.col}`)));
-            if (squareMatchEnabled) findSquareMatches().forEach(s => s.cells.forEach(c => toVanish.add(`${c.row},${c.col}`)));
+        // ============ GRAVITÉ SIMPLE (après rotation 90° uniquement) ============
+        async function applyGravityAnimated() {
+            let hasChanges = false;
             
-            if (toVanish.size > 0) {
-                playVanishSound();
-                for (const key of toVanish) {
-                    const [row, col] = key.split(',').map(Number);
-                    removePastilleAt(row, col);
+            for (let col = 0; col < 6; col++) {
+                const pastilles = [];
+                for (let row = 0; row < 6; row++) {
+                    if (grid[row][col]) pastilles.push(grid[row][col]);
                 }
+                
+                const newPositions = [];
+                for (let i = 0; i < pastilles.length; i++) {
+                    newPositions.push(6 - pastilles.length + i);
+                }
+                
+                let currentRow = 0;
+                for (let row = 0; row < 6; row++) {
+                    if (grid[row][col]) {
+                        if (row !== newPositions[currentRow]) hasChanges = true;
+                        currentRow++;
+                    }
+                }
+                
+                for (let row = 0; row < 6; row++) grid[row][col] = null;
+                
+                for (let i = 0; i < pastilles.length; i++) {
+                    grid[newPositions[i]][col] = pastilles[i];
+                }
+            }
+            
+            if (hasChanges) {
+                document.querySelectorAll('.pastille-anchor').forEach(a => {
+                    a.style.transition = 'left 0.25s ease-in, top 0.25s ease-in';
+                });
+                updateAllVisualPositions();
+                await sleep(300);
+                document.querySelectorAll('.pastille-anchor').forEach(a => {
+                    a.style.transition = '';
+                });
             }
         }
         
-        // ============ ROTATION MATRICE ============
+        // ============ FUSION DIAGONALE ============
+        async function fusionDiagonal(row1, col1, row2, col2) {
+            if (isAnimating || isLocalRotating) return;
+            
+            if (Math.abs(row2 - row1) !== 1 || Math.abs(col2 - col1) !== 1) return;
+            if (row2 < 0 || row2 > 5 || col2 < 0 || col2 > 5) return;
+            
+            const cell1 = grid[row1][col1];
+            const cell2 = grid[row2][col2];
+            
+            if (!cell1 || !cell2) {
+                playNoMatchSound();
+                return;
+            }
+            
+            if (cell1.color !== cell2.color) {
+                cell1.elem.classList.add('no-match');
+                playNoMatchSound();
+                await sleep(300);
+                cell1.elem.classList.remove('no-match');
+                return;
+            }
+            
+            isAnimating = true;
+            
+            const newColor = (cell1.color + 1) % 3;
+            const points = newColor === 1 ? 10 : (newColor === 2 ? 50 : 100);
+            
+            const ind1 = document.getElementById('fusionIndicator1');
+            const ind2 = document.getElementById('fusionIndicator2');
+            const pos1 = gridToPixel(row1, col1);
+            const pos2 = gridToPixel(row2, col2);
+            
+            ind1.style.left = (pos1.x - cellSize/2) + 'px';
+            ind1.style.top = (pos1.y - cellSize/2) + 'px';
+            ind1.style.width = ind1.style.height = (cellSize - 4) + 'px';
+            ind2.style.left = (pos2.x - cellSize/2) + 'px';
+            ind2.style.top = (pos2.y - cellSize/2) + 'px';
+            ind2.style.width = ind2.style.height = (cellSize - 4) + 'px';
+            ind1.classList.add('visible');
+            ind2.classList.add('visible');
+            
+            cell1.elem.classList.add('flying');
+            
+            const startTime = performance.now();
+            
+            await new Promise(resolve => {
+                function animate(t) {
+                    const progress = Math.min((t - startTime) / fusionSpeed, 1);
+                    const eased = progress * progress;
+                    
+                    const x = pos1.x + (pos2.x - pos1.x) * eased;
+                    const y = pos1.y + (pos2.y - pos1.y) * eased;
+                    cell1.anchor.style.left = (x - sizeAncrage / 2) + 'px';
+                    cell1.anchor.style.top = (y - sizeAncrage / 2) + 'px';
+                    
+                    const scale = 1 - 0.5 * eased;
+                    cell1.elem.style.transform = `scale(${scale})`;
+                    
+                    if (progress < 1) requestAnimationFrame(animate);
+                    else resolve();
+                }
+                requestAnimationFrame(animate);
+            });
+            
+            playMergeSound();
+            
+            cell1.anchor.remove();
+            grid[row1][col1] = null;
+            
+            cell2.color = newColor;
+            cell2.elem.className = `pastille color-${newColor}`;
+            cell2.elem.classList.add('merging');
+            
+            updateScore(points);
+            
+            ind1.classList.remove('visible');
+            ind2.classList.remove('visible');
+            
+            await sleep(400);
+            cell2.elem.classList.remove('merging');
+            
+            isAnimating = false;
+            
+            vanishAlignedPastilles();
+        }
+        
+        // ============ ROTATION 2x2 AMÉLIORÉE ============
+        // Le groupe est déterminé par: la pastille touchée est un des 4 coins
+        // Direction du swipe = sens de rotation
+        // On choisit le groupe 2x2 où la pastille est dans le coin OPPOSÉ à la direction
+        
+        function calculateRotationGroup2x2(row, col, direction) {
+            // row, col = position de la pastille touchée
+            // direction = 'up', 'down', 'left', 'right'
+            
+            let topRow, topCol;
+            
+            // La pastille touchée doit être dans le coin opposé à la direction du swipe
+            // Swipe vers le haut → pastille en bas du groupe
+            // Swipe vers le bas → pastille en haut du groupe
+            // Swipe vers la gauche → pastille à droite du groupe
+            // Swipe vers la droite → pastille à gauche du groupe
+            
+            switch(direction) {
+                case 'up':
+                    // Pastille en bas-gauche ou bas-droite du groupe
+                    // On prend le groupe au-dessus
+                    topRow = row - 1;
+                    topCol = col;
+                    // Si on déborde à gauche, on décale
+                    if (topCol > 4) topCol = 4;
+                    break;
+                case 'down':
+                    // Pastille en haut du groupe
+                    topRow = row;
+                    topCol = col;
+                    if (topCol > 4) topCol = 4;
+                    break;
+                case 'left':
+                    // Pastille à droite du groupe
+                    topRow = row;
+                    topCol = col - 1;
+                    if (topRow > 4) topRow = 4;
+                    break;
+                case 'right':
+                    // Pastille à gauche du groupe
+                    topRow = row;
+                    topCol = col;
+                    if (topRow > 4) topRow = 4;
+                    break;
+                default:
+                    return null;
+            }
+            
+            // Vérifier les limites
+            if (topRow < 0) topRow = 0;
+            if (topCol < 0) topCol = 0;
+            if (topRow > 4) topRow = 4;
+            if (topCol > 4) topCol = 4;
+            
+            // Sens de rotation basé sur la direction
+            // Up/Right = anti-horaire, Down/Left = horaire
+            const clockwise = (direction === 'down' || direction === 'left');
+            
+            return {
+                positions: [[topRow, topCol], [topRow, topCol + 1], [topRow + 1, topCol], [topRow + 1, topCol + 1]],
+                centerX: padding + (topCol + 1) * cellSize,
+                centerY: padding + (topRow + 1) * cellSize,
+                clockwise
+            };
+        }
+        
+        function executeLocalRotation(group, clockwise, callback) {
+            if (isLocalRotating || isAnimating) return;
+            isLocalRotating = true;
+            
+            const indicator = document.getElementById('localRotationIndicator');
+            indicator.style.left = (group.centerX - cellSize) + 'px';
+            indicator.style.top = (group.centerY - cellSize) + 'px';
+            indicator.style.width = indicator.style.height = (cellSize * 2 - 4) + 'px';
+            indicator.classList.add('visible');
+            
+            playRotationSound();
+            
+            const cells = group.positions.map(([r, c]) => ({
+                row: r, col: c,
+                data: grid[r][c],
+                startPos: gridToPixel(r, c)
+            }));
+            
+            // Indices de rotation: [TL, TR, BL, BR] -> nouvelles positions
+            // Horaire: TL->TR, TR->BR, BL->TL, BR->BL => [2, 0, 3, 1]
+            // Anti-horaire: TL->BL, TR->TL, BL->BR, BR->TR => [1, 3, 0, 2]
+            const newIndices = clockwise ? [2, 0, 3, 1] : [1, 3, 0, 2];
+            
+            cells.forEach((cell, i) => {
+                const targetIdx = newIndices[i];
+                const [tr, tc] = group.positions[targetIdx];
+                cell.endPos = gridToPixel(tr, tc);
+            });
+            
+            const startTime = performance.now();
+            
+            function animate(t) {
+                const progress = Math.min((t - startTime) / rotationSpeed, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                
+                cells.forEach(cell => {
+                    if (cell.data && cell.data.anchor) {
+                        const x = cell.startPos.x + (cell.endPos.x - cell.startPos.x) * eased;
+                        const y = cell.startPos.y + (cell.endPos.y - cell.startPos.y) * eased;
+                        cell.data.anchor.style.left = (x - sizeAncrage / 2) + 'px';
+                        cell.data.anchor.style.top = (y - sizeAncrage / 2) + 'px';
+                    }
+                });
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    finishLocalRotation(group, cells, newIndices, callback);
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+        
+        function finishLocalRotation(group, cells, newIndices, callback) {
+            const newData = [null, null, null, null];
+            for (let i = 0; i < 4; i++) {
+                newData[newIndices[i]] = cells[i].data;
+            }
+            
+            for (let i = 0; i < 4; i++) {
+                const [r, c] = group.positions[i];
+                grid[r][c] = newData[i];
+            }
+            
+            updateAllVisualPositions();
+            
+            document.getElementById('localRotationIndicator').classList.remove('visible');
+            isLocalRotating = false;
+            
+            vanishAlignedPastilles();
+            
+            if (callback) callback();
+        }
+        
+        function attemptRotation2x2(row, col, direction) {
+            if (isAnimating || isLocalRotating) return false;
+            
+            const group = calculateRotationGroup2x2(row, col, direction);
+            if (!group) return false;
+            
+            executeLocalRotation(group, group.clockwise, null);
+            return true;
+        }
+        
+        // ============ ROTATION MATRICE 90° ============
         function rotateMatrix(direction) {
-            if (isMatrixRotating) return;
-            if (matrixMovesMax > 0 && matrixMovesRemaining <= 0) { playBlockedSound(); return; }
+            if (isMatrixRotating || isAnimating) return;
             
             isMatrixRotating = true;
-            if (matrixMovesMax > 0) { matrixMovesRemaining--; document.getElementById('matrixMovesValue').textContent = matrixMovesRemaining; }
+            isAnimating = true;
             
             const gameArea = document.getElementById('gameArea');
             gameArea.style.transition = `transform ${matrixRotationDuration}ms cubic-bezier(0.4, 0, 0.2, 1)`;
@@ -664,18 +730,20 @@
             
             playMatrixRotationSound();
             
-            setTimeout(() => {
+            setTimeout(async () => {
                 gameArea.style.transition = 'none';
                 document.querySelectorAll('.pastille').forEach(p => p.style.transition = 'none');
                 void gameArea.offsetHeight;
                 
-                transposeDataForRotation(direction);
+                rotateGridData(direction);
                 
                 gameArea.style.transform = 'rotate(0deg)';
                 document.querySelectorAll('.pastille').forEach(p => {
                     p.style.transform = 'rotate(0deg)';
                     p.classList.remove('counter-rotating');
                 });
+                
+                updateAllVisualPositions();
                 
                 void gameArea.offsetHeight;
                 requestAnimationFrame(() => {
@@ -685,53 +753,43 @@
                 
                 isMatrixRotating = false;
                 
-                if (gravityEnabled) {
-                    setTimeout(() => { applyDownwardGravity(); setTimeout(() => vanishAlignedPastilles(), 200); }, 50);
-                } else {
-                    setTimeout(() => vanishAlignedPastilles(), 50);
-                }
+                // Gravité UNIQUEMENT ici, après rotation 90°
+                await sleep(100);
+                await applyGravityAnimated();
+                
+                isAnimating = false;
+                
+                setTimeout(() => vanishAlignedPastilles(), 100);
+                
             }, matrixRotationDuration + 50);
         }
         
-        function transposeDataForRotation(direction) {
-            // D'abord, collecter toutes les pastilles avec leurs positions VISUELLES actuelles
-            const gridData = [];
-            for (let c = 0; c < 3; c++) {
-                for (let i = 0; i < data[c].length; i++) {
-                    if (data[c][i] && data[c][i].value !== null) {
-                        const [row, col] = getGridPosition(c, i);
-                        gridData.push({ color: data[c][i].value, row, col, anchor: data[c][i].anchor, elem: data[c][i].elem });
+        function rotateGridData(direction) {
+            const newGrid = [];
+            for (let row = 0; row < 6; row++) {
+                newGrid[row] = [];
+                for (let col = 0; col < 6; col++) {
+                    newGrid[row][col] = null;
+                }
+            }
+            
+            for (let row = 0; row < 6; row++) {
+                for (let col = 0; col < 6; col++) {
+                    if (grid[row][col]) {
+                        let newRow, newCol;
+                        if (direction > 0) {
+                            newRow = col;
+                            newCol = 5 - row;
+                        } else {
+                            newRow = 5 - col;
+                            newCol = row;
+                        }
+                        newGrid[newRow][newCol] = grid[row][col];
                     }
                 }
             }
             
-            // Vider toutes les données
-            for (let c = 0; c < 3; c++) {
-                for (let i = 0; i < data[c].length; i++) {
-                    data[c][i] = null;
-                }
-            }
-            
-            // IMPORTANT: Réinitialiser les offsets à 0 car on remet tout à plat
-            offsets = [0, 0, 0];
-            
-            // Replacer chaque pastille à sa nouvelle position après rotation
-            for (const item of gridData) {
-                // Calculer la nouvelle position après rotation 90° (pour grille 6x6)
-                const newRow = direction > 0 ? item.col : 5 - item.col;
-                const newCol = direction > 0 ? 5 - item.row : item.row;
-                
-                // Trouver la couronne/index pour cette coordonnée
-                const target = findCrownSlotAtCoord(newRow, newCol);
-                if (target) {
-                    data[target.crown][target.index] = { value: item.color, anchor: item.anchor, elem: item.elem };
-                    item.anchor.dataset.crown = target.crown;
-                    item.anchor.dataset.index = target.index;
-                    positionPastille(item.anchor, target.crown, target.index);
-                } else {
-                    console.error('Position non trouvée:', newRow, newCol);
-                }
-            }
+            grid = newGrid;
         }
         
         function initMatrixRotationZones() {
@@ -739,7 +797,7 @@
             const rightZone = document.getElementById('rotationZoneRight');
             
             function handleZoneStart(e, side) {
-                if (isMatrixRotating) return;
+                if (isMatrixRotating || isAnimating) return;
                 const touch = e.touches ? e.touches[0] : e;
                 matrixRotationDrag = { side, startY: touch.clientY, triggered: false };
                 (side === 'left' ? leftZone : rightZone).classList.add('active');
@@ -748,7 +806,7 @@
             }
             
             function handleZoneMove(e) {
-                if (!matrixRotationDrag || matrixRotationDrag.triggered || isMatrixRotating) return;
+                if (!matrixRotationDrag || matrixRotationDrag.triggered || isMatrixRotating || isAnimating) return;
                 const touch = e.touches ? e.touches[0] : e;
                 const dy = touch.clientY - matrixRotationDrag.startY;
                 if (Math.abs(dy) > 30) {
@@ -776,329 +834,245 @@
             document.addEventListener('touchend', handleZoneEnd);
         }
         
-        // ============ ROTATION 2x2 ============
-        function detectDiagonalDirection(dx, dy) {
+        // ============ ALIGNEMENTS ============
+        function findAlignments(minLength) {
+            const alignments = [];
+            const directions = [[0, 1], [1, 0]];
+            if (diagAlignEnabled) directions.push([1, 1], [1, -1]);
+            
+            for (let row = 0; row < 6; row++) {
+                for (let col = 0; col < 6; col++) {
+                    if (!grid[row][col]) continue;
+                    const color = grid[row][col].color;
+                    
+                    for (const [dr, dc] of directions) {
+                        const line = [{ row, col }];
+                        let r = row + dr, c = col + dc;
+                        while (r >= 0 && r < 6 && c >= 0 && c < 6 && grid[r][c] && grid[r][c].color === color) {
+                            line.push({ row: r, col: c });
+                            r += dr; c += dc;
+                        }
+                        if (line.length >= minLength) {
+                            const key = line.map(p => `${p.row},${p.col}`).sort().join('|');
+                            if (!alignments.find(a => a.key === key)) alignments.push({ cells: line, key });
+                        }
+                    }
+                }
+            }
+            return alignments;
+        }
+        
+        function findSquareMatches() {
+            const squares = [];
+            for (let row = 0; row < 5; row++) {
+                for (let col = 0; col < 5; col++) {
+                    const tl = grid[row][col], tr = grid[row][col+1];
+                    const bl = grid[row+1][col], br = grid[row+1][col+1];
+                    if (tl && tr && bl && br && 
+                        tl.color === tr.color && tl.color === bl.color && tl.color === br.color) {
+                        const cells = [{row,col}, {row,col:col+1}, {row:row+1,col}, {row:row+1,col:col+1}];
+                        const key = cells.map(p => `${p.row},${p.col}`).sort().join('|');
+                        if (!squares.find(s => s.key === key)) squares.push({ cells, key });
+                    }
+                }
+            }
+            return squares;
+        }
+        
+        function vanishAlignedPastilles() {
+            const toVanish = new Set();
+            if (alignMinLength >= 3) {
+                findAlignments(alignMinLength).forEach(a => a.cells.forEach(c => toVanish.add(`${c.row},${c.col}`)));
+            }
+            if (squareMatchEnabled) {
+                findSquareMatches().forEach(s => s.cells.forEach(c => toVanish.add(`${c.row},${c.col}`)));
+            }
+            
+            if (toVanish.size > 0) {
+                playVanishSound();
+                for (const key of toVanish) {
+                    const [row, col] = key.split(',').map(Number);
+                    removePastilleAt(row, col, true);
+                }
+            }
+        }
+        
+        // ============ DÉTECTION DIRECTION ============
+        function detectDirection(dx, dy) {
             const absDx = Math.abs(dx), absDy = Math.abs(dy);
-            if (absDx < 5 || absDy < 5) return null;
-            const ratio = absDx / absDy;
-            const minRatio = 0.7 - (diagSensitivity / 100) * 0.6;
-            const maxRatio = 1.4 + (diagSensitivity / 100) * 8.6;
-            if (ratio < minRatio || ratio > maxRatio) return null;
-            if (dy < 0 && dx > 0) return 'upRight';
-            if (dy < 0 && dx < 0) return 'upLeft';
-            if (dy > 0 && dx > 0) return 'downRight';
-            if (dy > 0 && dx < 0) return 'downLeft';
-            return null;
-        }
-        
-        function calculateRotationGroup(row, col, dir) {
-            let topRow, topCol;
-            switch(dir) {
-                case 'upRight': topRow = row - 1; topCol = col; break;
-                case 'upLeft': topRow = row - 1; topCol = col - 1; break;
-                case 'downRight': topRow = row; topCol = col; break;
-                case 'downLeft': topRow = row; topCol = col - 1; break;
-                default: return null;
-            }
-            // Limites pour grille 6x6
-            if (topRow < 0 || topRow > 4 || topCol < 0 || topCol > 4) return null;
-            return {
-                positions: [[topRow, topCol], [topRow, topCol + 1], [topRow + 1, topCol], [topRow + 1, topCol + 1]],
-                centerX: padding + (topCol + 1) * cellSize,
-                centerY: padding + (topRow + 1) * cellSize
-            };
-        }
-        
-        function getRotationDirection(dir) {
-            return (dir === 'upRight' || dir === 'downRight') ? false : true;
-        }
-        
-        function stopContinuousRotation() {
-            if (continuousRotationTimer) { clearTimeout(continuousRotationTimer); continuousRotationTimer = null; }
-            continuousRotationState = null;
-            document.getElementById('localRotationIndicator').classList.remove('visible', 'continuous');
-        }
-        
-        function executeLocalRotation(group, clockwise, callback) {
-            if (isLocalRotating) return;
-            isLocalRotating = true;
             
-            const indicator = document.getElementById('localRotationIndicator');
-            indicator.style.left = (group.centerX - cellSize) + 'px';
-            indicator.style.top = (group.centerY - cellSize) + 'px';
-            indicator.style.width = indicator.style.height = (cellSize * 2 - 4) + 'px';
-            indicator.classList.add('visible');
-            if (continuousRotationState) indicator.classList.add('continuous');
+            // Ratio pour détecter diagonal vs H/V
+            // Plus strict: ratio > 0.6 = diagonal
+            const ratio = Math.min(absDx, absDy) / Math.max(absDx, absDy);
             
-            playLocalRotationSound();
-            
-            const cells = group.positions.map(([r, c]) => {
-                const found = findDataAtGridPosition(r, c);
-                return { row: r, col: c, color: found ? found.data.value : null, anchor: found ? found.data.anchor : null, crown: found ? found.crown : null, index: found ? found.index : null, startPos: gridToPixel(r, c) };
-            });
-            
-            const newIndices = clockwise ? [2, 0, 3, 1] : [1, 3, 0, 2];
-            cells.forEach((cell, i) => {
-                const targetIdx = newIndices[i];
-                cell.endPos = gridToPixel(group.positions[targetIdx][0], group.positions[targetIdx][1]);
-                cell.targetRow = group.positions[targetIdx][0];
-                cell.targetCol = group.positions[targetIdx][1];
-            });
-            
-            const duration = continuousRotationState ? continuousRotationSpeed * 0.7 : continuousRotationSpeed * 0.5;
-            const startTime = performance.now();
-            
-            function animate(t) {
-                const progress = Math.min((t - startTime) / duration, 1);
-                const eased = 1 - Math.pow(1 - progress, 3);
-                cells.forEach(cell => {
-                    if (cell.anchor) {
-                        cell.anchor.style.left = (cell.startPos.x + (cell.endPos.x - cell.startPos.x) * eased - sizeAncrage / 2) + 'px';
-                        cell.anchor.style.top = (cell.startPos.y + (cell.endPos.y - cell.startPos.y) * eased - sizeAncrage / 2) + 'px';
-                    }
-                });
-                if (progress < 1) requestAnimationFrame(animate);
-                else finishLocalRotation(group, cells, newIndices, callback);
-            }
-            requestAnimationFrame(animate);
-        }
-        
-        function finishLocalRotation(group, cells, newIndices, callback) {
-            // Calculer les nouvelles couleurs pour chaque position
-            const newColors = [null, null, null, null];
-            for (let i = 0; i < 4; i++) {
-                newColors[newIndices[i]] = cells[i].color;
+            if (ratio > 0.6) {
+                // Diagonal
+                if (dy < 0 && dx > 0) return { type: 'diagonal', dRow: -1, dCol: 1 };
+                if (dy < 0 && dx < 0) return { type: 'diagonal', dRow: -1, dCol: -1 };
+                if (dy > 0 && dx > 0) return { type: 'diagonal', dRow: 1, dCol: 1 };
+                if (dy > 0 && dx < 0) return { type: 'diagonal', dRow: 1, dCol: -1 };
             }
             
-            // Supprimer les anciennes pastilles (visuellement)
-            for (const cell of cells) {
-                if (cell.anchor) {
-                    cell.anchor.remove();
-                }
-                if (cell.crown !== null && cell.index !== null) {
-                    data[cell.crown][cell.index] = null;
-                }
+            // Horizontal ou vertical (plus clair maintenant)
+            if (absDx > absDy * 1.5) {
+                return { type: 'hv', dir: dx > 0 ? 'right' : 'left' };
+            } else if (absDy > absDx * 1.5) {
+                return { type: 'hv', dir: dy > 0 ? 'down' : 'up' };
             }
             
-            // Créer les nouvelles pastilles aux nouvelles positions
-            for (let i = 0; i < 4; i++) {
-                const [r, c] = group.positions[i];
-                if (newColors[i] !== null) {
-                    setColorAt(r, c, newColors[i]);
-                }
+            // Cas ambigu - on prend le plus fort
+            if (absDx > absDy) {
+                return { type: 'hv', dir: dx > 0 ? 'right' : 'left' };
+            } else {
+                return { type: 'hv', dir: dy > 0 ? 'down' : 'up' };
             }
-            
-            if (!continuousRotationState) {
-                document.getElementById('localRotationIndicator').classList.remove('visible', 'continuous');
-            }
-            isLocalRotating = false;
-            
-            // TOUJOURS vérifier les alignements après chaque rotation
-            vanishAlignedPastilles();
-            
-            if (callback) {
-                callback();
-            }
-        }
-        
-        function attemptDiagonalRotation(row, col, dx, dy) {
-            const dir = detectDiagonalDirection(dx, dy);
-            if (!dir) return false;
-            const group = calculateRotationGroup(row, col, dir);
-            if (!group) return false;
-            
-            const filledCount = group.positions.filter(([r, c]) => getColorAt(r, c) !== null).length;
-            if (filledCount < 1) return false;  // Permettre même avec 1 seul carré
-            
-            if (diag2x2MovesMax > 0 && diag2x2MovesRemaining <= 0) { playBlockedSound(); return false; }
-            if (diag2x2MovesMax > 0) { diag2x2MovesRemaining--; document.getElementById('diag2x2MovesValue').textContent = diag2x2MovesRemaining; }
-            
-            const clockwise = getRotationDirection(dir);
-            
-            // Démarrer la rotation continue
-            continuousRotationState = { row, col, diagDirection: dir, group };
-            
-            function executeContinuousStep() {
-                if (!continuousRotationState) return;
-                
-                // Vérifier si on peut encore faire des coups
-                if (diag2x2MovesMax > 0 && diag2x2MovesRemaining <= 0) {
-                    stopContinuousRotation();
-                    playBlockedSound();
-                    return;
-                }
-                
-                const grp = calculateRotationGroup(continuousRotationState.row, continuousRotationState.col, continuousRotationState.diagDirection);
-                if (!grp) { stopContinuousRotation(); return; }
-                
-                let cnt = 0;
-                for (const [r, c] of grp.positions) { if (getColorAt(r, c) !== null) cnt++; }
-                if (cnt < 1) { stopContinuousRotation(); return; }
-                
-                // Utiliser un coup
-                if (diag2x2MovesMax > 0) { diag2x2MovesRemaining--; document.getElementById('diag2x2MovesValue').textContent = diag2x2MovesRemaining; }
-                
-                const cw = getRotationDirection(continuousRotationState.diagDirection);
-                executeLocalRotation(grp, cw, () => {
-                    if (continuousRotationState) {
-                        continuousRotationTimer = setTimeout(executeContinuousStep, continuousRotationSpeed * 0.3);
-                    }
-                });
-            }
-            
-            executeContinuousStep();
-            return true;
         }
         
         // ============ DRAG HANDLING ============
         function findPastilleAt(x, y) {
-            for (let c = 0; c < 3; c++) {
-                for (let i = 0; i < data[c].length; i++) {
-                    if (!data[c][i]) continue;
-                    const pos = getPositionOnSquare(c, i);
-                    if (Math.sqrt((x - pos.x) ** 2 + (y - pos.y) ** 2) < sizeAncrage / 2) {
-                        return { crown: c, index: i, posX: pos.x, posY: pos.y };
+            for (let row = 0; row < 6; row++) {
+                for (let col = 0; col < 6; col++) {
+                    if (!grid[row][col]) continue;
+                    const pos = gridToPixel(row, col);
+                    if (Math.sqrt((x - pos.x) ** 2 + (y - pos.y) ** 2) < cellSize * 0.6) {
+                        return { row, col, posX: pos.x, posY: pos.y };
                     }
                 }
             }
             return null;
         }
         
-        function getAngle(x, y) { return Math.atan2(y - cy, x - cx); }
-        
         function handleStart(e) {
+            if (isAnimating || isLocalRotating) return;
             initAudio();
-            if (continuousRotationState) {
-                stopContinuousRotation();
-                return;
-            }
+            
             const rect = document.getElementById('gameArea').getBoundingClientRect();
             const touch = e.touches ? e.touches[0] : e;
             const x = touch.clientX - rect.left, y = touch.clientY - rect.top;
             
             const hit = findPastilleAt(x, y);
             if (hit) {
-                const [row, col] = getGridPosition(hit.crown, hit.index);
-                activeDrag = { type: 'detect', crown: hit.crown, index: hit.index, row, col, startX: x, startY: y, posX: hit.posX, posY: hit.posY };
+                activeDrag = { 
+                    type: 'detect', 
+                    row: hit.row, 
+                    col: hit.col, 
+                    startX: x, 
+                    startY: y, 
+                    posX: hit.posX, 
+                    posY: hit.posY 
+                };
             }
             e.preventDefault();
         }
         
         function handleMove(e) {
-            if (!activeDrag) return;
+            if (!activeDrag || isAnimating || isLocalRotating) return;
+            
             const rect = document.getElementById('gameArea').getBoundingClientRect();
             const touch = e.touches ? e.touches[0] : e;
             const x = touch.clientX - rect.left, y = touch.clientY - rect.top;
-            const dx = x - activeDrag.startX, dy = y - activeDrag.startY, dist = Math.sqrt(dx * dx + dy * dy);
+            const dx = x - activeDrag.startX, dy = y - activeDrag.startY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
             
             if (activeDrag.type === 'detect' && dist > 15) {
-                const diagDir = detectDiagonalDirection(dx, dy);
-                if (diagDir) {
-                    attemptDiagonalRotation(activeDrag.row, activeDrag.col, dx, dy);
+                const direction = detectDirection(dx, dy);
+                
+                if (direction.type === 'diagonal') {
+                    // Fusion diagonale
+                    const targetRow = activeDrag.row + direction.dRow;
+                    const targetCol = activeDrag.col + direction.dCol;
+                    fusionDiagonal(activeDrag.row, activeDrag.col, targetRow, targetCol);
                     activeDrag = null;
                 } else {
-                    // Rotation de couronne
-                    const radialX = activeDrag.posX - cx, radialY = activeDrag.posY - cy;
-                    const radialLen = Math.sqrt(radialX * radialX + radialY * radialY);
-                    const tangentX = -radialY / radialLen, tangentY = radialX / radialLen;
-                    const proj = Math.abs((dx / dist) * tangentX + (dy / dist) * tangentY);
-                    
-                    if (proj > 0.7) {
-                        activeDrag.type = 'crownRotation';
-                        activeDrag.startAngle = getAngle(x, y);
-                        activeDrag.startOffset = offsets[activeDrag.crown];
-                        activeDrag.startSnap = Math.round(offsets[activeDrag.crown]);
-                        activeDrag.movesUsed = 0;
-                        const rail = document.querySelector('.rail-c' + (activeDrag.crown + 1));
-                        if (rail) rail.classList.add('dragging');
-                    }
+                    // Rotation 2x2
+                    attemptRotation2x2(activeDrag.row, activeDrag.col, direction.dir);
+                    activeDrag = null;
                 }
-            }
-            
-            if (activeDrag && activeDrag.type === 'crownRotation') {
-                const currentAngle = getAngle(x, y);
-                let deltaAngle = currentAngle - activeDrag.startAngle;
-                if (deltaAngle > Math.PI) deltaAngle -= 2 * Math.PI;
-                if (deltaAngle < -Math.PI) deltaAngle += 2 * Math.PI;
-                
-                const count = crowns[activeDrag.crown].count;
-                const deltaPos = (deltaAngle / (2 * Math.PI)) * count;
-                let targetSnap = Math.round(activeDrag.startOffset + deltaPos);
-                
-                const wantedMoves = Math.abs(targetSnap - activeDrag.startSnap);
-                if (crownMovesMax > 0 && wantedMoves > crownMovesMax) {
-                    const dir = targetSnap > activeDrag.startSnap ? 1 : -1;
-                    targetSnap = activeDrag.startSnap + dir * crownMovesMax;
-                }
-                
-                const diff = targetSnap - offsets[activeDrag.crown];
-                offsets[activeDrag.crown] += diff * 0.3;
-                
-                if (Math.abs(targetSnap - activeDrag.startSnap) > activeDrag.movesUsed) {
-                    playTick();
-                    activeDrag.movesUsed = Math.abs(targetSnap - activeDrag.startSnap);
-                }
-                
-                updateAllPositions();
             }
             e.preventDefault();
         }
         
         function handleEnd() {
-            if (continuousRotationState) {
-                stopContinuousRotation();
-            }
-            if (!activeDrag) return;
-            
-            if (activeDrag.type === 'crownRotation') {
-                const crown = activeDrag.crown, count = crowns[crown].count;
-                const rail = document.querySelector('.rail-c' + (crown + 1));
-                if (rail) { rail.classList.remove('dragging'); rail.classList.add('snapping'); setTimeout(() => rail.classList.remove('snapping'), 300); }
-                
-                const targetOffset = Math.round(offsets[crown]) % count;
-                const startOffset = offsets[crown], startTime = performance.now();
-                
-                function animSnap(t) {
-                    const p = Math.min((t - startTime) / crownRotationSpeed, 1);
-                    offsets[crown] = startOffset + (targetOffset - startOffset) * (1 - Math.pow(1 - p, 3));
-                    updateAllPositions();
-                    if (p < 1) requestAnimationFrame(animSnap);
-                    else { offsets[crown] = targetOffset; setTimeout(() => vanishAlignedPastilles(), 100); }
-                }
-                requestAnimationFrame(animSnap);
-            }
             activeDrag = null;
         }
         
         // ============ AUDIO ============
         let audioCtx = null;
         function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
-        function playTick() { if (!audioCtx) return; const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.value = 800; g.gain.setValueAtTime(0.3, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05); o.start(); o.stop(audioCtx.currentTime + 0.05); }
-        function playBlockedSound() { if (!audioCtx) return; const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.value = 200; o.type = 'square'; g.gain.setValueAtTime(0.2, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1); o.start(); o.stop(audioCtx.currentTime + 0.1); }
-        function playVanishSound() { if (!audioCtx) return; const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.setValueAtTime(880, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(220, audioCtx.currentTime + 0.4); g.gain.setValueAtTime(0.3, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4); o.start(); o.stop(audioCtx.currentTime + 0.4); }
-        function playGravitySound() { if (!audioCtx) return; const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.setValueAtTime(500, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.1); g.gain.setValueAtTime(0.15, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1); o.start(); o.stop(audioCtx.currentTime + 0.1); }
-        function playMatrixRotationSound() { if (!audioCtx) return; const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.setValueAtTime(220, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + matrixRotationDuration / 1000); g.gain.setValueAtTime(0.2, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + matrixRotationDuration / 1000); o.start(); o.stop(audioCtx.currentTime + matrixRotationDuration / 1000); }
-        function playLocalRotationSound() { if (!audioCtx) return; const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.setValueAtTime(400, audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.15); o.type = 'triangle'; g.gain.setValueAtTime(0.25, audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.18); o.start(); o.stop(audioCtx.currentTime + 0.18); }
+        
+        function playRotationSound() { 
+            if (!audioCtx) return; 
+            const o = audioCtx.createOscillator(), g = audioCtx.createGain(); 
+            o.connect(g); g.connect(audioCtx.destination); 
+            o.frequency.setValueAtTime(500, audioCtx.currentTime); 
+            o.frequency.exponentialRampToValueAtTime(700, audioCtx.currentTime + 0.1); 
+            o.type = 'sine'; 
+            g.gain.setValueAtTime(0.2, audioCtx.currentTime); 
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12); 
+            o.start(); o.stop(audioCtx.currentTime + 0.12); 
+        }
+        
+        function playNoMatchSound() { 
+            if (!audioCtx) return; 
+            const o = audioCtx.createOscillator(), g = audioCtx.createGain(); 
+            o.connect(g); g.connect(audioCtx.destination); 
+            o.frequency.setValueAtTime(200, audioCtx.currentTime); 
+            o.type = 'square'; 
+            g.gain.setValueAtTime(0.15, audioCtx.currentTime); 
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15); 
+            o.start(); o.stop(audioCtx.currentTime + 0.15); 
+        }
+        
+        function playVanishSound() { 
+            if (!audioCtx) return; 
+            const o = audioCtx.createOscillator(), g = audioCtx.createGain(); 
+            o.connect(g); g.connect(audioCtx.destination); 
+            o.frequency.setValueAtTime(880, audioCtx.currentTime); 
+            o.frequency.exponentialRampToValueAtTime(220, audioCtx.currentTime + 0.4); 
+            g.gain.setValueAtTime(0.3, audioCtx.currentTime); 
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4); 
+            o.start(); o.stop(audioCtx.currentTime + 0.4); 
+        }
+        
+        function playMergeSound() { 
+            if (!audioCtx) return; 
+            const o = audioCtx.createOscillator(), g = audioCtx.createGain(); 
+            o.connect(g); g.connect(audioCtx.destination); 
+            o.frequency.setValueAtTime(400, audioCtx.currentTime); 
+            o.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.15);
+            o.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.3);
+            o.type = 'triangle'; 
+            g.gain.setValueAtTime(0.4, audioCtx.currentTime); 
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35); 
+            o.start(); o.stop(audioCtx.currentTime + 0.35); 
+        }
+        
+        function playMatrixRotationSound() { 
+            if (!audioCtx) return; 
+            const o = audioCtx.createOscillator(), g = audioCtx.createGain(); 
+            o.connect(g); g.connect(audioCtx.destination); 
+            o.frequency.setValueAtTime(150, audioCtx.currentTime); 
+            o.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + matrixRotationDuration / 1000); 
+            o.type = 'sine';
+            g.gain.setValueAtTime(0.15, audioCtx.currentTime); 
+            g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + matrixRotationDuration / 1000); 
+            o.start(); o.stop(audioCtx.currentTime + matrixRotationDuration / 1000); 
+        }
         
         // ============ INIT ============
         function resetGame() {
-            stopContinuousRotation();
+            if (isAnimating) return;
             isLocalRotating = false;
             document.getElementById('localRotationIndicator').classList.remove('visible');
             document.getElementById('gameArea').style.transform = 'rotate(0deg)';
-            matrixMovesRemaining = matrixMovesMax;
-            diag2x2MovesRemaining = diag2x2MovesMax;
-            if (matrixMovesMax > 0) document.getElementById('matrixMovesValue').textContent = matrixMovesRemaining;
-            if (diag2x2MovesMax > 0) document.getElementById('diag2x2MovesValue').textContent = diag2x2MovesRemaining;
             loadInitialGrid();
         }
         
         function init() {
             updateDimensions();
             updateMatrixRotSpeed();
-            updateContRotSpeed();
-            updateDiagSensitivity();
-            updateCrownRotSpeed();
+            updateRotSpeed();
+            updateFusionSpeed();
             loadInitialGrid();
             initMatrixRotationZones();
             
@@ -1111,7 +1085,7 @@
             document.addEventListener('touchend', handleEnd);
         }
         
-        window.addEventListener('resize', () => { updateDimensions(); updateAllPositions(); });
+        window.addEventListener('resize', () => { updateDimensions(); updateAllVisualPositions(); });
         init();
     </script>
 </body>
