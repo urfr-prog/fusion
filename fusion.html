@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Cylindre - Proto v8 - Selection Fix</title>
+    <title>Cylindre - Proto v10</title>
     <style>
         * {
             margin: 0;
@@ -14,7 +14,6 @@
         body {
             background: #0a0a0f;
             min-height: 100vh;
-            min-height: 100dvh;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -27,22 +26,20 @@
             width: 100%;
             max-width: 390px;
             height: 100vh;
-            height: 100dvh;
             max-height: 844px;
             background: linear-gradient(180deg, #0d0d15 0%, #1a1a2e 100%);
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
-            padding-top: 60px;
+            justify-content: center;
             position: relative;
             overflow: hidden;
         }
 
         .scene {
-            width: 350px;
-            height: 540px;
-            perspective: 900px;
+            width: 300px;
+            height: 450px;
+            perspective: 800px;
             perspective-origin: 50% 50%;
             display: flex;
             justify-content: center;
@@ -50,17 +47,18 @@
         }
 
         .cylinder {
-            width: 100%;
+            width: 0;
             height: 100%;
             position: relative;
             transform-style: preserve-3d;
+            transform-origin: center center;
         }
 
         .crown {
             position: absolute;
-            width: 100%;
+            width: 0;
             left: 0;
-            height: 90px;
+            height: 82px;
             transform-style: preserve-3d;
             transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
@@ -69,42 +67,62 @@
             transition: none;
         }
 
-        .crown-cell {
+        .cell {
             position: absolute;
-            width: 68px;
-            height: 85px;
-            left: 50%;
-            margin-left: -34px;
-            border-radius: 16px;
+            width: 70px;
+            height: 82px;
+            left: -35px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.9);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
             box-shadow: 
-                inset 0 4px 8px rgba(255,255,255,0.35),
-                inset 0 -4px 8px rgba(0,0,0,0.15),
-                0 8px 20px rgba(0,0,0,0.4);
+                inset 0 2px 4px rgba(255,255,255,0.2),
+                inset 0 -2px 4px rgba(0,0,0,0.2),
+                0 4px 8px rgba(0,0,0,0.3);
             backface-visibility: visible;
             cursor: pointer;
-            transition: box-shadow 0.15s ease;
         }
 
-        .crown-cell.selected {
+        .cell.selected {
             box-shadow: 
-                inset 0 4px 8px rgba(255,255,255,0.35),
-                inset 0 -4px 8px rgba(0,0,0,0.15),
+                inset 0 2px 4px rgba(255,255,255,0.2),
+                inset 0 -2px 4px rgba(0,0,0,0.2),
                 0 0 0 3px rgba(255,255,255,0.9),
                 0 0 30px rgba(255,255,255,0.5),
-                0 8px 20px rgba(0,0,0,0.4);
+                0 4px 8px rgba(0,0,0,0.3);
         }
 
-        /* Couleurs */
-        .color-0 { background: linear-gradient(155deg, #667eea 0%, #764ba2 100%); }
-        .color-1 { background: linear-gradient(155deg, #f093fb 0%, #f5576c 100%); }
-        .color-2 { background: linear-gradient(155deg, #4facfe 0%, #00f2fe 100%); }
-        .color-3 { background: linear-gradient(155deg, #43e97b 0%, #38f9d7 100%); }
-        .color-4 { background: linear-gradient(155deg, #fa709a 0%, #fee140 100%); }
-        .color-5 { background: linear-gradient(155deg, #e0c3fc 0%, #8ec5fc 100%); }
+        /* Couleurs opaques - 5 couleurs */
+        .color-0 { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .color-1 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .color-2 { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+        .color-3 { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .color-4 { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333; }
+        
+        .cell.destroying {
+            animation: destroy 0.5s ease-out forwards;
+        }
+        
+        @keyframes destroy {
+            0% { transform: rotateY(var(--angle)) translateZ(140px) scale(1); opacity: 1; }
+            50% { transform: rotateY(var(--angle)) translateZ(140px) scale(1.2); opacity: 0.8; }
+            100% { transform: rotateY(var(--angle)) translateZ(140px) scale(0); opacity: 0; }
+        }
+        
+        .cell.destroyed {
+            visibility: hidden;
+        }
 
         .swipe-zone {
+            position: absolute;
+            bottom: 0;
             width: 100%;
-            flex: 1;
+            height: 100px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -116,11 +134,19 @@
         }
 
         .hint {
-            color: rgba(255,255,255,0.35);
-            font-size: 16px;
-            letter-spacing: 6px;
-            text-transform: uppercase;
-            user-select: none;
+            color: rgba(255,255,255,0.4);
+            font-size: 14px;
+            letter-spacing: 2px;
+        }
+
+        .hint span {
+            display: inline-block;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 0.8; }
         }
     </style>
 </head>
@@ -130,65 +156,79 @@
             <div class="cylinder" id="cylinder"></div>
         </div>
         <div class="swipe-zone" id="swipeZone">
-            <div class="hint">← SWIPE →</div>
+            <div class="hint"><span>← SWIPE →</span></div>
         </div>
     </div>
 
     <script>
         const FACES = 10;
         const ROWS = 5;
-        const COLORS = 6;
+        const COLORS = 5;
         const RADIUS = 140;
-        const ANGLE_STEP = 360 / FACES; // 36° par face
+        const ANGLE_STEP = 360 / FACES;
         
         const cylinder = document.getElementById('cylinder');
         const swipeZone = document.getElementById('swipeZone');
         
-        // Rotation globale et par couronne (en nombre de faces, pas en degrés)
-        let globalRotation = 0;
-        let crownRotations = [0, 0, 0, 0, 0]; // En degrés pour l'affichage
-        let crownOffsets = [0, 0, 0, 0, 0];   // En nombre de faces (après snap)
+        let globalRotation = 90;
+        let crownRotations = [0, 0, 0, 0, 0];
+        let crownOffsets = [0, 0, 0, 0, 0];
         
-        // Données du cylindre
-        const grid = [];
+        // Créer une distribution équilibrée : 10 de chaque couleur
+        function createBalancedGrid() {
+            const colors = [];
+            for (let c = 0; c < COLORS; c++) {
+                for (let i = 0; i < 10; i++) {
+                    colors.push(c);
+                }
+            }
+            // Mélanger (Fisher-Yates)
+            for (let i = colors.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [colors[i], colors[j]] = [colors[j], colors[i]];
+            }
+            
+            // Remplir la grille
+            const grid = [];
+            let index = 0;
+            for (let f = 0; f < FACES; f++) {
+                grid[f] = [];
+                for (let r = 0; r < ROWS; r++) {
+                    grid[f][r] = colors[index++];
+                }
+            }
+            return grid;
+        }
+        
+        const grid = createBalancedGrid();
+        
+        // État des cellules (null = détruite)
+        const cellState = [];
         for (let f = 0; f < FACES; f++) {
-            grid[f] = [];
+            cellState[f] = [];
             for (let r = 0; r < ROWS; r++) {
-                grid[f][r] = Math.floor(Math.random() * COLORS);
+                cellState[f][r] = true; // true = vivante
             }
         }
 
-        // Sélection 2×2 (en coordonnées visuelles)
         let selection = null;
-
-        // Double-tap detection
         let lastTapTime = 0;
         let lastTapTarget = null;
 
-        // Drag state
         let isDraggingGlobal = false;
         let isDraggingCrown = false;
+        let isDraggingColumn = false;
         let activeCrown = -1;
+        let activeColumn = -1;
         let lastX = 0;
+        let lastY = 0;
         let dragStartX = 0;
+        let dragStartY = 0;
         let hasMoved = false;
+        let dragDirection = null; // 'horizontal' ou 'vertical'
 
-        // Position verticale des couronnes
-        const crownTops = [20, 123, 226, 329, 432];
+        const crownTops = [10, 100, 190, 280, 370];
 
-        // Convertir face visuelle en face data (tenant compte de la rotation)
-        function visualToData(visualFace, row) {
-            const offset = crownOffsets[row];
-            return ((visualFace - offset) % FACES + FACES) % FACES;
-        }
-
-        // Convertir face data en face visuelle
-        function dataToVisual(dataFace, row) {
-            const offset = crownOffsets[row];
-            return ((dataFace + offset) % FACES + FACES) % FACES;
-        }
-
-        // Snap to nearest face
         function snapToFace(rotation) {
             const normalized = ((rotation % 360) + 360) % 360;
             const faceIndex = Math.round(normalized / ANGLE_STEP);
@@ -202,9 +242,155 @@
 
         function snapCrown(crownIndex) {
             crownRotations[crownIndex] = snapToFace(crownRotations[crownIndex]);
-            // Mettre à jour l'offset en nombre de faces
             crownOffsets[crownIndex] = Math.round(crownRotations[crownIndex] / ANGLE_STEP) % FACES;
             updateAllRotations();
+            checkVerticalLines();
+        }
+
+        // Rotation verticale d'une colonne (face avant + face arrière)
+        function rotateColumnUp(faceIndex) {
+            // Face avant = faceIndex, Face arrière = (faceIndex + 5) % 10
+            const frontFace = faceIndex;
+            const backFace = (faceIndex + 5) % FACES;
+            
+            // Sauvegarder les valeurs
+            const frontColumn = [];
+            const backColumn = [];
+            for (let r = 0; r < ROWS; r++) {
+                frontColumn.push(grid[frontFace][r]);
+                backColumn.push(grid[backFace][r]);
+            }
+            
+            // Rotation vers le haut :
+            // - Le haut de devant va en haut derrière
+            // - Le bas de derrière va en bas devant
+            // C'est comme une roue qui tourne
+            
+            // Nouveau front : [front[1], front[2], front[3], front[4], back[4]]
+            // Nouveau back : [front[0], back[0], back[1], back[2], back[3]]
+            
+            // En fait, imaginer la colonne comme un anneau de 10 éléments :
+            // [front0, front1, front2, front3, front4, back4, back3, back2, back1, back0]
+            // Rotation = décaler d'un cran
+            
+            const ring = [
+                frontColumn[0], frontColumn[1], frontColumn[2], frontColumn[3], frontColumn[4],
+                backColumn[4], backColumn[3], backColumn[2], backColumn[1], backColumn[0]
+            ];
+            
+            // Rotation vers le haut = décaler de 1 vers la gauche
+            const shifted = [...ring.slice(1), ring[0]];
+            
+            // Remettre dans la grille
+            grid[frontFace][0] = shifted[0];
+            grid[frontFace][1] = shifted[1];
+            grid[frontFace][2] = shifted[2];
+            grid[frontFace][3] = shifted[3];
+            grid[frontFace][4] = shifted[4];
+            grid[backFace][4] = shifted[5];
+            grid[backFace][3] = shifted[6];
+            grid[backFace][2] = shifted[7];
+            grid[backFace][1] = shifted[8];
+            grid[backFace][0] = shifted[9];
+            
+            updateCellColors();
+            checkVerticalLines();
+        }
+
+        function rotateColumnDown(faceIndex) {
+            const frontFace = faceIndex;
+            const backFace = (faceIndex + 5) % FACES;
+            
+            const frontColumn = [];
+            const backColumn = [];
+            for (let r = 0; r < ROWS; r++) {
+                frontColumn.push(grid[frontFace][r]);
+                backColumn.push(grid[backFace][r]);
+            }
+            
+            const ring = [
+                frontColumn[0], frontColumn[1], frontColumn[2], frontColumn[3], frontColumn[4],
+                backColumn[4], backColumn[3], backColumn[2], backColumn[1], backColumn[0]
+            ];
+            
+            // Rotation vers le bas = décaler de 1 vers la droite
+            const shifted = [ring[9], ...ring.slice(0, 9)];
+            
+            grid[frontFace][0] = shifted[0];
+            grid[frontFace][1] = shifted[1];
+            grid[frontFace][2] = shifted[2];
+            grid[frontFace][3] = shifted[3];
+            grid[frontFace][4] = shifted[4];
+            grid[backFace][4] = shifted[5];
+            grid[backFace][3] = shifted[6];
+            grid[backFace][2] = shifted[7];
+            grid[backFace][1] = shifted[8];
+            grid[backFace][0] = shifted[9];
+            
+            updateCellColors();
+            checkVerticalLines();
+        }
+
+        // Vérifier si une face VISUELLE a une ligne verticale complète de même couleur
+        function checkVerticalLines() {
+            console.log('checkVerticalLines called');
+            
+            // Pour chaque position visuelle de face (0-9)
+            for (let visualFace = 0; visualFace < FACES; visualFace++) {
+                let allSameColor = true;
+                let allAlive = true;
+                let firstColor = null;
+                
+                for (let r = 0; r < ROWS; r++) {
+                    // Calculer la face DATA correspondant à cette position visuelle pour cette rangée
+                    const offset = crownOffsets[r];
+                    const dataFace = ((visualFace - offset) % FACES + FACES) % FACES;
+                    
+                    if (!cellState[dataFace][r]) {
+                        allAlive = false;
+                        break;
+                    }
+                    
+                    const color = grid[dataFace][r];
+                    if (firstColor === null) {
+                        firstColor = color;
+                    } else if (color !== firstColor) {
+                        allSameColor = false;
+                        break;
+                    }
+                }
+                
+                if (allAlive && allSameColor && firstColor !== null) {
+                    console.log('MATCH FOUND at visual face', visualFace);
+                    destroyVisualFace(visualFace);
+                }
+            }
+        }
+        
+        // Détruire une face VISUELLE avec animation
+        function destroyVisualFace(visualFace) {
+            for (let r = 0; r < ROWS; r++) {
+                const offset = crownOffsets[r];
+                const dataFace = ((visualFace - offset) % FACES + FACES) % FACES;
+                
+                // Marquer comme détruite dans les données
+                cellState[dataFace][r] = false;
+                
+                // Trouver la cellule DOM
+                const cell = document.querySelector(`.cell[data-face="${dataFace}"][data-row="${r}"]`);
+                if (cell) {
+                    const angle = dataFace * ANGLE_STEP;
+                    cell.style.setProperty('--angle', angle + 'deg');
+                    
+                    setTimeout(() => {
+                        cell.classList.add('destroying');
+                        setTimeout(() => {
+                            cell.classList.remove('destroying');
+                            cell.classList.add('destroyed');
+                        }, 500);
+                    }, r * 100);
+                }
+            }
         }
 
         function buildCylinder() {
@@ -218,7 +404,7 @@
 
                 for (let f = 0; f < FACES; f++) {
                     const cell = document.createElement('div');
-                    cell.className = `crown-cell color-${grid[f][r]}`;
+                    cell.className = `cell color-${grid[f][r]}`;
                     cell.dataset.face = f;
                     cell.dataset.row = r;
                     
@@ -245,23 +431,17 @@
             const crowns = document.querySelectorAll('.crown');
             if (crownIndex === -1) {
                 crowns.forEach(crown => {
-                    if (isDragging) {
-                        crown.classList.add('dragging');
-                    } else {
-                        crown.classList.remove('dragging');
-                    }
+                    if (isDragging) crown.classList.add('dragging');
+                    else crown.classList.remove('dragging');
                 });
-            } else {
-                if (isDragging) {
-                    crowns[crownIndex].classList.add('dragging');
-                } else {
-                    crowns[crownIndex].classList.remove('dragging');
-                }
+            } else if (crowns[crownIndex]) {
+                if (isDragging) crowns[crownIndex].classList.add('dragging');
+                else crowns[crownIndex].classList.remove('dragging');
             }
         }
 
         function updateCellColors() {
-            const cells = document.querySelectorAll('.crown-cell');
+            const cells = document.querySelectorAll('.cell');
             cells.forEach(cell => {
                 const f = parseInt(cell.dataset.face);
                 const r = parseInt(cell.dataset.row);
@@ -271,13 +451,11 @@
         }
 
         function updateSelection() {
-            const cells = document.querySelectorAll('.crown-cell');
+            const cells = document.querySelectorAll('.cell');
             cells.forEach(cell => cell.classList.remove('selected'));
 
             if (selection) {
-                const {face, row} = selection; // face est en coordonnées DATA
-                
-                // Les 4 cellules du bloc 2×2 en coordonnées DATA
+                const {face, row} = selection;
                 const positions = [
                     {f: face, r: row},
                     {f: (face + 1) % FACES, r: row},
@@ -286,8 +464,7 @@
                 ];
 
                 positions.forEach(pos => {
-                    // Trouver la cellule par ses coordonnées DATA
-                    const cell = document.querySelector(`.crown-cell[data-face="${pos.f}"][data-row="${pos.r}"]`);
+                    const cell = document.querySelector(`.cell[data-face="${pos.f}"][data-row="${pos.r}"]`);
                     if (cell) cell.classList.add('selected');
                 });
             }
@@ -313,16 +490,13 @@
             grid[f0][r1] = bottomRight;
 
             updateCellColors();
+            checkVerticalLines();
         }
 
         function handleCellTap(dataFace, row) {
-            // Ajuster si on clique sur la dernière rangée
             if (row >= ROWS - 1) {
                 row = ROWS - 2;
             }
-
-            // Vérifier que les deux rangées ont le même offset pour un bloc 2×2 cohérent
-            // Si non, on sélectionne quand même mais la rotation affectera les données
 
             const now = Date.now();
             const isDoubleTap = (now - lastTapTime < 350) && 
@@ -349,12 +523,42 @@
             
             for (let i = 0; i < ROWS; i++) {
                 const crownTop = crownTops[i];
-                const crownBottom = crownTop + 90;
+                const crownBottom = crownTop + 82;
                 if (relativeY >= crownTop && relativeY <= crownBottom) {
                     return i;
                 }
             }
             return -1;
+        }
+
+        function getFaceFromTouch(x, y) {
+            // D'abord essayer de trouver la cellule directement
+            const element = document.elementFromPoint(x, y);
+            if (element && element.classList.contains('cell')) {
+                return parseInt(element.dataset.face);
+            }
+            
+            // Sinon calculer basé sur la position X
+            const scene = document.querySelector('.scene');
+            const rect = scene.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const relativeX = x - centerX;
+            
+            // Les 2 colonnes visibles de face sont à ~35px du centre
+            // Colonne gauche = face visible - offset basé sur globalRotation
+            const visibleFace = Math.round((-globalRotation) / ANGLE_STEP) % FACES;
+            const normalizedFace = ((visibleFace % FACES) + FACES) % FACES;
+            
+            if (relativeX < -20) {
+                // Colonne de gauche
+                return ((normalizedFace - 1) + FACES) % FACES;
+            } else if (relativeX > 20) {
+                // Colonne de droite
+                return (normalizedFace + 1) % FACES;
+            } else {
+                // Centre (entre les deux colonnes)
+                return normalizedFace;
+            }
         }
 
         // === SWIPE ZONE (Global rotation) ===
@@ -367,8 +571,8 @@
         swipeZone.addEventListener('touchmove', (e) => {
             if (!isDraggingGlobal) return;
             const currentX = e.touches[0].clientX;
-            let delta = (currentX - lastX) * 0.3;
-            delta = Math.max(-15, Math.min(15, delta));
+            let delta = (currentX - lastX) * 0.15;
+            delta = Math.max(-8, Math.min(8, delta));
             globalRotation += delta;
             lastX = currentX;
             updateAllRotations();
@@ -382,31 +586,186 @@
             }
         });
 
-        // Mouse pour swipe zone
         swipeZone.addEventListener('mousedown', (e) => {
             isDraggingGlobal = true;
             lastX = e.clientX;
             setDragging(-1, true);
         });
 
+        // === SCENE (Crown rotation + Column rotation + tap) ===
+        const scene = document.querySelector('.scene');
+
+        let columnDragAccumulator = 0;
+
+        scene.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            const crown = getCrownFromY(touch.clientY);
+            
+            // Trouver la face directement depuis l'élément touché
+            const element = document.elementFromPoint(touch.clientX, touch.clientY);
+            let face = -1;
+            if (element && element.classList.contains('cell')) {
+                face = parseInt(element.dataset.face);
+            }
+            
+            // Si pas trouvé, calculer la face visible basée sur la rotation
+            if (face === -1) {
+                // Face centrale visible = basée sur globalRotation
+                const visibleFace = Math.round((90 - globalRotation) / ANGLE_STEP) % FACES;
+                face = ((visibleFace % FACES) + FACES) % FACES;
+            }
+            
+            activeCrown = crown;
+            activeColumn = face;
+            lastX = touch.clientX;
+            lastY = touch.clientY;
+            dragStartX = lastX;
+            dragStartY = lastY;
+            hasMoved = false;
+            dragDirection = null;
+            columnDragAccumulator = 0;
+        }, { passive: true });
+
+        scene.addEventListener('touchmove', (e) => {
+            const currentX = e.touches[0].clientX;
+            const currentY = e.touches[0].clientY;
+            const deltaX = currentX - dragStartX;
+            const deltaY = currentY - dragStartY;
+            
+            // Déterminer la direction si pas encore fait
+            if (!dragDirection && (Math.abs(deltaX) > 8 || Math.abs(deltaY) > 8)) {
+                if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                    dragDirection = 'horizontal';
+                    isDraggingCrown = true;
+                    if (activeCrown >= 0) setDragging(activeCrown, true);
+                } else {
+                    dragDirection = 'vertical';
+                    isDraggingColumn = true;
+                }
+                hasMoved = true;
+            }
+            
+            if (dragDirection === 'horizontal' && activeCrown >= 0) {
+                let delta = (currentX - lastX) * 0.15;
+                delta = Math.max(-8, Math.min(8, delta));
+                crownRotations[activeCrown] += delta;
+                updateAllRotations();
+            } else if (dragDirection === 'vertical' && activeColumn >= 0) {
+                columnDragAccumulator += (currentY - lastY);
+                
+                // Chaque 40px de drag = une rotation
+                if (columnDragAccumulator > 40) {
+                    rotateColumnDown(activeColumn);
+                    columnDragAccumulator = 0;
+                } else if (columnDragAccumulator < -40) {
+                    rotateColumnUp(activeColumn);
+                    columnDragAccumulator = 0;
+                }
+            }
+            
+            lastX = currentX;
+            lastY = currentY;
+        }, { passive: true });
+
+        scene.addEventListener('touchend', (e) => {
+            if (!hasMoved && e.changedTouches.length > 0) {
+                const touch = e.changedTouches[0];
+                const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                if (element && element.classList.contains('cell')) {
+                    const face = parseInt(element.dataset.face);
+                    const row = parseInt(element.dataset.row);
+                    handleCellTap(face, row);
+                }
+            }
+            
+            if (isDraggingCrown) {
+                setDragging(activeCrown, false);
+                snapCrown(activeCrown);
+            }
+            
+            isDraggingCrown = false;
+            isDraggingColumn = false;
+            activeCrown = -1;
+            activeColumn = -1;
+            dragDirection = null;
+            updateSelection();
+        });
+
+        scene.addEventListener('mousedown', (e) => {
+            const crown = getCrownFromY(e.clientY);
+            
+            // Trouver la face
+            const element = document.elementFromPoint(e.clientX, e.clientY);
+            let face = -1;
+            if (element && element.classList.contains('cell')) {
+                face = parseInt(element.dataset.face);
+            }
+            if (face === -1) {
+                const visibleFace = Math.round((90 - globalRotation) / ANGLE_STEP) % FACES;
+                face = ((visibleFace % FACES) + FACES) % FACES;
+            }
+            
+            activeCrown = crown;
+            activeColumn = face;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            dragStartX = lastX;
+            dragStartY = lastY;
+            hasMoved = false;
+            dragDirection = null;
+            columnDragAccumulator = 0;
+        });
+
         document.addEventListener('mousemove', (e) => {
             if (isDraggingGlobal) {
                 const currentX = e.clientX;
-                let delta = (currentX - lastX) * 0.3;
-                delta = Math.max(-15, Math.min(15, delta));
+                let delta = (currentX - lastX) * 0.15;
+                delta = Math.max(-8, Math.min(8, delta));
                 globalRotation += delta;
                 lastX = currentX;
                 updateAllRotations();
+                return;
             }
-            if (isDraggingCrown && activeCrown >= 0) {
-                const currentX = e.clientX;
-                let delta = (currentX - lastX) * 0.3;
-                delta = Math.max(-15, Math.min(15, delta));
-                crownRotations[activeCrown] += delta;
-                lastX = currentX;
+            
+            if (activeCrown < 0 && activeColumn < 0) return;
+            
+            const currentX = e.clientX;
+            const currentY = e.clientY;
+            const deltaX = currentX - dragStartX;
+            const deltaY = currentY - dragStartY;
+            
+            // Déterminer la direction si pas encore fait
+            if (!dragDirection && (Math.abs(deltaX) > 8 || Math.abs(deltaY) > 8)) {
+                if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                    dragDirection = 'horizontal';
+                    isDraggingCrown = true;
+                    if (activeCrown >= 0) setDragging(activeCrown, true);
+                } else {
+                    dragDirection = 'vertical';
+                    isDraggingColumn = true;
+                }
                 hasMoved = true;
-                updateAllRotations();
             }
+            
+            if (dragDirection === 'horizontal' && activeCrown >= 0) {
+                let delta = (currentX - lastX) * 0.15;
+                delta = Math.max(-8, Math.min(8, delta));
+                crownRotations[activeCrown] += delta;
+                updateAllRotations();
+            } else if (dragDirection === 'vertical' && activeColumn >= 0) {
+                columnDragAccumulator += (currentY - lastY);
+                
+                if (columnDragAccumulator > 40) {
+                    rotateColumnDown(activeColumn);
+                    columnDragAccumulator = 0;
+                } else if (columnDragAccumulator < -40) {
+                    rotateColumnUp(activeColumn);
+                    columnDragAccumulator = 0;
+                }
+            }
+            
+            lastX = currentX;
+            lastY = currentY;
         });
 
         document.addEventListener('mouseup', (e) => {
@@ -418,7 +777,7 @@
             if (isDraggingCrown) {
                 if (!hasMoved) {
                     const element = document.elementFromPoint(e.clientX, e.clientY);
-                    if (element && element.classList.contains('crown-cell')) {
+                    if (element && element.classList.contains('cell')) {
                         const face = parseInt(element.dataset.face);
                         const row = parseInt(element.dataset.row);
                         handleCellTap(face, row);
@@ -426,78 +785,39 @@
                 }
                 setDragging(activeCrown, false);
                 snapCrown(activeCrown);
-                isDraggingCrown = false;
-                activeCrown = -1;
-                updateSelection(); // Rafraîchir la sélection après snap
             }
+            
+            isDraggingCrown = false;
+            isDraggingColumn = false;
+            activeCrown = -1;
+            activeColumn = -1;
+            dragDirection = null;
+            updateSelection();
         });
 
-        // === SCENE (Crown rotation + tap) ===
-        const scene = document.querySelector('.scene');
-
-        scene.addEventListener('touchstart', (e) => {
-            const touch = e.touches[0];
-            const crown = getCrownFromY(touch.clientY);
+        // === WHEEL pour rotation globale (molette/trackpad scroll) ===
+        document.addEventListener('wheel', (e) => {
+            e.preventDefault();
             
-            if (crown >= 0) {
-                isDraggingCrown = true;
-                activeCrown = crown;
-                lastX = touch.clientX;
-                dragStartX = lastX;
-                hasMoved = false;
-                setDragging(crown, true);
-            }
-        }, { passive: true });
-
-        scene.addEventListener('touchmove', (e) => {
-            if (!isDraggingCrown || activeCrown < 0) return;
-            const currentX = e.touches[0].clientX;
-            let delta = (currentX - lastX) * 0.3;
-            delta = Math.max(-15, Math.min(15, delta));
+            // deltaY pour scroll vertical, deltaX pour scroll horizontal
+            let delta = e.deltaX !== 0 ? e.deltaX : e.deltaY;
             
-            if (Math.abs(currentX - dragStartX) > 8) {
-                hasMoved = true;
-            }
-            
-            crownRotations[activeCrown] += delta;
-            lastX = currentX;
+            // Sensibilité adaptée
+            globalRotation += delta * 0.1;
             updateAllRotations();
-        }, { passive: true });
-
-        scene.addEventListener('touchend', (e) => {
-            if (isDraggingCrown) {
-                if (!hasMoved && e.changedTouches.length > 0) {
-                    const touch = e.changedTouches[0];
-                    const element = document.elementFromPoint(touch.clientX, touch.clientY);
-                    if (element && element.classList.contains('crown-cell')) {
-                        const face = parseInt(element.dataset.face);
-                        const row = parseInt(element.dataset.row);
-                        handleCellTap(face, row);
-                    }
-                }
-                setDragging(activeCrown, false);
-                snapCrown(activeCrown);
-                isDraggingCrown = false;
-                activeCrown = -1;
-                updateSelection(); // Rafraîchir la sélection après snap
-            }
-        });
-
-        scene.addEventListener('mousedown', (e) => {
-            const crown = getCrownFromY(e.clientY);
             
-            if (crown >= 0) {
-                isDraggingCrown = true;
-                activeCrown = crown;
-                lastX = e.clientX;
-                dragStartX = lastX;
-                hasMoved = false;
-                setDragging(crown, true);
-            }
-        });
+            // Snap après un délai d'inactivité
+            clearTimeout(window.wheelTimeout);
+            window.wheelTimeout = setTimeout(() => {
+                snapGlobal();
+            }, 150);
+        }, { passive: false });
 
         // Init
         buildCylinder();
+        
+        // Vérification initiale au cas où
+        setTimeout(checkVerticalLines, 100);
     </script>
 </body>
 </html>
