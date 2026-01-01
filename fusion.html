@@ -2,13 +2,31 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Fusion Square - Proto v13.14 Debug</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Fusion Square v18</title>
+    
+    <!-- PWA iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Fusion">
+    
+    <!-- Icône iOS (emoji cube en SVG encodé) -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a1a2e'/><rect x='15' y='15' width='30' height='30' rx='6' fill='%23667eea'/><rect x='55' y='15' width='30' height='30' rx='6' fill='%2343e97b'/><rect x='15' y='55' width='30' height='30' rx='6' fill='%23fa709a'/><rect x='55' y='55' width='30' height='30' rx='6' fill='%234facfe'/></svg>">
+    
+    <!-- Couleur thème -->
+    <meta name="theme-color" content="#0a0a0f">
+    
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
@@ -86,6 +104,34 @@
                 0 4px 8px rgba(0,0,0,0.3);
             backface-visibility: visible;
             cursor: pointer;
+            /* Outline par défaut désactivé */
+            --outline-width: 0px;
+            --outline-opacity: 0;
+        }
+
+        /* Classes d'outline */
+        .cell.outline-1 { --outline-width: 1px; --outline-opacity: 0.9; }
+        .cell.outline-2 { --outline-width: 2px; --outline-opacity: 0.9; }
+        .cell.outline-3 { --outline-width: 3px; --outline-opacity: 0.9; }
+
+        .cell.outline-1,
+        .cell.outline-2,
+        .cell.outline-3 {
+            border: var(--outline-width) solid rgba(255, 255, 255, var(--outline-opacity));
+        }
+
+        /* Cellule détruite avec outline persistant (ghost) */
+        /* Opacité par défaut pour l'arrière: 20% */
+        .cell.destroyed.outline-ghost {
+            opacity: 1 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            border: var(--outline-width) solid rgba(255, 255, 255, 0.20);
+        }
+        
+        /* Opacité renforcée pour les 4 colonnes de façade: 35% */
+        .cell.destroyed.outline-ghost.ghost-front {
+            border: var(--outline-width) solid rgba(255, 255, 255, 0.35);
         }
 
         /* État pendant le long press */
@@ -148,7 +194,8 @@
             100% { transform: rotateY(var(--base-angle)) translateZ(140px) scale(0); opacity: 0; }
         }
         
-        .cell.destroyed {
+        /* Destroyed sans ghost = invisible */
+        .cell.destroyed:not(.outline-ghost) {
             opacity: 0 !important;
             pointer-events: none;
         }
@@ -175,7 +222,7 @@
         }
 
         /* =====================================================
-           DEBUG PANEL - CONSOLE AVANCÉE
+           DEBUG PANEL - CONSOLE AVANCÉE COMPACTE
            ===================================================== */
         .debug-panel {
             position: fixed;
@@ -184,11 +231,11 @@
             background: rgba(0,0,0,0.95);
             color: #0f0;
             font-family: monospace;
-            font-size: 13px;
-            padding: 15px;
+            font-size: 12px;
+            padding: 12px;
             border-radius: 10px;
             z-index: 1000;
-            min-width: 460px;
+            width: 520px;
             max-height: 95vh;
             overflow-y: auto;
             display: none;
@@ -200,18 +247,26 @@
         }
 
         .debug-panel h4 {
-            margin: 0 0 12px 0;
+            margin: 0 0 10px 0;
             color: #0f0;
-            font-size: 16px;
+            font-size: 14px;
             border-bottom: 1px solid #333;
-            padding-bottom: 8px;
+            padding-bottom: 6px;
         }
 
         .debug-row {
-            margin: 5px 0;
+            margin: 3px 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
+        }
+
+        .debug-row-compact {
+            margin: 2px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 10px;
         }
 
         .debug-label {
@@ -250,40 +305,62 @@
         }
 
         .debug-section {
-            margin-top: 12px;
-            padding-top: 10px;
+            margin-top: 8px;
+            padding-top: 8px;
             border-top: 1px solid #333;
         }
 
         .debug-section-title {
             color: #ff0;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
-        /* Grille debug */
+        /* Layout 2 colonnes pour infos compactes */
+        .debug-two-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .debug-column {
+            background: rgba(255,255,255,0.03);
+            border-radius: 6px;
+            padding: 8px;
+        }
+
+        .debug-column-title {
+            color: #ff0;
+            font-size: 10px;
+            font-weight: bold;
+            margin-bottom: 4px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 4px;
+        }
+
+        /* Grille debug - compacte */
         .debug-grid {
-            font-size: 11px;
-            line-height: 1.4;
+            font-size: 10px;
+            line-height: 1.2;
         }
 
         .debug-grid-header {
             display: flex;
-            gap: 3px;
-            margin-bottom: 4px;
-            padding-left: 32px;
+            gap: 2px;
+            margin-bottom: 3px;
+            padding-left: 26px;
         }
 
         .debug-grid-header span {
-            width: 28px;
-            height: 18px;
+            width: 24px;
+            height: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #888;
             font-weight: bold;
-            font-size: 10px;
+            font-size: 9px;
         }
 
         .debug-grid-header span.front {
@@ -304,28 +381,28 @@
 
         .debug-grid-row {
             display: flex;
-            gap: 3px;
+            gap: 2px;
             align-items: center;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
         }
 
         .debug-grid-row-label {
-            width: 28px;
+            width: 24px;
             color: #888;
-            font-size: 10px;
+            font-size: 9px;
             text-align: right;
-            padding-right: 4px;
+            padding-right: 2px;
         }
 
         .debug-grid-cell {
-            width: 28px;
-            height: 24px;
+            width: 24px;
+            height: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 3px;
             font-weight: bold;
-            font-size: 10px;
+            font-size: 9px;
             flex-direction: column;
             line-height: 1;
         }
@@ -338,7 +415,7 @@
         .debug-grid-cell.dead { background: #333; color: #666; }
 
         .debug-grid-cell .face-num {
-            font-size: 8px;
+            font-size: 7px;
             opacity: 0.7;
         }
 
@@ -347,49 +424,115 @@
             outline-offset: 1px;
         }
 
-        /* Options debug */
+        /* Options debug - inline compact */
         .debug-options {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 10px;
+            gap: 8px;
+            margin-top: 6px;
         }
 
         .debug-option {
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
         }
 
-        .debug-option input {
-            width: 14px;
-            height: 14px;
+        .debug-option input[type="checkbox"] {
+            width: 12px;
+            height: 12px;
             cursor: pointer;
         }
 
         .debug-option label {
             color: #aaa;
-            font-size: 11px;
+            font-size: 10px;
             cursor: pointer;
         }
 
+        /* Outline thickness selector - compact */
+        .outline-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 6px;
+            padding: 6px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 6px;
+        }
+
+        .outline-controls label {
+            color: #aaa;
+            font-size: 10px;
+        }
+
+        .thickness-buttons {
+            display: flex;
+            gap: 3px;
+        }
+
+        .thickness-btn {
+            width: 24px;
+            height: 20px;
+            background: #222;
+            border: 1px solid #555;
+            color: #aaa;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .thickness-btn:hover {
+            background: #333;
+            border-color: #0f0;
+        }
+
+        .thickness-btn.active {
+            background: #0f0;
+            color: #000;
+            border-color: #0f0;
+        }
+
+        /* Horizontal line option - style inversé */
+        .horizontal-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: 8px;
+            padding: 4px 8px;
+            background: rgba(255,100,100,0.1);
+            border-radius: 4px;
+            border: 1px solid rgba(255,100,100,0.3);
+        }
+
+        .horizontal-controls.disabled {
+            opacity: 0.4;
+            border-color: #333;
+        }
+
+        .horizontal-controls label {
+            color: #f88;
+            font-size: 10px;
+        }
+
         .debug-action {
-            margin-top: 12px;
-            padding-top: 10px;
+            margin-top: 8px;
+            padding-top: 8px;
             border-top: 1px solid #333;
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 6px;
         }
 
         .debug-action button {
             background: #222;
             color: #fff;
             border: 1px solid #555;
-            padding: 6px 12px;
+            padding: 5px 10px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 11px;
+            font-size: 10px;
         }
 
         .debug-action button:hover {
@@ -397,105 +540,51 @@
             border-color: #0f0;
         }
 
-        /* Légende */
+        /* Légende compacte */
         .debug-legend {
             display: flex;
-            gap: 15px;
-            margin-top: 8px;
-            font-size: 10px;
+            gap: 10px;
+            margin-top: 4px;
+            font-size: 9px;
         }
 
         .debug-legend-item {
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 3px;
         }
 
         .debug-legend-color {
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
             border-radius: 2px;
         }
 
         .debug-legend-color.front { background: rgba(0,255,0,0.4); border: 1px solid #0f0; }
         .debug-legend-color.back { background: rgba(255,136,0,0.4); border: 1px solid #f80; }
         .debug-legend-color.target { background: #333; border: 2px solid #ff0; }
+
+        /* Selects compacts */
+        .debug-select-compact {
+            width: 100%;
+            padding: 4px;
+            background: #222;
+            color: #fff;
+            border: 1px solid #555;
+            border-radius: 4px;
+            font-size: 10px;
+        }
     </style>
 </head>
 <body>
     <button class="debug-toggle" onclick="toggleDebug()">🔧 DEBUG</button>
     
     <div class="debug-panel" id="debugPanel">
-        <h4>🎮 Fusion Square v13.14 - Console Debug</h4>
+        <h4>🎮 Fusion Square v18 - Console Debug</h4>
         
-        <!-- Section État Global -->
-        <div class="debug-section">
-            <div class="debug-section-title">📐 ROTATIONS</div>
-            <div class="debug-row">
-                <span class="debug-label">globalRotation:</span>
-                <span class="debug-value" id="dbgGlobal">18°</span>
-            </div>
-            <div class="debug-row">
-                <span class="debug-label">crownRotations:</span>
-                <span class="debug-value" id="dbgCrownRot">[0,0,0,0,0]</span>
-            </div>
-            <div class="debug-row">
-                <span class="debug-label">centerFacePerRow:</span>
-                <span class="debug-value" id="dbgCenterFaces">[0,0,0,0,0]</span>
-            </div>
-        </div>
-
-        <!-- Section Touch/Swap -->
-        <div class="debug-section">
-            <div class="debug-section-title">👆 TOUCH & SWAP</div>
-            <div class="debug-row">
-                <span class="debug-label">touchOffset X:</span>
-                <span class="debug-value" id="dbgTouchX">-</span>
-            </div>
-            <div class="debug-row">
-                <span class="debug-label">visualColumn:</span>
-                <span class="debug-value highlight" id="dbgVisualCol">-</span>
-            </div>
-            <div class="debug-row">
-                <span class="debug-label">touchRow:</span>
-                <span class="debug-value" id="dbgTouchRow">-</span>
-            </div>
-            <div class="debug-row">
-                <span class="debug-label">targetFace (front):</span>
-                <span class="debug-value highlight" id="dbgTargetFront">-</span>
-            </div>
-            <div class="debug-row">
-                <span class="debug-label">targetFace (back):</span>
-                <span class="debug-value" id="dbgTargetBack">-</span>
-            </div>
-            <div class="debug-row">
-                <span class="debug-label">gesture:</span>
-                <span class="debug-value" id="dbgGesture">idle</span>
-            </div>
-        </div>
-
-        <!-- Section Grille -->
-        <div class="debug-section">
-            <div class="debug-section-title">📊 GRILLE VISUELLE (colonnes -2 à +7)</div>
-            <div class="debug-legend">
-                <div class="debug-legend-item">
-                    <div class="debug-legend-color front"></div>
-                    <span style="color:#0f0">Front visible</span>
-                </div>
-                <div class="debug-legend-item">
-                    <div class="debug-legend-color back"></div>
-                    <span style="color:#f80">Back (derrière)</span>
-                </div>
-                <div class="debug-legend-item">
-                    <div class="debug-legend-color target"></div>
-                    <span style="color:#ff0">Cible swap</span>
-                </div>
-            </div>
-            <div class="debug-grid-header" id="dbgGridHeader"></div>
-            <div class="debug-grid" id="dbgGrid"></div>
-        </div>
-
-        <!-- Options d'affichage -->
+        <!-- ===================== SECTION HAUTE: Options importantes ===================== -->
+        
+        <!-- Options d'affichage + Outline + Horizontal 5 carrés -->
         <div class="debug-section">
             <div class="debug-section-title">⚙️ OPTIONS D'AFFICHAGE</div>
             <div class="debug-options">
@@ -509,33 +598,215 @@
                 </div>
                 <div class="debug-option">
                     <input type="checkbox" id="optShowOnCells" onchange="toggleCellDisplay()">
-                    <label for="optShowOnCells">Afficher sur cylindre</label>
+                    <label for="optShowOnCells">Sur cylindre</label>
+                </div>
+                <div class="debug-option">
+                    <input type="checkbox" id="optGravity" checked onchange="toggleGravity()">
+                    <label for="optGravity" style="color:#0f0;font-weight:bold;">🌍 Gravité</label>
+                </div>
+                <div class="debug-option">
+                    <input type="checkbox" id="optFlipPause" checked onchange="toggleFlipGravityPause()">
+                    <label for="optFlipPause" style="color:#4facfe;">⏸️ Pause flip</label>
+                </div>
+            </div>
+            
+            <!-- Ligne Outline + Option 5 horizontaux -->
+            <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-top: 6px;">
+                <div class="outline-controls">
+                    <input type="checkbox" id="optOutline" checked onchange="toggleOutline()">
+                    <label for="optOutline" style="color:#fff;font-weight:bold;">🔲 Outline</label>
+                    <div class="thickness-buttons">
+                        <button class="thickness-btn active" data-thickness="1" onclick="setOutlineThickness(1)">1</button>
+                        <button class="thickness-btn" data-thickness="2" onclick="setOutlineThickness(2)">2</button>
+                        <button class="thickness-btn" data-thickness="3" onclick="setOutlineThickness(3)">3</button>
+                    </div>
+                    <span style="color:#666;font-size:9px;">px</span>
+                </div>
+                
+                <div class="horizontal-controls" id="horizontalControls">
+                    <input type="checkbox" id="optHorizontal5" onchange="toggleHorizontal5()">
+                    <label for="optHorizontal5">↔️ 5 Horiz.</label>
                 </div>
             </div>
         </div>
 
-        <!-- État jeu -->
+        <!-- Palettes et Niveaux -->
         <div class="debug-section">
-            <div class="debug-section-title">🎯 ÉTAT JEU</div>
-            <div class="debug-row">
-                <span class="debug-label">cellules vivantes:</span>
-                <span class="debug-value" id="dbgAlive">50/50</span>
+            <div class="debug-section-title">🎨 PALETTES & NIVEAUX</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div>
+                    <label class="debug-label" style="font-size:9px;">Palette:</label>
+                    <select id="paletteSelect" onchange="applyPalette(this.value)" class="debug-select-compact">
+                        <option value="neon">🌈 Neon Nights</option>
+                        <option value="sunset">🌅 Sunset Fire</option>
+                        <option value="cyberpunk">🤖 Cyberpunk</option>
+                        <option value="candy">🍬 Candy Pop</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="debug-label" style="font-size:9px;">Niveau:</label>
+                    <select id="mappingSelect" onchange="loadMapping(this.value)" class="debug-select-compact">
+                        <option value="mapping1">🟢 Débutant - Colonnes</option>
+                        <option value="mapping2">🟢 Débutant - Quasi-lignes</option>
+                        <option value="mapping3">🟡 Facile - Damier</option>
+                        <option value="mapping4">🟡 Facile - Vagues</option>
+                        <option value="mapping5">🟠 Moyen - Spirale</option>
+                        <option value="mapping6" selected>🟠 Moyen - Miroir brisé</option>
+                        <option value="mapping7">🔴 Difficile - Chaos</option>
+                        <option value="mapping8">🔴 Difficile - Entropie</option>
+                        <option value="mapping9">💀 Expert - Dispersion</option>
+                        <option value="mapping10">☠️ Cauchemar</option>
+                    </select>
+                </div>
             </div>
-            <div class="debug-row">
-                <span class="debug-label">isSwapping:</span>
-                <span class="debug-value" id="dbgSwapping">false</span>
+            <div class="debug-row" style="margin-top:4px;">
+                <span class="debug-label">Mapping:</span>
+                <span class="debug-value" id="dbgCurrentMapping" style="font-size: 10px;">Moyen - Miroir brisé</span>
             </div>
-            <div class="debug-row">
-                <span class="debug-label">isDestroying:</span>
-                <span class="debug-value" id="dbgDestroying">false</span>
+        </div>
+
+        <!-- Grille Visuelle -->
+        <div class="debug-section">
+            <div class="debug-section-title">📊 GRILLE VISUELLE (col -2 à +7)</div>
+            <div class="debug-legend">
+                <div class="debug-legend-item">
+                    <div class="debug-legend-color front"></div>
+                    <span style="color:#0f0">Front</span>
+                </div>
+                <div class="debug-legend-item">
+                    <div class="debug-legend-color back"></div>
+                    <span style="color:#f80">Back</span>
+                </div>
+                <div class="debug-legend-item">
+                    <div class="debug-legend-color target"></div>
+                    <span style="color:#ff0">Cible</span>
+                </div>
+            </div>
+            <div class="debug-grid-header" id="dbgGridHeader"></div>
+            <div class="debug-grid" id="dbgGrid"></div>
+        </div>
+
+        <!-- ===================== SECTION BASSE: 2 colonnes ===================== -->
+        <div class="debug-section">
+            <div class="debug-two-columns">
+                <!-- Colonne gauche: Rotations + Touch -->
+                <div class="debug-column">
+                    <div class="debug-column-title">📐 ROTATIONS</div>
+                    <div class="debug-row-compact">
+                        <span class="debug-label">globalRotation:</span>
+                        <span class="debug-value" id="dbgGlobal">18°</span>
+                    </div>
+                    <div class="debug-row-compact">
+                        <span class="debug-label">crownRotations:</span>
+                        <span class="debug-value" id="dbgCrownRot" style="font-size:9px;">[0,0,0,0,0]</span>
+                    </div>
+                    <div class="debug-row-compact">
+                        <span class="debug-label">centerFace:</span>
+                        <span class="debug-value" id="dbgCenterFaces" style="font-size:9px;">[0,0,0,0,0]</span>
+                    </div>
+                    
+                    <div class="debug-column-title" style="margin-top:6px;">👆 TOUCH</div>
+                    <div class="debug-row-compact">
+                        <span class="debug-label">offsetX:</span>
+                        <span class="debug-value" id="dbgTouchX">-</span>
+                    </div>
+                    <div class="debug-row-compact">
+                        <span class="debug-label">visualCol:</span>
+                        <span class="debug-value highlight" id="dbgVisualCol">-</span>
+                    </div>
+                    <div class="debug-row-compact">
+                        <span class="debug-label">touchRow:</span>
+                        <span class="debug-value" id="dbgTouchRow">-</span>
+                    </div>
+                    <div class="debug-row-compact">
+                        <span class="debug-label">front:</span>
+                        <span class="debug-value highlight" id="dbgTargetFront">-</span>
+                    </div>
+                    <div class="debug-row-compact">
+                        <span class="debug-label">back:</span>
+                        <span class="debug-value" id="dbgTargetBack">-</span>
+                    </div>
+                    <div class="debug-row-compact">
+                        <span class="debug-label">gesture:</span>
+                        <span class="debug-value" id="dbgGesture">idle</span>
+                    </div>
+                </div>
+
+                <!-- Colonne droite: État jeu + Difficulté -->
+                <div class="debug-column">
+                    <div class="debug-column-title">🎯 ÉTAT JEU</div>
+                    <div class="debug-row-compact">
+                        <span class="debug-label">cellules:</span>
+                        <span class="debug-value" id="dbgAlive">50/50</span>
+                    </div>
+                    <div class="debug-row-compact">
+                        <span class="debug-label">Swapping:</span>
+                        <span class="debug-value" id="dbgSwapping">false</span>
+                    </div>
+                    <div class="debug-row-compact">
+                        <span class="debug-label">Destroying:</span>
+                        <span class="debug-value" id="dbgDestroying">false</span>
+                    </div>
+                    <div class="debug-row-compact">
+                        <span class="debug-label">🌍 Gravité:</span>
+                        <span class="debug-value" id="dbgGravity">ON</span>
+                    </div>
+                    <div class="debug-row-compact">
+                        <span class="debug-label">Applying:</span>
+                        <span class="debug-value" id="dbgApplyingGravity">false</span>
+                    </div>
+                    <div class="debug-row-compact">
+                        <span class="debug-label">🔲 Outline:</span>
+                        <span class="debug-value" id="dbgOutline">OFF</span>
+                    </div>
+                    <div class="debug-row-compact">
+                        <span class="debug-label">↔️ Horiz5:</span>
+                        <span class="debug-value" id="dbgHorizontal5">OFF</span>
+                    </div>
+                    <div class="debug-row-compact">
+                        <span class="debug-label">🔄 Flipping:</span>
+                        <span class="debug-value" id="dbgFlipping">false</span>
+                    </div>
+                    <div class="debug-row-compact">
+                        <span class="debug-label">⏸️ Pausée:</span>
+                        <span class="debug-value" id="dbgGravityPaused">false</span>
+                    </div>
+                    
+                    <div class="debug-column-title" style="margin-top:6px;">📊 DIFFICULTÉ</div>
+                    <div class="debug-row-compact">
+                        <span class="debug-label">Quasi-lignes:</span>
+                        <span class="debug-value" id="dbgQuasiLines">-</span>
+                    </div>
+                    <div class="debug-row-compact">
+                        <span class="debug-label">Adjacences:</span>
+                        <span class="debug-value" id="dbgAdjacent">-</span>
+                    </div>
+                    <div class="debug-row-compact">
+                        <span class="debug-label">Paires:</span>
+                        <span class="debug-value" id="dbgUsefulPairs">-</span>
+                    </div>
+                    <div class="debug-row-compact">
+                        <span class="debug-label">Dispersion:</span>
+                        <span class="debug-value" id="dbgDispersion">-</span>
+                    </div>
+                    <div class="debug-row-compact">
+                        <span class="debug-label" style="color:#ff0;">SCORE:</span>
+                        <span class="debug-value highlight" id="dbgDifficultyScore" style="font-size:12px;">-</span>
+                    </div>
+                    <div class="debug-row-compact">
+                        <span class="debug-label">Niveau:</span>
+                        <span class="debug-value" id="dbgDifficultyLevel" style="font-size:11px;">-</span>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Actions -->
         <div class="debug-action">
             <button onclick="resetGame()">🔄 Reset</button>
-            <button onclick="logFullState()">📋 Log console</button>
-            <button onclick="testSwapAt(0, 0)">Test swap F0/R0</button>
+            <button onclick="logFullState()">📋 Log</button>
+            <button onclick="analyzeDifficulty()">📊 Analyser</button>
+            <button onclick="testSwapAt(0, 0)">Test F0/R0</button>
         </div>
     </div>
 
@@ -577,24 +848,229 @@
             rotationSensitivity: 0.35,
             maxDeltaDegrees: 12,
             maxDeltaPixels: 80,
-            directionThreshold: 18
+            directionThreshold: 18,
+            verticalSwipeThreshold: 50,  // Pixels pour déclencher un flip
+            horizontalMaxForVertical: 30 // Max horizontal autorisé pendant un swipe vertical
         };
 
         // =====================================================
-        // PLATEAU FIXE
+        // PALETTES DE COULEURS
         // =====================================================
-        const FIXED_GRID = [
-            [2, 0, 3, 1, 4],  // Face 0
-            [1, 3, 0, 4, 2],  // Face 1
-            [4, 2, 1, 0, 3],  // Face 2
-            [0, 4, 2, 3, 1],  // Face 3
-            [3, 1, 4, 2, 0],  // Face 4
-            [2, 3, 0, 1, 4],  // Face 5
-            [4, 0, 3, 2, 1],  // Face 6
-            [1, 4, 2, 0, 3],  // Face 7
-            [3, 2, 1, 4, 0],  // Face 8
-            [0, 1, 4, 3, 2]   // Face 9
-        ];
+        const COLOR_PALETTES = {
+            neon: {
+                name: '🌈 Neon Nights',
+                colors: [
+                    'linear-gradient(135deg, #ff006e 0%, #ff4da6 100%)',  // Rose néon
+                    'linear-gradient(135deg, #00f5ff 0%, #00b4d8 100%)',  // Cyan électrique
+                    'linear-gradient(135deg, #39ff14 0%, #7fff00 100%)',  // Vert fluo
+                    'linear-gradient(135deg, #bf00ff 0%, #8000ff 100%)',  // Violet laser
+                    'linear-gradient(135deg, #ffff00 0%, #ffd000 100%)'   // Jaune flash
+                ],
+                textColors: ['#fff', '#000', '#000', '#fff', '#000']
+            },
+            sunset: {
+                name: '🌅 Sunset Fire',
+                colors: [
+                    'linear-gradient(135deg, #ff4500 0%, #ff6a00 100%)',  // Orange brûlant
+                    'linear-gradient(135deg, #ff0055 0%, #ff3377 100%)',  // Rouge magenta
+                    'linear-gradient(135deg, #ff9500 0%, #ffb700 100%)',  // Or soleil
+                    'linear-gradient(135deg, #9d00ff 0%, #c77dff 100%)',  // Violet crépuscule
+                    'linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)'   // Bleu horizon
+                ],
+                textColors: ['#fff', '#fff', '#000', '#fff', '#000']
+            },
+            cyberpunk: {
+                name: '🤖 Cyberpunk',
+                colors: [
+                    'linear-gradient(135deg, #f72585 0%, #b5179e 100%)',  // Magenta cyber
+                    'linear-gradient(135deg, #4cc9f0 0%, #4361ee 100%)',  // Bleu néon
+                    'linear-gradient(135deg, #06ffa5 0%, #00cc7a 100%)',  // Vert matrix
+                    'linear-gradient(135deg, #fee440 0%, #ffaa00 100%)',  // Jaune warning
+                    'linear-gradient(135deg, #9b5de5 0%, #7b2cbf 100%)'   // Violet glitch
+                ],
+                textColors: ['#fff', '#fff', '#000', '#000', '#fff']
+            },
+            candy: {
+                name: '🍬 Candy Pop',
+                colors: [
+                    'linear-gradient(135deg, #ff6b9d 0%, #ff8fab 100%)',  // Rose bonbon
+                    'linear-gradient(135deg, #00e5ff 0%, #69f0ae 100%)',  // Menthe glacée
+                    'linear-gradient(135deg, #ffd93d 0%, #ffe066 100%)',  // Citron acidulé
+                    'linear-gradient(135deg, #c9b1ff 0%, #a18aff 100%)',  // Lavande douce
+                    'linear-gradient(135deg, #ff8a5c 0%, #ffa07a 100%)'   // Pêche sucrée
+                ],
+                textColors: ['#000', '#000', '#000', '#000', '#000']
+            }
+        };
+
+        // =====================================================
+        // MAPPINGS DE GRILLES (10 niveaux)
+        // =====================================================
+        const GRID_MAPPINGS = {
+            mapping1: {
+                name: '🟢 Débutant - Colonnes proches',
+                difficulty: 'Très Facile',
+                grid: [
+                    [0, 0, 1, 1, 2],
+                    [1, 1, 2, 2, 3],
+                    [2, 2, 3, 3, 4],
+                    [3, 3, 4, 4, 0],
+                    [4, 4, 0, 0, 1],
+                    [0, 1, 1, 2, 2],
+                    [1, 2, 2, 3, 3],
+                    [2, 3, 3, 4, 4],
+                    [3, 4, 4, 0, 0],
+                    [4, 0, 0, 1, 1]
+                ]
+            },
+            mapping2: {
+                name: '🟢 Débutant - Quasi-lignes',
+                difficulty: 'Très Facile',
+                grid: [
+                    [0, 0, 0, 0, 1],
+                    [1, 1, 1, 1, 2],
+                    [2, 2, 2, 2, 3],
+                    [3, 3, 3, 3, 4],
+                    [4, 4, 4, 4, 0],
+                    [0, 0, 0, 1, 0],
+                    [1, 1, 1, 2, 1],
+                    [2, 2, 2, 3, 2],
+                    [3, 3, 3, 4, 3],
+                    [4, 4, 4, 0, 4]
+                ]
+            },
+            mapping3: {
+                name: '🟡 Facile - Damier',
+                difficulty: 'Facile',
+                grid: [
+                    [0, 1, 0, 1, 0],
+                    [1, 2, 1, 2, 1],
+                    [2, 3, 2, 3, 2],
+                    [3, 4, 3, 4, 3],
+                    [4, 0, 4, 0, 4],
+                    [0, 1, 0, 1, 0],
+                    [1, 2, 1, 2, 1],
+                    [2, 3, 2, 3, 2],
+                    [3, 4, 3, 4, 3],
+                    [4, 0, 4, 0, 4]
+                ]
+            },
+            mapping4: {
+                name: '🟡 Facile - Vagues',
+                difficulty: 'Facile',
+                grid: [
+                    [0, 1, 2, 1, 0],
+                    [1, 2, 3, 2, 1],
+                    [2, 3, 4, 3, 2],
+                    [3, 4, 0, 4, 3],
+                    [4, 0, 1, 0, 4],
+                    [0, 1, 2, 1, 0],
+                    [1, 2, 3, 2, 1],
+                    [2, 3, 4, 3, 2],
+                    [3, 4, 0, 4, 3],
+                    [4, 0, 1, 0, 4]
+                ]
+            },
+            mapping5: {
+                name: '🟠 Moyen - Spirale',
+                difficulty: 'Moyen',
+                grid: [
+                    [0, 1, 2, 3, 4],
+                    [4, 0, 1, 2, 3],
+                    [3, 4, 0, 1, 2],
+                    [2, 3, 4, 0, 1],
+                    [1, 2, 3, 4, 0],
+                    [0, 1, 2, 3, 4],
+                    [4, 0, 1, 2, 3],
+                    [3, 4, 0, 1, 2],
+                    [2, 3, 4, 0, 1],
+                    [1, 2, 3, 4, 0]
+                ]
+            },
+            mapping6: {
+                name: '🟠 Moyen - Miroir brisé',
+                difficulty: 'Moyen',
+                grid: [
+                    [2, 0, 3, 1, 4],
+                    [1, 3, 0, 4, 2],
+                    [4, 2, 1, 0, 3],
+                    [0, 4, 2, 3, 1],
+                    [3, 1, 4, 2, 0],
+                    [2, 3, 0, 1, 4],
+                    [4, 0, 3, 2, 1],
+                    [1, 4, 2, 0, 3],
+                    [3, 2, 1, 4, 0],
+                    [0, 1, 4, 3, 2]
+                ]
+            },
+            mapping7: {
+                name: '🔴 Difficile - Chaos ordonné',
+                difficulty: 'Difficile',
+                grid: [
+                    [3, 1, 4, 0, 2],
+                    [0, 4, 2, 3, 1],
+                    [2, 0, 3, 1, 4],
+                    [4, 3, 1, 2, 0],
+                    [1, 2, 0, 4, 3],
+                    [2, 4, 1, 3, 0],
+                    [1, 0, 4, 2, 3],
+                    [4, 3, 0, 1, 2],
+                    [0, 2, 3, 4, 1],
+                    [3, 1, 2, 0, 4]
+                ]
+            },
+            mapping8: {
+                name: '🔴 Difficile - Entropie',
+                difficulty: 'Difficile',
+                grid: [
+                    [1, 4, 2, 0, 3],
+                    [3, 0, 4, 2, 1],
+                    [0, 2, 1, 3, 4],
+                    [4, 1, 3, 0, 2],
+                    [2, 3, 0, 4, 1],
+                    [1, 0, 4, 3, 2],
+                    [4, 2, 3, 1, 0],
+                    [3, 4, 0, 2, 1],
+                    [0, 3, 2, 1, 4],
+                    [2, 1, 1, 4, 3]
+                ]
+            },
+            mapping9: {
+                name: '💀 Expert - Dispersion max',
+                difficulty: 'Très Dur',
+                grid: [
+                    [0, 2, 4, 1, 3],
+                    [3, 1, 0, 4, 2],
+                    [1, 4, 3, 2, 0],
+                    [4, 0, 2, 3, 1],
+                    [2, 3, 1, 0, 4],
+                    [3, 1, 4, 2, 0],
+                    [0, 4, 2, 1, 3],
+                    [4, 2, 0, 3, 1],
+                    [1, 3, 4, 0, 2],
+                    [2, 0, 3, 4, 1]
+                ]
+            },
+            mapping10: {
+                name: '☠️ Cauchemar - Aucune pitié',
+                difficulty: 'Extrême',
+                grid: [
+                    [4, 1, 3, 0, 2],
+                    [2, 0, 4, 3, 1],
+                    [0, 3, 2, 1, 4],
+                    [1, 4, 0, 2, 3],
+                    [3, 2, 1, 4, 0],
+                    [1, 0, 4, 3, 2],
+                    [3, 4, 1, 2, 0],
+                    [2, 1, 3, 0, 4],
+                    [4, 2, 0, 1, 3],
+                    [0, 3, 2, 4, 1]
+                ]
+            }
+        };
+
+        let currentPalette = 'neon';
+        let currentMapping = 'mapping6'; // Celui d'origine (Moyen)
 
         // =====================================================
         // ÉTAT DU JEU
@@ -619,12 +1095,29 @@
         // Debug
         let dbgTouchXOffset = 0;
         let showCellInfo = false;
+        
+        // Gravité
+        let gravityEnabled = true;
+        let isApplyingGravity = false;
+
+        // Outline
+        let outlineEnabled = true;
+        let outlineThickness = 1; // Défaut: 1px
+
+        // Column Flip
+        let isFlipping = false;
+        let gravityPausedAfterFlip = false; // Gravité suspendue après un flip
+        let flipGravityPauseEnabled = true; // Option pour activer/désactiver cette fonctionnalité
+
+        // 5 Carrés Horizontaux consécutifs (s'annule si activé avec vertical)
+        let horizontal5Enabled = false;
 
         function initGrid() {
             gridByFace = [];
             cellState = [];
+            const mapping = GRID_MAPPINGS[currentMapping].grid;
             for (let f = 0; f < FACES; f++) {
-                gridByFace[f] = [...FIXED_GRID[f]];
+                gridByFace[f] = [...mapping[f]];
                 cellState[f] = [true, true, true, true, true];
             }
             isDestroying = false;
@@ -740,14 +1233,59 @@
         }
 
         // =====================================================
-        // PROTECTION ANTI-EMBALLEMENT
+        // PROTECTION ANTI-EMBALLEMENT RENFORCÉE
         // =====================================================
+        let lastMoveTime = 0;
+        let velocityBuffer = [];
+        const MAX_VELOCITY_SAMPLES = 5;
+        
         function sanitizeDelta(deltaPixels) {
+            const now = performance.now();
+            
+            // Si trop de temps entre deux moves, reset (nouveau geste)
+            if (now - lastMoveTime > 100) {
+                velocityBuffer = [];
+            }
+            lastMoveTime = now;
+            
+            // Ignorer les deltas trop grands (bug ou multitouch)
             if (Math.abs(deltaPixels) > INTERACTION.maxDeltaPixels) {
                 return 0;
             }
+            
+            // Ignorer les micro-mouvements (bruit)
+            if (Math.abs(deltaPixels) < 1) {
+                return 0;
+            }
+            
+            // Calculer la vélocité et détecter l'emballement
+            velocityBuffer.push(Math.abs(deltaPixels));
+            if (velocityBuffer.length > MAX_VELOCITY_SAMPLES) {
+                velocityBuffer.shift();
+            }
+            
+            // Si la moyenne des derniers mouvements est trop élevée, freiner
+            if (velocityBuffer.length >= 3) {
+                const avgVelocity = velocityBuffer.reduce((a, b) => a + b, 0) / velocityBuffer.length;
+                if (avgVelocity > 30) {
+                    // Emballement détecté - appliquer une friction forte
+                    deltaPixels *= 0.3;
+                }
+            }
+            
+            // Convertir en degrés avec sensibilité
             let deltaDegrees = deltaPixels * INTERACTION.rotationSensitivity;
-            return Math.max(-INTERACTION.maxDeltaDegrees, Math.min(INTERACTION.maxDeltaDegrees, deltaDegrees));
+            
+            // Clamp final
+            deltaDegrees = Math.max(-INTERACTION.maxDeltaDegrees, Math.min(INTERACTION.maxDeltaDegrees, deltaDegrees));
+            
+            return deltaDegrees;
+        }
+        
+        // Reset velocity buffer quand on relâche
+        function resetVelocity() {
+            velocityBuffer = [];
+            lastMoveTime = 0;
         }
 
         // =====================================================
@@ -855,6 +1393,12 @@
         function triggerSwap(frontFace, row) {
             if (isSwapping || frontFace === null || row === null) return;
             
+            // Réactiver la gravité si elle était pausée après un flip
+            if (gravityPausedAfterFlip) {
+                gravityPausedAfterFlip = false;
+                console.log('[GRAVITY] Réactivée après swap');
+            }
+            
             const backFace = getBackFace(frontFace);
             
             const frontAlive = cellState[frontFace][row];
@@ -914,17 +1458,28 @@
                 
                 if (!cellState[frontFace][row]) {
                     frontCell.classList.add('destroyed');
+                    if (outlineEnabled) {
+                        frontCell.classList.add('outline-ghost');
+                    }
                     frontCell.style.opacity = '0';
                 }
                 if (!cellState[backFace][row]) {
                     backCell.classList.add('destroyed');
+                    if (outlineEnabled) {
+                        backCell.classList.add('outline-ghost');
+                    }
                     backCell.style.opacity = '0';
                 }
                 
                 isSwapping = false;
                 cancelLongPress();
                 
+                // Vérifier les lignes puis appliquer la gravité immédiatement
                 checkVerticalLines();
+                // Si pas de destruction en cours, appliquer la gravité
+                if (!isDestroying) {
+                    applyGravity();
+                }
             }, 400);
         }
         
@@ -936,11 +1491,18 @@
             cell.classList.add(`color-${color}`);
             cell.classList.add('cell');
             
+            // Appliquer l'outline si activé
+            applyOutlineToCell(cell);
+            
             if (alive) {
                 cell.classList.remove('destroyed');
+                cell.classList.remove('outline-ghost');
                 cell.style.opacity = '1';
             } else {
                 cell.classList.add('destroyed');
+                if (outlineEnabled) {
+                    cell.classList.add('outline-ghost');
+                }
                 cell.style.opacity = '0';
             }
             
@@ -951,17 +1513,104 @@
         }
 
         // =====================================================
-        // VÉRIFICATION LIGNES VERTICALES
+        // VÉRIFICATION LIGNES VERTICALES ET HORIZONTALES
         // =====================================================
         function checkVerticalLines() {
             if (isDestroying) return;
             
+            // Collecter TOUTES les colonnes verticales valides
+            const allColumnsToDestroy = [];
+            
             for (let f = 0; f < FACES; f++) {
-                if (checkFaceColumn(f)) return;
+                const columnData = getValidColumn(f);
+                if (columnData) {
+                    allColumnsToDestroy.push(columnData);
+                }
+            }
+            
+            // Collecter les lignes horizontales si l'option est activée
+            if (horizontal5Enabled) {
+                const horizontalLines = checkHorizontalLines();
+                if (horizontalLines.length > 0) {
+                    allColumnsToDestroy.push(...horizontalLines);
+                }
+            }
+            
+            // Si des colonnes/lignes à détruire, les traiter toutes
+            if (allColumnsToDestroy.length > 0) {
+                destroyMultipleColumns(allColumnsToDestroy);
             }
         }
         
-        function checkFaceColumn(face) {
+        /**
+         * Vérifie les lignes horizontales (5 consécutifs même couleur sur une row)
+         * Retourne un tableau de lignes à détruire
+         */
+        function checkHorizontalLines() {
+            const linesToDestroy = [];
+            
+            // Pour chaque row
+            for (let r = 0; r < ROWS; r++) {
+                // Obtenir l'offset de rotation de cette couronne
+                const rowRotationOffset = Math.round(crownRotations[r] / ANGLE_STEP);
+                
+                // Vérifier chaque point de départ possible sur le cylindre (10 faces)
+                for (let startVisualFace = 0; startVisualFace < FACES; startVisualFace++) {
+                    let consecutiveCount = 0;
+                    let firstColor = null;
+                    const consecutiveFaces = [];
+                    
+                    // Parcourir 5 faces consécutives
+                    for (let i = 0; i < 5; i++) {
+                        const visualFace = (startVisualFace + i) % FACES;
+                        const dataFace = ((visualFace - rowRotationOffset) % FACES + FACES) % FACES;
+                        
+                        if (!cellState[dataFace][r]) {
+                            break;
+                        }
+                        
+                        const color = gridByFace[dataFace][r];
+                        
+                        if (i === 0) {
+                            firstColor = color;
+                            consecutiveCount = 1;
+                            consecutiveFaces.push(dataFace);
+                        } else if (color === firstColor) {
+                            consecutiveCount++;
+                            consecutiveFaces.push(dataFace);
+                        } else {
+                            break;
+                        }
+                    }
+                    
+                    // Si on a trouvé 5 consécutifs de même couleur
+                    if (consecutiveCount === 5) {
+                        // Créer l'objet ligne (structure compatible avec colonnes)
+                        // faces: tableau des faces pour chaque "row" - ici c'est horizontal donc on met la row fixe
+                        const facesArray = consecutiveFaces.map(f => f);
+                        
+                        // Pour être compatible avec destroyMultipleColumns, on adapte le format
+                        // On crée un objet spécial pour les lignes horizontales
+                        linesToDestroy.push({
+                            type: 'horizontal',
+                            row: r,
+                            dataFaces: consecutiveFaces,
+                            color: firstColor
+                        });
+                        
+                        console.log(`[HORIZONTAL] Ligne trouvée Row ${r}: faces ${consecutiveFaces.join(',')} couleur ${firstColor}`);
+                    }
+                }
+            }
+            
+            return linesToDestroy;
+        }
+        
+        /**
+         * Vérifie si une colonne visuelle est valide (5 cellules de même couleur)
+         * Retourne les faces concernées ou null
+         */
+        function getValidColumn(face) {
             let allSameColor = true;
             let allAlive = true;
             let firstColor = null;
@@ -987,18 +1636,44 @@
             }
             
             if (allAlive && allSameColor && firstColor !== null) {
-                destroyColumn(actualFaces);
-                return true;
+                return { type: 'vertical', faces: actualFaces, color: firstColor };
             }
-            return false;
+            return null;
         }
         
-        function destroyColumn(faces) {
+        /**
+         * Détruit plusieurs colonnes/lignes simultanément
+         */
+        function destroyMultipleColumns(columns) {
             isDestroying = true;
             updateDebug();
             
-            for (let r = 0; r < ROWS; r++) {
-                const df = faces[r];
+            // Marquer toutes les cellules comme mortes
+            const allCellsToDestroy = [];
+            columns.forEach(col => {
+                if (col.type === 'horizontal') {
+                    // Ligne horizontale: toutes les faces sont sur la même row
+                    col.dataFaces.forEach(df => {
+                        const key = `${df}-${col.row}`;
+                        if (!allCellsToDestroy.find(c => c.key === key)) {
+                            allCellsToDestroy.push({ face: df, row: col.row, key });
+                        }
+                    });
+                } else {
+                    // Colonne verticale: une face par row
+                    for (let r = 0; r < ROWS; r++) {
+                        const df = col.faces[r];
+                        const key = `${df}-${r}`;
+                        if (!allCellsToDestroy.find(c => c.key === key)) {
+                            allCellsToDestroy.push({ face: df, row: r, key });
+                        }
+                    }
+                }
+            });
+            
+            // Animer et détruire
+            allCellsToDestroy.forEach((cellData, index) => {
+                const { face: df, row: r } = cellData;
                 cellState[df][r] = false;
                 
                 const cell = document.querySelector(`.cell[data-face="${df}"][data-row="${r}"]`);
@@ -1011,17 +1686,29 @@
                         setTimeout(() => {
                             cell.classList.remove('destroying');
                             cell.classList.add('destroyed');
+                            if (outlineEnabled) {
+                                cell.classList.add('outline-ghost');
+                            }
                             cell.style.opacity = '0';
                         }, 500);
-                    }, r * 100);
+                    }, (index % ROWS) * 100); // Étaler l'animation
                 }
-            }
+            });
+            
+            console.log(`[DESTROY] ${columns.length} colonne(s) détruite(s), ${allCellsToDestroy.length} cellules`);
+            
+            // Calculer le délai total basé sur le nombre de cellules
+            const totalDelay = Math.min(allCellsToDestroy.length, ROWS) * 100 + 600;
             
             setTimeout(() => {
                 isDestroying = false;
                 updateDebug();
-                checkVerticalLines();
-            }, 800);
+                updateGhostFrontClasses();
+                // Après destruction, appliquer la gravité
+                setTimeout(() => {
+                    applyGravity();
+                }, 100);
+            }, totalDelay);
         }
 
         // =====================================================
@@ -1046,8 +1733,14 @@
                     cell.dataset.face = f;
                     cell.dataset.row = r;
                     
+                    // Appliquer l'outline si activé
+                    applyOutlineToCell(cell);
+                    
                     if (!cellState[f][r]) {
                         cell.classList.add('destroyed');
+                        if (outlineEnabled) {
+                            cell.classList.add('outline-ghost');
+                        }
                         cell.style.opacity = '0';
                     }
                     
@@ -1066,51 +1759,270 @@
                 cylinder.appendChild(crown);
             }
             updateAllRotations();
+            // Mettre à jour les ghost-front après construction
+            updateGhostFrontClasses();
         }
 
         // =====================================================
-        // MISE À JOUR VISUELLE
+        // OUTLINE SYSTEM
         // =====================================================
+        
+        function applyOutlineToCell(cell) {
+            // Retirer les anciennes classes d'outline
+            cell.classList.remove('outline-1', 'outline-2', 'outline-3');
+            
+            if (outlineEnabled) {
+                cell.classList.add(`outline-${outlineThickness}`);
+            }
+        }
+        
+        /**
+         * Met à jour les classes ghost-front sur toutes les cellules détruites
+         * Les 4 colonnes de façade ont une opacité de 30%, le reste 20%
+         */
+        function updateGhostFrontClasses() {
+            if (!outlineEnabled) return;
+            
+            // Pour chaque row, déterminer quelles faces sont en façade
+            for (let r = 0; r < ROWS; r++) {
+                // Les 4 colonnes visuelles de façade: -2, -1, 0, 1
+                const frontFaces = [];
+                for (let vc = -2; vc <= 1; vc++) {
+                    frontFaces.push(getDataFaceForVisualColumnAndRow(vc, r));
+                }
+                
+                // Parcourir toutes les cellules de cette row
+                for (let f = 0; f < FACES; f++) {
+                    const cell = document.querySelector(`.cell[data-face="${f}"][data-row="${r}"]`);
+                    if (!cell) continue;
+                    
+                    // Si c'est un ghost (détruit avec outline)
+                    if (cell.classList.contains('outline-ghost')) {
+                        if (frontFaces.includes(f)) {
+                            cell.classList.add('ghost-front');
+                        } else {
+                            cell.classList.remove('ghost-front');
+                        }
+                    }
+                }
+            }
+        }
+
+        // =====================================================
+        // COLUMN FLIP SYSTEM (Swipe Vertical)
+        // =====================================================
+        
+        /**
+         * Effectue un flip miroir vertical sur une colonne visuelle
+         * Row 0 ↔ Row 4, Row 1 ↔ Row 3, Row 2 reste fixe
+         */
+        function triggerColumnFlip(visualCol) {
+            if (isFlipping || isSwapping || isDestroying || isApplyingGravity) return;
+            
+            isFlipping = true;
+            
+            // Si l'option est activée, suspendre la gravité après ce flip
+            if (flipGravityPauseEnabled) {
+                gravityPausedAfterFlip = true;
+                console.log(`[FLIP] Colonne visuelle ${visualCol} - Gravité SUSPENDUE`);
+            } else {
+                console.log(`[FLIP] Colonne visuelle ${visualCol}`);
+            }
+            
+            // Récupérer les faces data pour chaque row de cette colonne visuelle
+            const columnFaces = [];
+            for (let r = 0; r < ROWS; r++) {
+                const df = getDataFaceForVisualColumnAndRow(visualCol, r);
+                columnFaces.push(df);
+                console.log(`[FLIP] Row ${r}: visualCol ${visualCol} → dataFace ${df}`);
+            }
+            
+            // Sauvegarder les données actuelles
+            const savedColors = [];
+            const savedStates = [];
+            for (let r = 0; r < ROWS; r++) {
+                const df = columnFaces[r];
+                savedColors.push(gridByFace[df][r]);
+                savedStates.push(cellState[df][r]);
+            }
+            
+            // Effectuer le miroir : 0↔4, 1↔3, 2 reste
+            // Nouvelle position = 4 - ancienne position
+            for (let r = 0; r < ROWS; r++) {
+                const mirrorR = ROWS - 1 - r; // 0→4, 1→3, 2→2, 3→1, 4→0
+                const df = columnFaces[r];
+                
+                gridByFace[df][r] = savedColors[mirrorR];
+                cellState[df][r] = savedStates[mirrorR];
+            }
+            
+            // Animation visuelle
+            animateColumnFlip(columnFaces, () => {
+                isFlipping = false;
+                updateDebug();
+                
+                // Vérifier les lignes après le flip
+                setTimeout(() => {
+                    checkVerticalLines();
+                    // Puis gravité si pas de destruction ET si pas pausée après flip
+                    setTimeout(() => {
+                        if (!isDestroying && !gravityPausedAfterFlip) {
+                            applyGravity();
+                        }
+                    }, 100);
+                }, 50);
+            });
+        }
+        
+        /**
+         * Animation du flip de colonne
+         */
+        function animateColumnFlip(columnFaces, callback) {
+            // Ajouter une classe d'animation aux cellules concernées
+            const cells = [];
+            for (let r = 0; r < ROWS; r++) {
+                const df = columnFaces[r];
+                const cell = document.querySelector(`.cell[data-face="${df}"][data-row="${r}"]`);
+                if (cell) {
+                    cells.push({ cell, face: df, row: r });
+                    cell.style.transition = 'transform 0.3s ease-in-out, opacity 0.15s';
+                    cell.style.opacity = '0.5';
+                    cell.style.transform += ' scale(0.8)';
+                }
+            }
+            
+            // À mi-chemin, mettre à jour l'apparence
+            setTimeout(() => {
+                cells.forEach(({ cell, face, row }) => {
+                    updateCellAppearance(cell, face, row);
+                });
+            }, 150);
+            
+            // Fin de l'animation
+            setTimeout(() => {
+                cells.forEach(({ cell, face, row }) => {
+                    const angle = face * ANGLE_STEP;
+                    cell.style.transition = 'transform 0.3s ease-out';
+                    cell.style.opacity = cellState[face][row] ? '1' : '0';
+                    cell.style.transform = `rotateY(${angle}deg) translateZ(${RADIUS}px)`;
+                });
+                
+                // Reset des transitions après animation
+                setTimeout(() => {
+                    cells.forEach(({ cell }) => {
+                        cell.style.transition = '';
+                    });
+                    updateGhostFrontClasses();
+                    if (callback) callback();
+                }, 300);
+            }, 150);
+        }
+        
+        function toggleOutline() {
+            outlineEnabled = document.getElementById('optOutline').checked;
+            console.log('[OUTLINE] ' + (outlineEnabled ? `Activé (${outlineThickness}px)` : 'Désactivé'));
+            
+            // Mettre à jour l'affichage des boutons
+            updateThicknessButtons();
+            
+            // Reconstruire le cylindre pour appliquer
+            buildCylinder();
+            updateDebug();
+        }
+        
+        function setOutlineThickness(thickness) {
+            outlineThickness = thickness;
+            console.log(`[OUTLINE] Épaisseur: ${thickness}px`);
+            
+            // Mettre à jour les boutons
+            updateThicknessButtons();
+            
+            // Activer automatiquement l'outline si on change l'épaisseur
+            if (!outlineEnabled) {
+                outlineEnabled = true;
+                document.getElementById('optOutline').checked = true;
+            }
+            
+            // Reconstruire
+            buildCylinder();
+            updateDebug();
+        }
+        
+        function updateThicknessButtons() {
+            document.querySelectorAll('.thickness-btn').forEach(btn => {
+                const t = parseInt(btn.dataset.thickness);
+                if (t === outlineThickness && outlineEnabled) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
         function updateAllRotations() {
-            const crowns = document.querySelectorAll('.crown');
+            const cylinder = document.getElementById('cylinder');
+            const crowns = cylinder.querySelectorAll('.crown');
+            
             crowns.forEach((crown, index) => {
                 const totalRotation = globalRotation + crownRotations[index];
                 crown.style.transform = `rotateY(${totalRotation}deg)`;
             });
+            
+            // Mettre à jour les classes ghost-front selon la nouvelle rotation
+            updateGhostFrontClasses();
+            
             updateDebug();
         }
 
         function setDragging(crownIndex, isDragging) {
             const crowns = document.querySelectorAll('.crown');
-            if (crownIndex === -1) {
-                crowns.forEach(crown => {
-                    if (isDragging) crown.classList.add('dragging');
-                    else crown.classList.remove('dragging');
+            if (crownIndex < 0) {
+                crowns.forEach(c => {
+                    if (isDragging) c.classList.add('dragging');
+                    else c.classList.remove('dragging');
                 });
-            } else if (crowns[crownIndex]) {
+            } else {
                 if (isDragging) crowns[crownIndex].classList.add('dragging');
                 else crowns[crownIndex].classList.remove('dragging');
             }
         }
 
-        // =====================================================
-        // SNAP
-        // =====================================================
         function snapToViewPosition(rotation) {
-            const normalized = ((rotation % 360) + 360) % 360;
-            const snapped = Math.round((normalized - INITIAL_ROTATION) / ANGLE_STEP) * ANGLE_STEP + INITIAL_ROTATION;
-            return snapped;
+            return Math.round(rotation / ANGLE_STEP) * ANGLE_STEP + INITIAL_ROTATION % ANGLE_STEP;
         }
 
         function snapGlobal() {
             globalRotation = snapToViewPosition(globalRotation);
             updateAllRotations();
+            
+            // Réactiver la gravité si elle était pausée après un flip
+            if (gravityPausedAfterFlip) {
+                gravityPausedAfterFlip = false;
+                console.log('[GRAVITY] Réactivée après rotation globale');
+                // Appliquer la gravité maintenant
+                setTimeout(() => {
+                    if (!isDestroying) applyGravity();
+                }, 100);
+            }
         }
 
         function snapCrown(crownIndex) {
             crownRotations[crownIndex] = Math.round(crownRotations[crownIndex] / ANGLE_STEP) * ANGLE_STEP;
             updateAllRotations();
-            setTimeout(checkVerticalLines, 300);
+            
+            // Réactiver la gravité si elle était pausée après un flip
+            if (gravityPausedAfterFlip) {
+                gravityPausedAfterFlip = false;
+                console.log('[GRAVITY] Réactivée après rotation');
+            }
+            
+            setTimeout(() => {
+                checkVerticalLines();
+                // Appliquer la gravité après le snap
+                setTimeout(() => {
+                    if (!isDestroying) applyGravity();
+                }, 100);
+            }, 300);
         }
 
         // =====================================================
@@ -1124,6 +2036,169 @@
         function toggleCellDisplay() {
             showCellInfo = document.getElementById('optShowOnCells').checked;
             buildCylinder();
+        }
+
+        function toggleGravity() {
+            gravityEnabled = document.getElementById('optGravity').checked;
+            console.log('[GRAVITY] ' + (gravityEnabled ? 'Activée' : 'Désactivée'));
+        }
+
+        function toggleFlipGravityPause() {
+            flipGravityPauseEnabled = document.getElementById('optFlipPause').checked;
+            console.log('[FLIP PAUSE] ' + (flipGravityPauseEnabled ? 'Activée' : 'Désactivée'));
+        }
+
+        function toggleHorizontal5() {
+            horizontal5Enabled = document.getElementById('optHorizontal5').checked;
+            console.log('[HORIZONTAL 5] ' + (horizontal5Enabled ? 'Activée' : 'Désactivée'));
+            
+            // Mise à jour visuelle du contrôle
+            const controls = document.getElementById('horizontalControls');
+            if (horizontal5Enabled) {
+                controls.classList.remove('disabled');
+            } else {
+                controls.classList.add('disabled');
+            }
+            
+            updateDebug();
+            
+            // Vérifier immédiatement les lignes si activé
+            if (horizontal5Enabled) {
+                setTimeout(() => {
+                    checkVerticalLines();
+                }, 100);
+            }
+        }
+
+        // =====================================================
+        // GESTION DES PALETTES ET MAPPINGS
+        // =====================================================
+        
+        function applyPalette(paletteName) {
+            currentPalette = paletteName;
+            const palette = COLOR_PALETTES[paletteName];
+            
+            // Mettre à jour le CSS dynamiquement
+            const styleSheet = document.styleSheets[0];
+            
+            // Supprimer les anciennes règles de couleur
+            const rulesToDelete = [];
+            for (let i = 0; i < styleSheet.cssRules.length; i++) {
+                const rule = styleSheet.cssRules[i];
+                if (rule.selectorText && rule.selectorText.startsWith('.color-')) {
+                    rulesToDelete.push(i);
+                }
+            }
+            // Supprimer en ordre inverse pour ne pas décaler les indices
+            for (let i = rulesToDelete.length - 1; i >= 0; i--) {
+                styleSheet.deleteRule(rulesToDelete[i]);
+            }
+            
+            // Ajouter les nouvelles règles
+            for (let i = 0; i < 5; i++) {
+                const rule = `.color-${i} { background: ${palette.colors[i]}; color: ${palette.textColors[i]}; }`;
+                styleSheet.insertRule(rule, styleSheet.cssRules.length);
+            }
+            
+            // Mettre à jour le sélecteur
+            document.getElementById('paletteSelect').value = paletteName;
+            
+            console.log(`[PALETTE] ${palette.name}`);
+            buildCylinder();
+        }
+        
+        function loadMapping(mappingName) {
+            currentMapping = mappingName;
+            const mapping = GRID_MAPPINGS[mappingName];
+            
+            // Mettre à jour le sélecteur
+            document.getElementById('mappingSelect').value = mappingName;
+            
+            console.log(`[MAPPING] ${mapping.name} (${mapping.difficulty})`);
+            
+            // Reset avec le nouveau mapping
+            globalRotation = INITIAL_ROTATION;
+            crownRotations = [0, 0, 0, 0, 0];
+            gravityPausedAfterFlip = false;
+            cancelLongPress();
+            initGrid();
+            buildCylinder();
+            updateDebug();
+            analyzeDifficulty();
+        }
+
+        // =====================================================
+        // SYSTÈME DE GRAVITÉ
+        // =====================================================
+        
+        /**
+         * Applique la gravité sur toutes les colonnes visuelles
+         * Une colonne visuelle = une face "alignée" à travers toutes les rows
+         * en tenant compte des rotations individuelles des couronnes
+         */
+        function applyGravity() {
+            if (!gravityEnabled || isApplyingGravity || isDestroying || isSwapping) return;
+            
+            isApplyingGravity = true;
+            let somethingFell = false;
+            
+            // Pour chaque "colonne visuelle" (face de référence 0-9)
+            for (let visualFace = 0; visualFace < FACES; visualFace++) {
+                // Construire la colonne : quelle face DATA est à cette position visuelle pour chaque row ?
+                const columnFaces = [];
+                for (let r = 0; r < ROWS; r++) {
+                    const rowRotationOffset = Math.round(crownRotations[r] / ANGLE_STEP);
+                    const actualDataFace = ((visualFace - rowRotationOffset) % FACES + FACES) % FACES;
+                    columnFaces.push(actualDataFace);
+                }
+                
+                // Appliquer la gravité sur cette colonne (de bas en haut)
+                // On cherche les trous et on fait tomber ce qui est au-dessus
+                for (let r = ROWS - 1; r >= 0; r--) {
+                    const dataFace = columnFaces[r];
+                    
+                    // Si cette cellule est vide, chercher la première cellule vivante au-dessus
+                    if (!cellState[dataFace][r]) {
+                        for (let above = r - 1; above >= 0; above--) {
+                            const aboveDataFace = columnFaces[above];
+                            
+                            if (cellState[aboveDataFace][above]) {
+                                // Trouver la cellule vivante ! La faire tomber
+                                console.log(`[GRAVITY] F${aboveDataFace}/R${above} tombe vers F${dataFace}/R${r}`);
+                                
+                                // Transférer les données
+                                gridByFace[dataFace][r] = gridByFace[aboveDataFace][above];
+                                cellState[dataFace][r] = true;
+                                
+                                // Vider l'ancienne position
+                                cellState[aboveDataFace][above] = false;
+                                
+                                somethingFell = true;
+                                break; // Une seule cellule tombe par trou à la fois
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (somethingFell) {
+                // Reconstruire le visuel et vérifier les nouvelles lignes
+                buildCylinder();
+                updateDebug();
+                
+                // Attendre un peu puis vérifier si d'autres chutes ou lignes
+                setTimeout(() => {
+                    isApplyingGravity = false;
+                    // D'abord vérifier les lignes créées par la chute
+                    checkVerticalLines();
+                    // Puis ré-appliquer la gravité si nécessaire (cascade)
+                    setTimeout(() => {
+                        if (!isDestroying) applyGravity();
+                    }, 100);
+                }, 300);
+            } else {
+                isApplyingGravity = false;
+            }
         }
 
         function countAliveCells() {
@@ -1160,6 +2235,29 @@
             document.getElementById('dbgAlive').textContent = countAliveCells() + '/50';
             document.getElementById('dbgSwapping').textContent = isSwapping;
             document.getElementById('dbgDestroying').textContent = isDestroying;
+            document.getElementById('dbgGravity').textContent = gravityEnabled ? 'ON' : 'OFF';
+            document.getElementById('dbgGravity').style.color = gravityEnabled ? '#0f0' : '#f55';
+            document.getElementById('dbgApplyingGravity').textContent = isApplyingGravity;
+            
+            // Outline
+            const outlineStatus = outlineEnabled ? `ON (${outlineThickness}px)` : 'OFF';
+            document.getElementById('dbgOutline').textContent = outlineStatus;
+            document.getElementById('dbgOutline').style.color = outlineEnabled ? '#0f0' : '#f55';
+            
+            // Horizontal 5
+            document.getElementById('dbgHorizontal5').textContent = horizontal5Enabled ? 'ON' : 'OFF';
+            document.getElementById('dbgHorizontal5').style.color = horizontal5Enabled ? '#f88' : '#888';
+            
+            // Flip
+            document.getElementById('dbgFlipping').textContent = isFlipping;
+            document.getElementById('dbgGravityPaused').textContent = gravityPausedAfterFlip;
+            document.getElementById('dbgGravityPaused').style.color = gravityPausedAfterFlip ? '#4facfe' : '#888';
+            
+            // Mapping actuel
+            if (document.getElementById('dbgCurrentMapping')) {
+                const mapping = GRID_MAPPINGS[currentMapping];
+                document.getElementById('dbgCurrentMapping').textContent = mapping.name.replace(/^[^\s]+\s/, '');
+            }
             
             // Grille
             updateDebugGrid();
@@ -1218,17 +2316,247 @@
             initGrid();
             buildCylinder();
             updateDebug();
+            analyzeDifficulty();
             console.log('[RESET] Plateau réinitialisé');
         }
 
         function logFullState() {
-            console.log('=== ÉTAT COMPLET v13.14 ===');
+            console.log('=== ÉTAT COMPLET v18 ===');
             console.log('globalRotation:', globalRotation);
             console.log('crownRotations:', crownRotations);
             console.log('centerFacesPerRow:', Array.from({length: ROWS}, (_, r) => getCenterDataFaceForRow(r)));
             console.log('gridByFace:', JSON.stringify(gridByFace));
             console.log('cellState:', JSON.stringify(cellState));
             console.log('Cellules vivantes:', countAliveCells());
+            console.log('Outline:', outlineEnabled ? `ON (${outlineThickness}px)` : 'OFF');
+            console.log('Horizontal5:', horizontal5Enabled ? 'ON' : 'OFF');
+        }
+
+        // =====================================================
+        // ANALYSEUR DE DIFFICULTÉ
+        // =====================================================
+        
+        /**
+         * Compte les quasi-lignes (colonnes avec 4/5 cellules de même couleur)
+         * Plus il y en a = plus facile
+         */
+        function countQuasiLines() {
+            let count = 0;
+            
+            for (let visualFace = 0; visualFace < FACES; visualFace++) {
+                // Compter les couleurs dans cette colonne visuelle
+                const colorCount = [0, 0, 0, 0, 0];
+                let aliveCount = 0;
+                
+                for (let r = 0; r < ROWS; r++) {
+                    const rowRotationOffset = Math.round(crownRotations[r] / ANGLE_STEP);
+                    const actualDataFace = ((visualFace - rowRotationOffset) % FACES + FACES) % FACES;
+                    
+                    if (cellState[actualDataFace][r]) {
+                        const color = gridByFace[actualDataFace][r];
+                        colorCount[color]++;
+                        aliveCount++;
+                    }
+                }
+                
+                // Quasi-ligne = 4 cellules de même couleur sur 5
+                const maxSameColor = Math.max(...colorCount);
+                if (maxSameColor >= 4 && aliveCount >= 4) {
+                    count++;
+                }
+            }
+            
+            return count;
+        }
+        
+        /**
+         * Compte les adjacences verticales de même couleur
+         * (deux cellules voisines verticalement avec même couleur)
+         * Plus il y en a = plus facile
+         */
+        function countVerticalAdjacencies() {
+            let count = 0;
+            
+            for (let visualFace = 0; visualFace < FACES; visualFace++) {
+                for (let r = 0; r < ROWS - 1; r++) {
+                    const rowOffset1 = Math.round(crownRotations[r] / ANGLE_STEP);
+                    const rowOffset2 = Math.round(crownRotations[r + 1] / ANGLE_STEP);
+                    const face1 = ((visualFace - rowOffset1) % FACES + FACES) % FACES;
+                    const face2 = ((visualFace - rowOffset2) % FACES + FACES) % FACES;
+                    
+                    if (cellState[face1][r] && cellState[face2][r + 1]) {
+                        if (gridByFace[face1][r] === gridByFace[face2][r + 1]) {
+                            count++;
+                        }
+                    }
+                }
+            }
+            
+            return count;
+        }
+        
+        /**
+         * Compte les paires front/back "utiles"
+         * Une paire est utile si swapper améliorerait une quasi-ligne
+         */
+        function countUsefulPairs() {
+            let count = 0;
+            
+            for (let f = 0; f < FACES / 2; f++) {
+                const frontFace = f;
+                const backFace = (f + 5) % FACES;
+                
+                for (let r = 0; r < ROWS; r++) {
+                    if (!cellState[frontFace][r] || !cellState[backFace][r]) continue;
+                    
+                    const frontColor = gridByFace[frontFace][r];
+                    const backColor = gridByFace[backFace][r];
+                    
+                    if (frontColor === backColor) continue; // Swap inutile
+                    
+                    // Vérifier si le swap aiderait à créer une ligne
+                    // Compter combien de voisins verticaux ont la couleur du back
+                    let frontNeighborsMatchBack = 0;
+                    let backNeighborsMatchFront = 0;
+                    
+                    for (let dr = -1; dr <= 1; dr += 2) {
+                        const nr = r + dr;
+                        if (nr < 0 || nr >= ROWS) continue;
+                        
+                        // Vérifier sur la colonne front
+                        const rowOffset = Math.round(crownRotations[nr] / ANGLE_STEP);
+                        const neighborFace = ((frontFace + rowOffset) % FACES + FACES) % FACES;
+                        
+                        if (cellState[neighborFace][nr]) {
+                            if (gridByFace[neighborFace][nr] === backColor) frontNeighborsMatchBack++;
+                            if (gridByFace[neighborFace][nr] === frontColor) backNeighborsMatchFront++;
+                        }
+                    }
+                    
+                    // Si le swap améliorerait l'alignement
+                    if (frontNeighborsMatchBack > 0 || backNeighborsMatchFront > 0) {
+                        count++;
+                    }
+                }
+            }
+            
+            return count;
+        }
+        
+        /**
+         * Mesure la dispersion des couleurs (entropie)
+         * 0 = toutes les mêmes couleurs regroupées
+         * 100 = couleurs parfaitement dispersées (difficile)
+         */
+        function measureDispersion() {
+            let totalDistance = 0;
+            let pairCount = 0;
+            
+            // Pour chaque couleur, calculer la distance moyenne entre ses occurrences
+            for (let color = 0; color < COLORS; color++) {
+                const positions = [];
+                
+                // Trouver toutes les positions de cette couleur
+                for (let f = 0; f < FACES; f++) {
+                    for (let r = 0; r < ROWS; r++) {
+                        if (cellState[f][r] && gridByFace[f][r] === color) {
+                            positions.push({ face: f, row: r });
+                        }
+                    }
+                }
+                
+                // Calculer distance entre chaque paire
+                for (let i = 0; i < positions.length; i++) {
+                    for (let j = i + 1; j < positions.length; j++) {
+                        const p1 = positions[i];
+                        const p2 = positions[j];
+                        
+                        // Distance sur le cylindre (faces sont circulaires)
+                        const faceDist = Math.min(
+                            Math.abs(p1.face - p2.face),
+                            FACES - Math.abs(p1.face - p2.face)
+                        );
+                        const rowDist = Math.abs(p1.row - p2.row);
+                        
+                        totalDistance += faceDist + rowDist;
+                        pairCount++;
+                    }
+                }
+            }
+            
+            if (pairCount === 0) return 0;
+            
+            const avgDistance = totalDistance / pairCount;
+            // Normaliser sur 100 (distance max théorique ≈ 7)
+            return Math.round((avgDistance / 7) * 100);
+        }
+        
+        /**
+         * Calcule le score de difficulté global (0-100)
+         */
+        function calculateDifficultyScore() {
+            const quasiLines = countQuasiLines();
+            const adjacencies = countVerticalAdjacencies();
+            const usefulPairs = countUsefulPairs();
+            const dispersion = measureDispersion();
+            
+            // Formule de difficulté :
+            // - Moins de quasi-lignes = plus dur
+            // - Moins d'adjacences = plus dur  
+            // - Moins de paires utiles = plus dur
+            // - Plus de dispersion = plus dur
+            
+            const quasiScore = Math.max(0, 20 - quasiLines * 5);      // 0-20 points
+            const adjScore = Math.max(0, 30 - adjacencies * 2);       // 0-30 points
+            const pairsScore = Math.max(0, 20 - usefulPairs * 2);     // 0-20 points
+            const dispersionScore = dispersion * 0.3;                  // 0-30 points
+            
+            const total = Math.round(quasiScore + adjScore + pairsScore + dispersionScore);
+            
+            return {
+                quasiLines,
+                adjacencies,
+                usefulPairs,
+                dispersion,
+                score: Math.min(100, Math.max(0, total))
+            };
+        }
+        
+        /**
+         * Retourne le niveau de difficulté en texte
+         */
+        function getDifficultyLevel(score) {
+            if (score < 20) return { text: '😴 TRÈS FACILE', color: '#43e97b' };
+            if (score < 40) return { text: '🙂 FACILE', color: '#4facfe' };
+            if (score < 55) return { text: '😐 MOYEN', color: '#fee140' };
+            if (score < 70) return { text: '😤 DIFFICILE', color: '#fa709a' };
+            if (score < 85) return { text: '🔥 TRÈS DUR', color: '#f55' };
+            return { text: '💀 EXTRÊME', color: '#f00' };
+        }
+        
+        /**
+         * Lance l'analyse et met à jour l'affichage
+         */
+        function analyzeDifficulty() {
+            const analysis = calculateDifficultyScore();
+            const level = getDifficultyLevel(analysis.score);
+            
+            document.getElementById('dbgQuasiLines').textContent = analysis.quasiLines;
+            document.getElementById('dbgAdjacent').textContent = analysis.adjacencies;
+            document.getElementById('dbgUsefulPairs').textContent = analysis.usefulPairs;
+            document.getElementById('dbgDispersion').textContent = analysis.dispersion + '%';
+            document.getElementById('dbgDifficultyScore').textContent = analysis.score + '/100';
+            document.getElementById('dbgDifficultyScore').style.color = level.color;
+            document.getElementById('dbgDifficultyLevel').textContent = level.text;
+            document.getElementById('dbgDifficultyLevel').style.color = level.color;
+            
+            console.log('=== ANALYSE DIFFICULTÉ ===');
+            console.log('Quasi-lignes (4/5):', analysis.quasiLines);
+            console.log('Adjacences verticales:', analysis.adjacencies);
+            console.log('Paires utiles:', analysis.usefulPairs);
+            console.log('Dispersion:', analysis.dispersion + '%');
+            console.log('SCORE:', analysis.score + '/100');
+            console.log('NIVEAU:', level.text);
         }
 
         function testSwapAt(face, row) {
@@ -1279,6 +2607,7 @@
                 setDragging(-1, false);
                 snapGlobal();
                 currentGesture = 'idle';
+                resetVelocity();
                 updateDebug();
             }
         });
@@ -1312,14 +2641,29 @@
             checkLongPressMove(currentX, currentY);
             
             const deltaX = currentX - dragStartX;
+            const deltaY = currentY - dragStartY;
             
-            // Permettre le drag depuis 'pending' OU 'pending_drag_only'
-            if ((currentGesture === 'pending' || currentGesture === 'pending_drag_only') && Math.abs(deltaX) > INTERACTION.directionThreshold) {
-                cancelLongPress();
-                currentGesture = 'drag';
-                isDraggingCrown = true;
-                if (activeCrown >= 0) setDragging(activeCrown, true);
-                updateDebug();
+            // Détection du type de geste
+            if (currentGesture === 'pending' || currentGesture === 'pending_drag_only') {
+                // Swipe HORIZONTAL → Drag couronne
+                if (Math.abs(deltaX) > INTERACTION.directionThreshold && Math.abs(deltaX) > Math.abs(deltaY)) {
+                    cancelLongPress();
+                    currentGesture = 'drag';
+                    isDraggingCrown = true;
+                    if (activeCrown >= 0) setDragging(activeCrown, true);
+                    updateDebug();
+                }
+                // Swipe VERTICAL → Column Flip (seulement si on était sur une cellule valide)
+                else if (currentGesture === 'pending' && 
+                         Math.abs(deltaY) > INTERACTION.verticalSwipeThreshold && 
+                         Math.abs(deltaX) < INTERACTION.horizontalMaxForVertical &&
+                         longPressFrozenVisualCol !== null) {
+                    const visualColToFlip = longPressFrozenVisualCol; // Sauvegarder AVANT cancel
+                    cancelLongPress();
+                    currentGesture = 'flip';
+                    triggerColumnFlip(visualColToFlip);
+                    updateDebug();
+                }
             }
             
             if (currentGesture === 'drag' && activeCrown >= 0) {
@@ -1346,6 +2690,7 @@
             isDraggingCrown = false;
             activeCrown = -1;
             currentGesture = 'idle';
+            resetVelocity();
             updateDebug();
         });
 
@@ -1380,14 +2725,31 @@
             if (activeCrown < 0) return;
             
             const currentX = e.clientX;
+            const currentY = e.clientY;
             const deltaX = currentX - dragStartX;
+            const deltaY = currentY - dragStartY;
             
-            if ((currentGesture === 'pending' || currentGesture === 'pending_drag_only') && Math.abs(deltaX) > INTERACTION.directionThreshold) {
-                cancelLongPress();
-                currentGesture = 'drag';
-                isDraggingCrown = true;
-                if (activeCrown >= 0) setDragging(activeCrown, true);
-                updateDebug();
+            // Détection du type de geste
+            if (currentGesture === 'pending' || currentGesture === 'pending_drag_only') {
+                // Swipe HORIZONTAL → Drag couronne
+                if (Math.abs(deltaX) > INTERACTION.directionThreshold && Math.abs(deltaX) > Math.abs(deltaY)) {
+                    cancelLongPress();
+                    currentGesture = 'drag';
+                    isDraggingCrown = true;
+                    if (activeCrown >= 0) setDragging(activeCrown, true);
+                    updateDebug();
+                }
+                // Swipe VERTICAL → Column Flip (seulement si on était sur une cellule valide)
+                else if (currentGesture === 'pending' && 
+                         Math.abs(deltaY) > INTERACTION.verticalSwipeThreshold && 
+                         Math.abs(deltaX) < INTERACTION.horizontalMaxForVertical &&
+                         longPressFrozenVisualCol !== null) {
+                    const visualColToFlip = longPressFrozenVisualCol; // Sauvegarder AVANT cancel
+                    cancelLongPress();
+                    currentGesture = 'flip';
+                    triggerColumnFlip(visualColToFlip);
+                    updateDebug();
+                }
             }
             
             if (currentGesture === 'drag' && activeCrown >= 0) {
@@ -1419,6 +2781,7 @@
             isDraggingCrown = false;
             activeCrown = -1;
             currentGesture = 'idle';
+            resetVelocity();
             updateDebug();
         });
 
@@ -1441,9 +2804,13 @@
         // INIT
         // =====================================================
         initGrid();
+        applyPalette('neon'); // Palette par défaut
         buildCylinder();
         
-        setTimeout(checkVerticalLines, 100);
+        setTimeout(() => {
+            checkVerticalLines();
+            analyzeDifficulty();
+        }, 100);
     </script>
 </body>
 </html>
