@@ -218,15 +218,14 @@
            ===================================================== */
         .gravity-zone {
             position: absolute;
-            width: 45px;
-            top: 50%;
-            transform: translateY(-50%);
-            height: 400px;
+            width: 50px;
+            top: 0;
+            bottom: 80px; /* Laisse de l'espace pour la swipe-zone du bas */
             display: flex;
-            flex-direction: column;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
             z-index: 10;
+            cursor: pointer;
         }
 
         .gravity-zone.left {
@@ -237,62 +236,48 @@
             right: 0;
         }
 
-        .gravity-control {
-            width: 100%;
-            height: 45%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            border-radius: 8px;
-            transition: background 0.2s;
-        }
-
-        .gravity-control:active {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .gravity-control .hint-vertical {
+        .gravity-zone .hint-vertical {
             writing-mode: vertical-rl;
             text-orientation: mixed;
-            color: rgba(255, 255, 255, 0.3);
-            font-size: 11px;
-            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.35);
+            font-size: 12px;
+            letter-spacing: 3px;
             pointer-events: none;
         }
 
-        .gravity-control.anti-gravity .hint-vertical {
-            color: rgba(100, 200, 255, 0.4);
-        }
-
-        .gravity-control.gravity .hint-vertical {
-            color: rgba(255, 150, 100, 0.4);
-        }
-
         /* Animation de feedback gravité */
-        .gravity-control.activated {
-            animation: gravityPulse 0.3s ease-out;
+        .gravity-zone.activated-down {
+            animation: gravityPulseDown 0.3s ease-out;
+        }
+        
+        .gravity-zone.activated-up {
+            animation: gravityPulseUp 0.3s ease-out;
         }
 
-        @keyframes gravityPulse {
-            0% { background: rgba(255, 255, 255, 0); }
-            50% { background: rgba(255, 255, 255, 0.2); }
-            100% { background: rgba(255, 255, 255, 0); }
+        @keyframes gravityPulseDown {
+            0% { background: rgba(255, 150, 100, 0); }
+            50% { background: rgba(255, 150, 100, 0.3); }
+            100% { background: rgba(255, 150, 100, 0); }
+        }
+        
+        @keyframes gravityPulseUp {
+            0% { background: rgba(100, 200, 255, 0); }
+            50% { background: rgba(100, 200, 255, 0.3); }
+            100% { background: rgba(100, 200, 255, 0); }
         }
 
         .swipe-zone {
             position: absolute;
             bottom: 0;
-            left: 0;
-            right: 0;
-            width: 100%;
-            height: 70px;
+            left: 50px; /* Laisse de l'espace pour les zones latérales */
+            right: 50px;
+            height: 150px; /* Très haute - arrive presque au cylindre */
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-end; /* Texte en bas */
+            padding-bottom: 20px;
             cursor: grab;
-            background: linear-gradient(to top, rgba(0,0,0,0.3) 0%, transparent 100%);
-            padding-bottom: env(safe-area-inset-bottom, 0px);
+            background: linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 100%);
         }
 
         .swipe-zone:active {
@@ -882,13 +867,8 @@
     <div class="container">
         <div class="game-area">
             <!-- Zone gravité gauche -->
-            <div class="gravity-zone left">
-                <div class="gravity-control anti-gravity" id="gravityLeftUp">
-                    <span class="hint-vertical">↑ SWIPE ↑</span>
-                </div>
-                <div class="gravity-control gravity" id="gravityLeftDown">
-                    <span class="hint-vertical">↓ SWIPE ↓</span>
-                </div>
+            <div class="gravity-zone left" id="gravityZoneLeft">
+                <span class="hint-vertical">↑ SWIPE ↓</span>
             </div>
 
             <!-- Scène centrale -->
@@ -897,13 +877,8 @@
             </div>
 
             <!-- Zone gravité droite -->
-            <div class="gravity-zone right">
-                <div class="gravity-control anti-gravity" id="gravityRightUp">
-                    <span class="hint-vertical">↑ SWIPE ↑</span>
-                </div>
-                <div class="gravity-control gravity" id="gravityRightDown">
-                    <span class="hint-vertical">↓ SWIPE ↓</span>
-                </div>
+            <div class="gravity-zone right" id="gravityZoneRight">
+                <span class="hint-vertical">↑ SWIPE ↓</span>
             </div>
         </div>
 
@@ -2117,11 +2092,11 @@
             // Mettre à jour le CSS dynamiquement
             const styleSheet = document.styleSheets[0];
             
-            // Supprimer les anciennes règles de couleur
+            // Supprimer les anciennes règles de couleur (cylindre ET debug)
             const rulesToDelete = [];
             for (let i = 0; i < styleSheet.cssRules.length; i++) {
                 const rule = styleSheet.cssRules[i];
-                if (rule.selectorText && rule.selectorText.startsWith('.color-')) {
+                if (rule.selectorText && (rule.selectorText.startsWith('.color-') || rule.selectorText.startsWith('.debug-grid-cell.c'))) {
                     rulesToDelete.push(i);
                 }
             }
@@ -2130,9 +2105,15 @@
                 styleSheet.deleteRule(rulesToDelete[i]);
             }
             
-            // Ajouter les nouvelles règles
+            // Ajouter les nouvelles règles pour le cylindre
             for (let i = 0; i < 5; i++) {
                 const rule = `.color-${i} { background: ${palette.colors[i]}; color: ${palette.textColors[i]}; }`;
+                styleSheet.insertRule(rule, styleSheet.cssRules.length);
+            }
+            
+            // Ajouter les nouvelles règles pour la grille debug (mêmes couleurs)
+            for (let i = 0; i < 5; i++) {
+                const rule = `.debug-grid-cell.c${i} { background: ${palette.colors[i]}; color: ${palette.textColors[i]}; }`;
                 styleSheet.insertRule(rule, styleSheet.cssRules.length);
             }
             
@@ -2141,6 +2122,7 @@
             
             console.log(`[PALETTE] ${palette.name}`);
             buildCylinder();
+            updateDebugGrid(); // Rafraîchir la grille debug
         }
         
         function loadMapping(mappingName) {
@@ -2656,79 +2638,87 @@
 
         // Variables pour les zones de gravité
         let gravityZoneActive = null;
+        let gravityStartY = 0;
+        let gravityTriggered = false;
 
         // =====================================================
         // ÉVÉNEMENTS - ZONES GRAVITÉ LATÉRALES
         // =====================================================
         
-        function setupGravityZone(element, direction) {
-            let startY = 0;
-            let triggered = false;
-            
-            // Touch
+        function setupGravityZone(element) {
+            // Touch events
             element.addEventListener('touchstart', (e) => {
-                startY = e.touches[0].clientY;
-                triggered = false;
-            }, { passive: true });
+                e.preventDefault();
+                gravityStartY = e.touches[0].clientY;
+                gravityTriggered = false;
+                gravityZoneActive = element;
+            }, { passive: false });
             
             element.addEventListener('touchmove', (e) => {
-                if (triggered) return;
-                const currentY = e.touches[0].clientY;
-                const deltaY = currentY - startY;
+                if (gravityTriggered || gravityZoneActive !== element) return;
+                e.preventDefault();
                 
-                // Swipe vers le bas = gravité, vers le haut = anti-gravité
-                if (direction === 'down' && deltaY > INTERACTION.gravitySwipeThreshold) {
-                    triggered = true;
-                    element.classList.add('activated');
+                const currentY = e.touches[0].clientY;
+                const deltaY = currentY - gravityStartY;
+                
+                // Swipe vers le bas = gravité
+                if (deltaY > INTERACTION.gravitySwipeThreshold) {
+                    gravityTriggered = true;
+                    element.classList.add('activated-down');
                     applyGravityDown();
-                    setTimeout(() => element.classList.remove('activated'), 300);
-                } else if (direction === 'up' && deltaY < -INTERACTION.gravitySwipeThreshold) {
-                    triggered = true;
-                    element.classList.add('activated');
-                    applyGravityUp();
-                    setTimeout(() => element.classList.remove('activated'), 300);
+                    setTimeout(() => element.classList.remove('activated-down'), 300);
                 }
-            }, { passive: true });
+                // Swipe vers le haut = anti-gravité
+                else if (deltaY < -INTERACTION.gravitySwipeThreshold) {
+                    gravityTriggered = true;
+                    element.classList.add('activated-up');
+                    applyGravityUp();
+                    setTimeout(() => element.classList.remove('activated-up'), 300);
+                }
+            }, { passive: false });
             
             element.addEventListener('touchend', () => {
-                triggered = false;
+                gravityTriggered = false;
+                gravityZoneActive = null;
             });
             
-            // Mouse
-            let mouseStartY = 0;
-            let mouseTriggered = false;
-            
+            // Mouse events
             element.addEventListener('mousedown', (e) => {
-                mouseStartY = e.clientY;
-                mouseTriggered = false;
-                gravityZoneActive = { element, direction, startY: mouseStartY };
+                gravityStartY = e.clientY;
+                gravityTriggered = false;
+                gravityZoneActive = element;
             });
         }
         
-        // Gestion globale du mouse pour les zones gravité
+        // Setup des 2 zones de gravité (gauche et droite)
+        setupGravityZone(document.getElementById('gravityZoneLeft'));
+        setupGravityZone(document.getElementById('gravityZoneRight'));
+        
+        // Gestion globale du mousemove pour les zones gravité
         document.addEventListener('mousemove', (e) => {
-            if (gravityZoneActive) {
-                const deltaY = e.clientY - gravityZoneActive.startY;
-                
-                if (gravityZoneActive.direction === 'down' && deltaY > INTERACTION.gravitySwipeThreshold) {
-                    gravityZoneActive.element.classList.add('activated');
-                    applyGravityDown();
-                    setTimeout(() => gravityZoneActive.element.classList.remove('activated'), 300);
-                    gravityZoneActive = null;
-                } else if (gravityZoneActive.direction === 'up' && deltaY < -INTERACTION.gravitySwipeThreshold) {
-                    gravityZoneActive.element.classList.add('activated');
-                    applyGravityUp();
-                    setTimeout(() => gravityZoneActive.element.classList.remove('activated'), 300);
-                    gravityZoneActive = null;
-                }
+            if (!gravityZoneActive || gravityTriggered) return;
+            
+            const deltaY = e.clientY - gravityStartY;
+            
+            // Swipe vers le bas = gravité
+            if (deltaY > INTERACTION.gravitySwipeThreshold) {
+                gravityTriggered = true;
+                gravityZoneActive.classList.add('activated-down');
+                applyGravityDown();
+                setTimeout(() => {
+                    if (gravityZoneActive) gravityZoneActive.classList.remove('activated-down');
+                }, 300);
+            }
+            // Swipe vers le haut = anti-gravité
+            else if (deltaY < -INTERACTION.gravitySwipeThreshold) {
+                gravityTriggered = true;
+                gravityZoneActive.classList.add('activated-up');
+                applyGravityUp();
+                setTimeout(() => {
+                    if (gravityZoneActive) gravityZoneActive.classList.remove('activated-up');
+                }, 300);
             }
         });
-        
-        // Setup des 4 zones de gravité
-        setupGravityZone(document.getElementById('gravityLeftUp'), 'up');
-        setupGravityZone(document.getElementById('gravityLeftDown'), 'down');
-        setupGravityZone(document.getElementById('gravityRightUp'), 'up');
-        setupGravityZone(document.getElementById('gravityRightDown'), 'down');
 
         // =====================================================
         // ÉVÉNEMENTS - SWIPE ZONE
@@ -2922,7 +2912,8 @@
 
         document.addEventListener('mouseup', () => {
             cancelLongPress();
-            gravityZoneActive = null; // Reset zone gravité
+            gravityZoneActive = null;
+            gravityTriggered = false;
             
             if (isDraggingGlobal) {
                 isDraggingGlobal = false;
