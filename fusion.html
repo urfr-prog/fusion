@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Fusion Square v18</title>
+    <title>Fusion Square v19</title>
     
     <!-- PWA iOS -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -32,6 +32,7 @@
         body {
             background: #0a0a0f;
             min-height: 100vh;
+            min-height: 100dvh; /* Dynamic viewport height pour iOS */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -44,6 +45,7 @@
             width: 100%;
             max-width: 390px;
             height: 100vh;
+            height: 100dvh;
             max-height: 844px;
             background: linear-gradient(180deg, #0d0d15 0%, #1a1a2e 100%);
             display: flex;
@@ -52,6 +54,17 @@
             justify-content: center;
             position: relative;
             overflow: hidden;
+        }
+
+        /* Zone centrale avec cylindre et zones latérales */
+        .game-area {
+            position: relative;
+            width: 100%;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-bottom: 70px; /* Espace pour la swipe-zone du bas */
         }
 
         .scene {
@@ -200,15 +213,86 @@
             pointer-events: none;
         }
 
+        /* =====================================================
+           ZONES DE CONTRÔLE GRAVITÉ (latérales)
+           ===================================================== */
+        .gravity-zone {
+            position: absolute;
+            width: 45px;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .gravity-zone.left {
+            left: 0;
+        }
+
+        .gravity-zone.right {
+            right: 0;
+        }
+
+        .gravity-control {
+            width: 100%;
+            height: 45%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .gravity-control:active {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .gravity-control .hint-vertical {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 11px;
+            letter-spacing: 2px;
+            pointer-events: none;
+        }
+
+        .gravity-control.anti-gravity .hint-vertical {
+            color: rgba(100, 200, 255, 0.4);
+        }
+
+        .gravity-control.gravity .hint-vertical {
+            color: rgba(255, 150, 100, 0.4);
+        }
+
+        /* Animation de feedback gravité */
+        .gravity-control.activated {
+            animation: gravityPulse 0.3s ease-out;
+        }
+
+        @keyframes gravityPulse {
+            0% { background: rgba(255, 255, 255, 0); }
+            50% { background: rgba(255, 255, 255, 0.2); }
+            100% { background: rgba(255, 255, 255, 0); }
+        }
+
         .swipe-zone {
             position: absolute;
             bottom: 0;
+            left: 0;
+            right: 0;
             width: 100%;
-            height: 80px;
+            height: 70px;
             display: flex;
             justify-content: center;
             align-items: center;
             cursor: grab;
+            background: linear-gradient(to top, rgba(0,0,0,0.3) 0%, transparent 100%);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
         }
 
         .swipe-zone:active {
@@ -407,11 +491,12 @@
             line-height: 1;
         }
 
-        .debug-grid-cell.c0 { background: #667eea; color: #fff; }
-        .debug-grid-cell.c1 { background: #4facfe; color: #fff; }
-        .debug-grid-cell.c2 { background: #43e97b; color: #fff; }
-        .debug-grid-cell.c3 { background: #fa709a; color: #fff; }
-        .debug-grid-cell.c4 { background: #a8edea; color: #333; }
+        /* Couleurs debug synchronisées avec les dégradés du cylindre */
+        .debug-grid-cell.c0 { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; }
+        .debug-grid-cell.c1 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: #fff; }
+        .debug-grid-cell.c2 { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: #fff; }
+        .debug-grid-cell.c3 { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: #fff; }
+        .debug-grid-cell.c4 { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333; }
         .debug-grid-cell.dead { background: #333; color: #666; }
 
         .debug-grid-cell .face-num {
@@ -580,7 +665,7 @@
     <button class="debug-toggle" onclick="toggleDebug()">🔧 DEBUG</button>
     
     <div class="debug-panel" id="debugPanel">
-        <h4>🎮 Fusion Square v18 - Console Debug</h4>
+        <h4>🎮 Fusion Square v19 - Gravité Manuelle</h4>
         
         <!-- ===================== SECTION HAUTE: Options importantes ===================== -->
         
@@ -599,14 +684,6 @@
                 <div class="debug-option">
                     <input type="checkbox" id="optShowOnCells" onchange="toggleCellDisplay()">
                     <label for="optShowOnCells">Sur cylindre</label>
-                </div>
-                <div class="debug-option">
-                    <input type="checkbox" id="optGravity" checked onchange="toggleGravity()">
-                    <label for="optGravity" style="color:#0f0;font-weight:bold;">🌍 Gravité</label>
-                </div>
-                <div class="debug-option">
-                    <input type="checkbox" id="optFlipPause" checked onchange="toggleFlipGravityPause()">
-                    <label for="optFlipPause" style="color:#4facfe;">⏸️ Pause flip</label>
                 </div>
             </div>
             
@@ -748,14 +825,6 @@
                         <span class="debug-value" id="dbgDestroying">false</span>
                     </div>
                     <div class="debug-row-compact">
-                        <span class="debug-label">🌍 Gravité:</span>
-                        <span class="debug-value" id="dbgGravity">ON</span>
-                    </div>
-                    <div class="debug-row-compact">
-                        <span class="debug-label">Applying:</span>
-                        <span class="debug-value" id="dbgApplyingGravity">false</span>
-                    </div>
-                    <div class="debug-row-compact">
                         <span class="debug-label">🔲 Outline:</span>
                         <span class="debug-value" id="dbgOutline">OFF</span>
                     </div>
@@ -768,8 +837,8 @@
                         <span class="debug-value" id="dbgFlipping">false</span>
                     </div>
                     <div class="debug-row-compact">
-                        <span class="debug-label">⏸️ Pausée:</span>
-                        <span class="debug-value" id="dbgGravityPaused">false</span>
+                        <span class="debug-label">⬇️ Last Gravity:</span>
+                        <span class="debug-value" id="dbgLastGravity">-</span>
                     </div>
                     
                     <div class="debug-column-title" style="margin-top:6px;">📊 DIFFICULTÉ</div>
@@ -811,9 +880,34 @@
     </div>
 
     <div class="container">
-        <div class="scene" id="scene">
-            <div class="cylinder" id="cylinder"></div>
+        <div class="game-area">
+            <!-- Zone gravité gauche -->
+            <div class="gravity-zone left">
+                <div class="gravity-control anti-gravity" id="gravityLeftUp">
+                    <span class="hint-vertical">↑ SWIPE ↑</span>
+                </div>
+                <div class="gravity-control gravity" id="gravityLeftDown">
+                    <span class="hint-vertical">↓ SWIPE ↓</span>
+                </div>
+            </div>
+
+            <!-- Scène centrale -->
+            <div class="scene" id="scene">
+                <div class="cylinder" id="cylinder"></div>
+            </div>
+
+            <!-- Zone gravité droite -->
+            <div class="gravity-zone right">
+                <div class="gravity-control anti-gravity" id="gravityRightUp">
+                    <span class="hint-vertical">↑ SWIPE ↑</span>
+                </div>
+                <div class="gravity-control gravity" id="gravityRightDown">
+                    <span class="hint-vertical">↓ SWIPE ↓</span>
+                </div>
+            </div>
         </div>
+
+        <!-- Zone swipe rotation globale -->
         <div class="swipe-zone" id="swipeZone">
             <div class="hint"><span>← SWIPE →</span></div>
         </div>
@@ -850,7 +944,8 @@
             maxDeltaPixels: 80,
             directionThreshold: 18,
             verticalSwipeThreshold: 50,  // Pixels pour déclencher un flip
-            horizontalMaxForVertical: 30 // Max horizontal autorisé pendant un swipe vertical
+            horizontalMaxForVertical: 30, // Max horizontal autorisé pendant un swipe vertical
+            gravitySwipeThreshold: 40     // Seuil pour déclencher gravité manuelle
         };
 
         // =====================================================
@@ -1096,9 +1191,9 @@
         let dbgTouchXOffset = 0;
         let showCellInfo = false;
         
-        // Gravité
-        let gravityEnabled = true;
+        // Gravité manuelle (plus de gravité automatique)
         let isApplyingGravity = false;
+        let lastGravityAction = '-'; // Pour debug
 
         // Outline
         let outlineEnabled = true;
@@ -1106,8 +1201,6 @@
 
         // Column Flip
         let isFlipping = false;
-        let gravityPausedAfterFlip = false; // Gravité suspendue après un flip
-        let flipGravityPauseEnabled = true; // Option pour activer/désactiver cette fonctionnalité
 
         // 5 Carrés Horizontaux consécutifs (s'annule si activé avec vertical)
         let horizontal5Enabled = false;
@@ -1393,12 +1486,6 @@
         function triggerSwap(frontFace, row) {
             if (isSwapping || frontFace === null || row === null) return;
             
-            // Réactiver la gravité si elle était pausée après un flip
-            if (gravityPausedAfterFlip) {
-                gravityPausedAfterFlip = false;
-                console.log('[GRAVITY] Réactivée après swap');
-            }
-            
             const backFace = getBackFace(frontFace);
             
             const frontAlive = cellState[frontFace][row];
@@ -1474,12 +1561,8 @@
                 isSwapping = false;
                 cancelLongPress();
                 
-                // Vérifier les lignes puis appliquer la gravité immédiatement
+                // Vérifier les lignes (pas de gravité automatique)
                 checkVerticalLines();
-                // Si pas de destruction en cours, appliquer la gravité
-                if (!isDestroying) {
-                    applyGravity();
-                }
             }, 400);
         }
         
@@ -1704,10 +1787,7 @@
                 isDestroying = false;
                 updateDebug();
                 updateGhostFrontClasses();
-                // Après destruction, appliquer la gravité
-                setTimeout(() => {
-                    applyGravity();
-                }, 100);
+                // PAS de gravité automatique - le joueur contrôle
             }, totalDelay);
         }
 
@@ -1820,21 +1900,13 @@
             if (isFlipping || isSwapping || isDestroying || isApplyingGravity) return;
             
             isFlipping = true;
-            
-            // Si l'option est activée, suspendre la gravité après ce flip
-            if (flipGravityPauseEnabled) {
-                gravityPausedAfterFlip = true;
-                console.log(`[FLIP] Colonne visuelle ${visualCol} - Gravité SUSPENDUE`);
-            } else {
-                console.log(`[FLIP] Colonne visuelle ${visualCol}`);
-            }
+            console.log(`[FLIP] Colonne visuelle ${visualCol}`);
             
             // Récupérer les faces data pour chaque row de cette colonne visuelle
             const columnFaces = [];
             for (let r = 0; r < ROWS; r++) {
                 const df = getDataFaceForVisualColumnAndRow(visualCol, r);
                 columnFaces.push(df);
-                console.log(`[FLIP] Row ${r}: visualCol ${visualCol} → dataFace ${df}`);
             }
             
             // Sauvegarder les données actuelles
@@ -1861,15 +1933,9 @@
                 isFlipping = false;
                 updateDebug();
                 
-                // Vérifier les lignes après le flip
+                // Vérifier les lignes après le flip (pas de gravité auto)
                 setTimeout(() => {
                     checkVerticalLines();
-                    // Puis gravité si pas de destruction ET si pas pausée après flip
-                    setTimeout(() => {
-                        if (!isDestroying && !gravityPausedAfterFlip) {
-                            applyGravity();
-                        }
-                    }, 100);
                 }, 50);
             });
         }
@@ -1994,34 +2060,14 @@
         function snapGlobal() {
             globalRotation = snapToViewPosition(globalRotation);
             updateAllRotations();
-            
-            // Réactiver la gravité si elle était pausée après un flip
-            if (gravityPausedAfterFlip) {
-                gravityPausedAfterFlip = false;
-                console.log('[GRAVITY] Réactivée après rotation globale');
-                // Appliquer la gravité maintenant
-                setTimeout(() => {
-                    if (!isDestroying) applyGravity();
-                }, 100);
-            }
         }
 
         function snapCrown(crownIndex) {
             crownRotations[crownIndex] = Math.round(crownRotations[crownIndex] / ANGLE_STEP) * ANGLE_STEP;
             updateAllRotations();
             
-            // Réactiver la gravité si elle était pausée après un flip
-            if (gravityPausedAfterFlip) {
-                gravityPausedAfterFlip = false;
-                console.log('[GRAVITY] Réactivée après rotation');
-            }
-            
             setTimeout(() => {
                 checkVerticalLines();
-                // Appliquer la gravité après le snap
-                setTimeout(() => {
-                    if (!isDestroying) applyGravity();
-                }, 100);
             }, 300);
         }
 
@@ -2036,16 +2082,6 @@
         function toggleCellDisplay() {
             showCellInfo = document.getElementById('optShowOnCells').checked;
             buildCylinder();
-        }
-
-        function toggleGravity() {
-            gravityEnabled = document.getElementById('optGravity').checked;
-            console.log('[GRAVITY] ' + (gravityEnabled ? 'Activée' : 'Désactivée'));
-        }
-
-        function toggleFlipGravityPause() {
-            flipGravityPauseEnabled = document.getElementById('optFlipPause').checked;
-            console.log('[FLIP PAUSE] ' + (flipGravityPauseEnabled ? 'Activée' : 'Désactivée'));
         }
 
         function toggleHorizontal5() {
@@ -2119,7 +2155,7 @@
             // Reset avec le nouveau mapping
             globalRotation = INITIAL_ROTATION;
             crownRotations = [0, 0, 0, 0, 0];
-            gravityPausedAfterFlip = false;
+            lastGravityAction = '-';
             cancelLongPress();
             initGrid();
             buildCylinder();
@@ -2128,23 +2164,19 @@
         }
 
         // =====================================================
-        // SYSTÈME DE GRAVITÉ
+        // SYSTÈME DE GRAVITÉ MANUELLE
         // =====================================================
         
         /**
-         * Applique la gravité sur toutes les colonnes visuelles
-         * Une colonne visuelle = une face "alignée" à travers toutes les rows
-         * en tenant compte des rotations individuelles des couronnes
+         * Applique la gravité (vers le bas) - UNE SEULE FOIS
          */
-        function applyGravity() {
-            if (!gravityEnabled || isApplyingGravity || isDestroying || isSwapping) return;
+        function applyGravityDown() {
+            if (isApplyingGravity || isDestroying || isSwapping) return;
             
             isApplyingGravity = true;
-            let somethingFell = false;
+            let somethingMoved = false;
             
-            // Pour chaque "colonne visuelle" (face de référence 0-9)
             for (let visualFace = 0; visualFace < FACES; visualFace++) {
-                // Construire la colonne : quelle face DATA est à cette position visuelle pour chaque row ?
                 const columnFaces = [];
                 for (let r = 0; r < ROWS; r++) {
                     const rowRotationOffset = Math.round(crownRotations[r] / ANGLE_STEP);
@@ -2152,52 +2184,98 @@
                     columnFaces.push(actualDataFace);
                 }
                 
-                // Appliquer la gravité sur cette colonne (de bas en haut)
-                // On cherche les trous et on fait tomber ce qui est au-dessus
+                // De bas en haut : chercher les trous et faire tomber
                 for (let r = ROWS - 1; r >= 0; r--) {
                     const dataFace = columnFaces[r];
                     
-                    // Si cette cellule est vide, chercher la première cellule vivante au-dessus
                     if (!cellState[dataFace][r]) {
+                        // Cellule vide, chercher la première vivante au-dessus
                         for (let above = r - 1; above >= 0; above--) {
                             const aboveDataFace = columnFaces[above];
                             
                             if (cellState[aboveDataFace][above]) {
-                                // Trouver la cellule vivante ! La faire tomber
-                                console.log(`[GRAVITY] F${aboveDataFace}/R${above} tombe vers F${dataFace}/R${r}`);
-                                
-                                // Transférer les données
+                                // Transférer
                                 gridByFace[dataFace][r] = gridByFace[aboveDataFace][above];
                                 cellState[dataFace][r] = true;
-                                
-                                // Vider l'ancienne position
                                 cellState[aboveDataFace][above] = false;
-                                
-                                somethingFell = true;
-                                break; // Une seule cellule tombe par trou à la fois
+                                somethingMoved = true;
+                                break;
                             }
                         }
                     }
                 }
             }
             
-            if (somethingFell) {
-                // Reconstruire le visuel et vérifier les nouvelles lignes
+            if (somethingMoved) {
+                lastGravityAction = '↓ DOWN';
+                console.log('[GRAVITY] ↓ Gravité appliquée');
                 buildCylinder();
                 updateDebug();
                 
-                // Attendre un peu puis vérifier si d'autres chutes ou lignes
                 setTimeout(() => {
                     isApplyingGravity = false;
-                    // D'abord vérifier les lignes créées par la chute
                     checkVerticalLines();
-                    // Puis ré-appliquer la gravité si nécessaire (cascade)
-                    setTimeout(() => {
-                        if (!isDestroying) applyGravity();
-                    }, 100);
                 }, 300);
             } else {
+                lastGravityAction = '↓ (rien)';
                 isApplyingGravity = false;
+                updateDebug();
+            }
+        }
+        
+        /**
+         * Applique l'anti-gravité (vers le haut) - UNE SEULE FOIS
+         */
+        function applyGravityUp() {
+            if (isApplyingGravity || isDestroying || isSwapping) return;
+            
+            isApplyingGravity = true;
+            let somethingMoved = false;
+            
+            for (let visualFace = 0; visualFace < FACES; visualFace++) {
+                const columnFaces = [];
+                for (let r = 0; r < ROWS; r++) {
+                    const rowRotationOffset = Math.round(crownRotations[r] / ANGLE_STEP);
+                    const actualDataFace = ((visualFace - rowRotationOffset) % FACES + FACES) % FACES;
+                    columnFaces.push(actualDataFace);
+                }
+                
+                // De haut en bas : chercher les trous et faire monter
+                for (let r = 0; r < ROWS; r++) {
+                    const dataFace = columnFaces[r];
+                    
+                    if (!cellState[dataFace][r]) {
+                        // Cellule vide, chercher la première vivante en-dessous
+                        for (let below = r + 1; below < ROWS; below++) {
+                            const belowDataFace = columnFaces[below];
+                            
+                            if (cellState[belowDataFace][below]) {
+                                // Transférer
+                                gridByFace[dataFace][r] = gridByFace[belowDataFace][below];
+                                cellState[dataFace][r] = true;
+                                cellState[belowDataFace][below] = false;
+                                somethingMoved = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (somethingMoved) {
+                lastGravityAction = '↑ UP';
+                console.log('[GRAVITY] ↑ Anti-gravité appliquée');
+                buildCylinder();
+                updateDebug();
+                
+                setTimeout(() => {
+                    isApplyingGravity = false;
+                    checkVerticalLines();
+                }, 300);
+            } else {
+                lastGravityAction = '↑ (rien)';
+                isApplyingGravity = false;
+                updateDebug();
             }
         }
 
@@ -2235,9 +2313,6 @@
             document.getElementById('dbgAlive').textContent = countAliveCells() + '/50';
             document.getElementById('dbgSwapping').textContent = isSwapping;
             document.getElementById('dbgDestroying').textContent = isDestroying;
-            document.getElementById('dbgGravity').textContent = gravityEnabled ? 'ON' : 'OFF';
-            document.getElementById('dbgGravity').style.color = gravityEnabled ? '#0f0' : '#f55';
-            document.getElementById('dbgApplyingGravity').textContent = isApplyingGravity;
             
             // Outline
             const outlineStatus = outlineEnabled ? `ON (${outlineThickness}px)` : 'OFF';
@@ -2250,8 +2325,10 @@
             
             // Flip
             document.getElementById('dbgFlipping').textContent = isFlipping;
-            document.getElementById('dbgGravityPaused').textContent = gravityPausedAfterFlip;
-            document.getElementById('dbgGravityPaused').style.color = gravityPausedAfterFlip ? '#4facfe' : '#888';
+            
+            // Gravité manuelle - dernière action
+            document.getElementById('dbgLastGravity').textContent = lastGravityAction;
+            document.getElementById('dbgLastGravity').style.color = lastGravityAction.includes('UP') ? '#4facfe' : (lastGravityAction.includes('DOWN') ? '#f80' : '#888');
             
             // Mapping actuel
             if (document.getElementById('dbgCurrentMapping')) {
@@ -2312,6 +2389,7 @@
         function resetGame() {
             globalRotation = INITIAL_ROTATION;
             crownRotations = [0, 0, 0, 0, 0];
+            lastGravityAction = '-';
             cancelLongPress();
             initGrid();
             buildCylinder();
@@ -2321,7 +2399,7 @@
         }
 
         function logFullState() {
-            console.log('=== ÉTAT COMPLET v18 ===');
+            console.log('=== ÉTAT COMPLET v19 ===');
             console.log('globalRotation:', globalRotation);
             console.log('crownRotations:', crownRotations);
             console.log('centerFacesPerRow:', Array.from({length: ROWS}, (_, r) => getCenterDataFaceForRow(r)));
@@ -2330,6 +2408,7 @@
             console.log('Cellules vivantes:', countAliveCells());
             console.log('Outline:', outlineEnabled ? `ON (${outlineThickness}px)` : 'OFF');
             console.log('Horizontal5:', horizontal5Enabled ? 'ON' : 'OFF');
+            console.log('Last Gravity:', lastGravityAction);
         }
 
         // =====================================================
@@ -2575,6 +2654,82 @@
         let dragStartX = 0;
         let dragStartY = 0;
 
+        // Variables pour les zones de gravité
+        let gravityZoneActive = null;
+
+        // =====================================================
+        // ÉVÉNEMENTS - ZONES GRAVITÉ LATÉRALES
+        // =====================================================
+        
+        function setupGravityZone(element, direction) {
+            let startY = 0;
+            let triggered = false;
+            
+            // Touch
+            element.addEventListener('touchstart', (e) => {
+                startY = e.touches[0].clientY;
+                triggered = false;
+            }, { passive: true });
+            
+            element.addEventListener('touchmove', (e) => {
+                if (triggered) return;
+                const currentY = e.touches[0].clientY;
+                const deltaY = currentY - startY;
+                
+                // Swipe vers le bas = gravité, vers le haut = anti-gravité
+                if (direction === 'down' && deltaY > INTERACTION.gravitySwipeThreshold) {
+                    triggered = true;
+                    element.classList.add('activated');
+                    applyGravityDown();
+                    setTimeout(() => element.classList.remove('activated'), 300);
+                } else if (direction === 'up' && deltaY < -INTERACTION.gravitySwipeThreshold) {
+                    triggered = true;
+                    element.classList.add('activated');
+                    applyGravityUp();
+                    setTimeout(() => element.classList.remove('activated'), 300);
+                }
+            }, { passive: true });
+            
+            element.addEventListener('touchend', () => {
+                triggered = false;
+            });
+            
+            // Mouse
+            let mouseStartY = 0;
+            let mouseTriggered = false;
+            
+            element.addEventListener('mousedown', (e) => {
+                mouseStartY = e.clientY;
+                mouseTriggered = false;
+                gravityZoneActive = { element, direction, startY: mouseStartY };
+            });
+        }
+        
+        // Gestion globale du mouse pour les zones gravité
+        document.addEventListener('mousemove', (e) => {
+            if (gravityZoneActive) {
+                const deltaY = e.clientY - gravityZoneActive.startY;
+                
+                if (gravityZoneActive.direction === 'down' && deltaY > INTERACTION.gravitySwipeThreshold) {
+                    gravityZoneActive.element.classList.add('activated');
+                    applyGravityDown();
+                    setTimeout(() => gravityZoneActive.element.classList.remove('activated'), 300);
+                    gravityZoneActive = null;
+                } else if (gravityZoneActive.direction === 'up' && deltaY < -INTERACTION.gravitySwipeThreshold) {
+                    gravityZoneActive.element.classList.add('activated');
+                    applyGravityUp();
+                    setTimeout(() => gravityZoneActive.element.classList.remove('activated'), 300);
+                    gravityZoneActive = null;
+                }
+            }
+        });
+        
+        // Setup des 4 zones de gravité
+        setupGravityZone(document.getElementById('gravityLeftUp'), 'up');
+        setupGravityZone(document.getElementById('gravityLeftDown'), 'down');
+        setupGravityZone(document.getElementById('gravityRightUp'), 'up');
+        setupGravityZone(document.getElementById('gravityRightDown'), 'down');
+
         // =====================================================
         // ÉVÉNEMENTS - SWIPE ZONE
         // =====================================================
@@ -2767,6 +2922,7 @@
 
         document.addEventListener('mouseup', () => {
             cancelLongPress();
+            gravityZoneActive = null; // Reset zone gravité
             
             if (isDraggingGlobal) {
                 isDraggingGlobal = false;
