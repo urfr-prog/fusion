@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Fusion Square v19</title>
+    <title>Fusion Square v20 - Tetris Mode</title>
     
     <!-- PWA iOS -->
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -32,7 +32,6 @@
         body {
             background: #0a0a0f;
             min-height: 100vh;
-            min-height: 100dvh; /* Dynamic viewport height pour iOS */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -45,7 +44,6 @@
             width: 100%;
             max-width: 390px;
             height: 100vh;
-            height: 100dvh;
             max-height: 844px;
             background: linear-gradient(180deg, #0d0d15 0%, #1a1a2e 100%);
             display: flex;
@@ -54,17 +52,6 @@
             justify-content: center;
             position: relative;
             overflow: hidden;
-        }
-
-        /* Zone centrale avec cylindre et zones latérales */
-        .game-area {
-            position: relative;
-            width: 100%;
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding-bottom: 70px; /* Espace pour la swipe-zone du bas */
         }
 
         .scene {
@@ -213,71 +200,16 @@
             pointer-events: none;
         }
 
-        /* =====================================================
-           ZONES DE CONTRÔLE GRAVITÉ (latérales)
-           ===================================================== */
-        .gravity-zone {
-            position: absolute;
-            width: 50px;
-            top: 0;
-            bottom: 80px; /* Laisse de l'espace pour la swipe-zone du bas */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10;
-            cursor: pointer;
-        }
-
-        .gravity-zone.left {
-            left: 0;
-        }
-
-        .gravity-zone.right {
-            right: 0;
-        }
-
-        .gravity-zone .hint-vertical {
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-            color: rgba(255, 255, 255, 0.35);
-            font-size: 12px;
-            letter-spacing: 3px;
-            pointer-events: none;
-        }
-
-        /* Animation de feedback gravité */
-        .gravity-zone.activated-down {
-            animation: gravityPulseDown 0.3s ease-out;
-        }
-        
-        .gravity-zone.activated-up {
-            animation: gravityPulseUp 0.3s ease-out;
-        }
-
-        @keyframes gravityPulseDown {
-            0% { background: rgba(255, 150, 100, 0); }
-            50% { background: rgba(255, 150, 100, 0.3); }
-            100% { background: rgba(255, 150, 100, 0); }
-        }
-        
-        @keyframes gravityPulseUp {
-            0% { background: rgba(100, 200, 255, 0); }
-            50% { background: rgba(100, 200, 255, 0.3); }
-            100% { background: rgba(100, 200, 255, 0); }
-        }
-
         .swipe-zone {
             position: absolute;
             bottom: 0;
-            left: 50px; /* Laisse de l'espace pour les zones latérales */
-            right: 50px;
-            height: 150px; /* Très haute - arrive presque au cylindre */
+            width: 100%;
+            height: 80px;
+            padding-bottom: env(safe-area-inset-bottom, 20px);
             display: flex;
             justify-content: center;
-            align-items: flex-end; /* Texte en bas */
-            padding-bottom: 20px;
+            align-items: center;
             cursor: grab;
-            background: linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 100%);
         }
 
         .swipe-zone:active {
@@ -288,6 +220,7 @@
             color: rgba(255,255,255,0.4);
             font-size: 14px;
             letter-spacing: 2px;
+            margin-bottom: env(safe-area-inset-bottom, 10px);
         }
 
         /* =====================================================
@@ -476,12 +409,11 @@
             line-height: 1;
         }
 
-        /* Couleurs debug synchronisées avec les dégradés du cylindre */
-        .debug-grid-cell.c0 { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; }
-        .debug-grid-cell.c1 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: #fff; }
-        .debug-grid-cell.c2 { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: #fff; }
-        .debug-grid-cell.c3 { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: #fff; }
-        .debug-grid-cell.c4 { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333; }
+        .debug-grid-cell.c0 { background: #667eea; color: #fff; }
+        .debug-grid-cell.c1 { background: #4facfe; color: #fff; }
+        .debug-grid-cell.c2 { background: #43e97b; color: #fff; }
+        .debug-grid-cell.c3 { background: #fa709a; color: #fff; }
+        .debug-grid-cell.c4 { background: #a8edea; color: #333; }
         .debug-grid-cell.dead { background: #333; color: #666; }
 
         .debug-grid-cell .face-num {
@@ -586,6 +518,127 @@
             font-size: 10px;
         }
 
+        /* Vertical 5 option - style vert */
+        .vertical-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            background: rgba(100,255,100,0.1);
+            border-radius: 4px;
+            border: 1px solid rgba(100,255,100,0.3);
+        }
+
+        .vertical-controls.disabled {
+            opacity: 0.4;
+            border-color: #333;
+        }
+
+        .vertical-controls label {
+            color: #8f8;
+            font-size: 10px;
+        }
+
+        /* C Shape option - style cyan */
+        .cshape-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            background: rgba(100,200,255,0.1);
+            border-radius: 4px;
+            border: 1px solid rgba(100,200,255,0.3);
+        }
+
+        .cshape-controls.disabled {
+            opacity: 0.4;
+            border-color: #333;
+        }
+
+        .cshape-controls label {
+            color: #8cf;
+            font-size: 10px;
+        }
+
+        /* Tetris Mode controls - style orange */
+        .tetris-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            background: rgba(255,165,0,0.15);
+            border-radius: 6px;
+            border: 2px solid rgba(255,165,0,0.5);
+        }
+
+        .tetris-controls.disabled {
+            opacity: 0.4;
+            border-color: #333;
+        }
+
+        .tetris-controls label {
+            color: #ffa500;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        /* Timer slider */
+        .timer-slider {
+            width: 80px;
+            height: 6px;
+            -webkit-appearance: none;
+            background: #333;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .timer-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: #ffa500;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .timer-value {
+            color: #ffa500;
+            font-size: 10px;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        /* Shape options - petits badges */
+        .shape-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 4px;
+        }
+
+        .shape-badge {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            padding: 2px 6px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            border: 1px solid #444;
+            font-size: 9px;
+            color: #888;
+        }
+
+        .shape-badge.active {
+            background: rgba(255,165,0,0.2);
+            border-color: #ffa500;
+            color: #ffa500;
+        }
+
+        .shape-badge input {
+            width: 10px;
+            height: 10px;
+        }
+
         .debug-action {
             margin-top: 8px;
             padding-top: 8px;
@@ -608,6 +661,22 @@
         .debug-action button:hover {
             background: #333;
             border-color: #0f0;
+        }
+
+        /* Bouton Tetris spécial */
+        .debug-action button.tetris-btn {
+            background: rgba(255,165,0,0.3);
+            border-color: #ffa500;
+            color: #ffa500;
+        }
+
+        .debug-action button.tetris-btn:hover {
+            background: rgba(255,165,0,0.5);
+        }
+
+        .debug-action button.tetris-btn.active {
+            background: #ffa500;
+            color: #000;
         }
 
         /* Légende compacte */
@@ -650,7 +719,7 @@
     <button class="debug-toggle" onclick="toggleDebug()">🔧 DEBUG</button>
     
     <div class="debug-panel" id="debugPanel">
-        <h4>🎮 Fusion Square v19 - Gravité Manuelle</h4>
+        <h4>🎮 Fusion Square v20 - Tetris Mode</h4>
         
         <!-- ===================== SECTION HAUTE: Options importantes ===================== -->
         
@@ -670,9 +739,17 @@
                     <input type="checkbox" id="optShowOnCells" onchange="toggleCellDisplay()">
                     <label for="optShowOnCells">Sur cylindre</label>
                 </div>
+                <div class="debug-option">
+                    <input type="checkbox" id="optGravity" checked onchange="toggleGravity()">
+                    <label for="optGravity" style="color:#0f0;font-weight:bold;">🌍 Gravité</label>
+                </div>
+                <div class="debug-option">
+                    <input type="checkbox" id="optFlipPause" checked onchange="toggleFlipGravityPause()">
+                    <label for="optFlipPause" style="color:#4facfe;">⏸️ Pause flip</label>
+                </div>
             </div>
             
-            <!-- Ligne Outline + Option 5 horizontaux -->
+            <!-- Ligne Outline + Options de destruction -->
             <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-top: 6px;">
                 <div class="outline-controls">
                     <input type="checkbox" id="optOutline" checked onchange="toggleOutline()">
@@ -689,6 +766,91 @@
                     <input type="checkbox" id="optHorizontal5" onchange="toggleHorizontal5()">
                     <label for="optHorizontal5">↔️ 5 Horiz.</label>
                 </div>
+            </div>
+            
+            <!-- Ligne Options de pattern de destruction -->
+            <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-top: 6px;">
+                <div class="vertical-controls" id="verticalControls">
+                    <input type="checkbox" id="optVertical5" checked onchange="toggleVertical5()">
+                    <label for="optVertical5">↕️ 5 Vertic.</label>
+                </div>
+                
+                <div class="cshape-controls" id="cshapeControls">
+                    <input type="checkbox" id="optCShape" onchange="toggleCShape()">
+                    <label for="optCShape">🇨 C Shape</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===================== TETRIS MODE ===================== -->
+        <div class="debug-section">
+            <div class="debug-section-title">🧱 TETRIS MODE</div>
+            
+            <!-- Ligne 1: Play/Pause + Vider -->
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <button id="btnPlayPause" onclick="toggleTetrisMode()" style="background:#222;border:2px solid #ffa500;color:#ffa500;padding:8px 16px;border-radius:6px;font-size:14px;font-weight:bold;cursor:pointer;min-width:80px;">
+                    ▶️ PLAY
+                </button>
+                <button onclick="clearGrid()" style="background:#222;border:2px solid #f55;color:#f55;padding:8px 12px;border-radius:6px;font-size:12px;cursor:pointer;">
+                    🗑️ VIDER
+                </button>
+                <span style="color:#888;font-size:11px;">Carrés: <span id="dbgSpawnedCount" style="color:#ffa500;font-weight:bold;">0</span></span>
+            </div>
+            
+            <!-- Ligne 2: Timers -->
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 8px;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="color:#ffa500;font-size:10px;font-weight:bold;">⏱️ Spawn:</span>
+                    <input type="range" class="timer-slider" id="spawnTimer" min="0.5" max="5" step="0.5" value="2" onchange="updateSpawnTimer()" style="width:70px;">
+                    <span id="timerValue" style="color:#ffa500;font-size:11px;min-width:25px;">2s</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="color:#4facfe;font-size:10px;font-weight:bold;">⬇️ Chute:</span>
+                    <input type="range" class="timer-slider" id="fallTimer" min="0" max="5" step="0.5" value="1" onchange="updateFallTimer()" style="width:70px;">
+                    <span id="fallTimerValue" style="color:#4facfe;font-size:11px;min-width:25px;">1s</span>
+                </div>
+            </div>
+            
+            <!-- Ligne 3: Formes 3 carrés -->
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                <span style="color:#43e97b;font-size:11px;font-weight:bold;min-width:65px;">3 carrés:</span>
+                <label class="shape-badge" id="badge-L3" style="padding:4px 10px;font-size:11px;">
+                    <input type="checkbox" id="optShape-L3" onchange="toggleShape('L3')" style="width:14px;height:14px;">
+                    <span>⌐ L</span>
+                </label>
+                <label class="shape-badge" id="badge-I3" style="padding:4px 10px;font-size:11px;">
+                    <input type="checkbox" id="optShape-I3" onchange="toggleShape('I3')" style="width:14px;height:14px;">
+                    <span>― I</span>
+                </label>
+            </div>
+            
+            <!-- Ligne 4: Formes 4 carrés -->
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span style="color:#fa709a;font-size:11px;font-weight:bold;min-width:65px;">4 carrés:</span>
+                <label class="shape-badge" id="badge-T4" style="padding:4px 10px;font-size:11px;">
+                    <input type="checkbox" id="optShape-T4" onchange="toggleShape('T4')" style="width:14px;height:14px;">
+                    <span>⊥ T</span>
+                </label>
+                <label class="shape-badge" id="badge-L4" style="padding:4px 10px;font-size:11px;">
+                    <input type="checkbox" id="optShape-L4" onchange="toggleShape('L4')" style="width:14px;height:14px;">
+                    <span>⌐ L</span>
+                </label>
+                <label class="shape-badge" id="badge-S4" style="padding:4px 10px;font-size:11px;">
+                    <input type="checkbox" id="optShape-S4" onchange="toggleShape('S4')" style="width:14px;height:14px;">
+                    <span>⌐⌐ S</span>
+                </label>
+                <label class="shape-badge" id="badge-Z4" style="padding:4px 10px;font-size:11px;">
+                    <input type="checkbox" id="optShape-Z4" onchange="toggleShape('Z4')" style="width:14px;height:14px;">
+                    <span>⌐⌐ Z</span>
+                </label>
+                <label class="shape-badge" id="badge-I4" style="padding:4px 10px;font-size:11px;">
+                    <input type="checkbox" id="optShape-I4" onchange="toggleShape('I4')" style="width:14px;height:14px;">
+                    <span>― I</span>
+                </label>
+                <label class="shape-badge" id="badge-O4" style="padding:4px 10px;font-size:11px;">
+                    <input type="checkbox" id="optShape-O4" onchange="toggleShape('O4')" style="width:14px;height:14px;">
+                    <span>▢ O</span>
+                </label>
             </div>
         </div>
 
@@ -810,6 +972,14 @@
                         <span class="debug-value" id="dbgDestroying">false</span>
                     </div>
                     <div class="debug-row-compact">
+                        <span class="debug-label">🌍 Gravité:</span>
+                        <span class="debug-value" id="dbgGravity">ON</span>
+                    </div>
+                    <div class="debug-row-compact">
+                        <span class="debug-label">Applying:</span>
+                        <span class="debug-value" id="dbgApplyingGravity">false</span>
+                    </div>
+                    <div class="debug-row-compact">
                         <span class="debug-label">🔲 Outline:</span>
                         <span class="debug-value" id="dbgOutline">OFF</span>
                     </div>
@@ -818,12 +988,20 @@
                         <span class="debug-value" id="dbgHorizontal5">OFF</span>
                     </div>
                     <div class="debug-row-compact">
+                        <span class="debug-label">↕️ Vertic5:</span>
+                        <span class="debug-value" id="dbgVertical5">ON</span>
+                    </div>
+                    <div class="debug-row-compact">
+                        <span class="debug-label">🇨 C Shape:</span>
+                        <span class="debug-value" id="dbgCShape">OFF</span>
+                    </div>
+                    <div class="debug-row-compact">
                         <span class="debug-label">🔄 Flipping:</span>
                         <span class="debug-value" id="dbgFlipping">false</span>
                     </div>
                     <div class="debug-row-compact">
-                        <span class="debug-label">⬇️ Last Gravity:</span>
-                        <span class="debug-value" id="dbgLastGravity">-</span>
+                        <span class="debug-label">⏸️ Pausée:</span>
+                        <span class="debug-value" id="dbgGravityPaused">false</span>
                     </div>
                     
                     <div class="debug-column-title" style="margin-top:6px;">📊 DIFFICULTÉ</div>
@@ -865,24 +1043,9 @@
     </div>
 
     <div class="container">
-        <div class="game-area">
-            <!-- Zone gravité gauche -->
-            <div class="gravity-zone left" id="gravityZoneLeft">
-                <span class="hint-vertical">↑ SWIPE ↓</span>
-            </div>
-
-            <!-- Scène centrale -->
-            <div class="scene" id="scene">
-                <div class="cylinder" id="cylinder"></div>
-            </div>
-
-            <!-- Zone gravité droite -->
-            <div class="gravity-zone right" id="gravityZoneRight">
-                <span class="hint-vertical">↑ SWIPE ↓</span>
-            </div>
+        <div class="scene" id="scene">
+            <div class="cylinder" id="cylinder"></div>
         </div>
-
-        <!-- Zone swipe rotation globale -->
         <div class="swipe-zone" id="swipeZone">
             <div class="hint"><span>← SWIPE →</span></div>
         </div>
@@ -919,8 +1082,7 @@
             maxDeltaPixels: 80,
             directionThreshold: 18,
             verticalSwipeThreshold: 50,  // Pixels pour déclencher un flip
-            horizontalMaxForVertical: 30, // Max horizontal autorisé pendant un swipe vertical
-            gravitySwipeThreshold: 40     // Seuil pour déclencher gravité manuelle
+            horizontalMaxForVertical: 30 // Max horizontal autorisé pendant un swipe vertical
         };
 
         // =====================================================
@@ -1166,9 +1328,9 @@
         let dbgTouchXOffset = 0;
         let showCellInfo = false;
         
-        // Gravité manuelle (plus de gravité automatique)
+        // Gravité
+        let gravityEnabled = true;
         let isApplyingGravity = false;
-        let lastGravityAction = '-'; // Pour debug
 
         // Outline
         let outlineEnabled = true;
@@ -1176,9 +1338,87 @@
 
         // Column Flip
         let isFlipping = false;
+        let gravityPausedAfterFlip = false; // Gravité suspendue après un flip
+        let flipGravityPauseEnabled = true; // Option pour activer/désactiver cette fonctionnalité
 
         // 5 Carrés Horizontaux consécutifs (s'annule si activé avec vertical)
         let horizontal5Enabled = false;
+
+        // 5 Carrés Verticaux (colonne) - activé par défaut
+        let vertical5Enabled = true;
+
+        // Motif en C de 5 carrés
+        let cShapeEnabled = false;
+
+        // =====================================================
+        // TETRIS MODE - VARIABLES
+        // =====================================================
+        let tetrisModeEnabled = false;
+        let tetrisSpawnInterval = null;
+        let tetrisSpawnDelay = 2000; // 2 secondes par défaut
+        let tetrisFallDelay = 1000; // 1 seconde avant chute par défaut
+        let tetrisSpawnedCount = 0;
+        
+        // Formes actives pour détection
+        let shapesEnabled = {
+            // 3 carrés
+            'L3': false,
+            'I3': false,
+            // 4 carrés
+            'T4': false,
+            'L4': false,
+            'S4': false,
+            'Z4': false,
+            'I4': false,
+            'O4': false
+        };
+        
+        // Définitions des formes (relatives à une position de départ)
+        // Chaque forme a plusieurs orientations possibles
+        const SHAPE_DEFINITIONS = {
+            // === FORMES 3 CARRÉS ===
+            'L3': [
+                // L classique
+                [{df: 0, dr: 0}, {df: 0, dr: 1}, {df: 1, dr: 1}],
+                [{df: 0, dr: 0}, {df: 1, dr: 0}, {df: 0, dr: 1}],
+                [{df: 0, dr: 0}, {df: 1, dr: 0}, {df: 1, dr: 1}],
+                [{df: 0, dr: 0}, {df: 0, dr: 1}, {df: -1, dr: 1}]
+            ],
+            'I3': [
+                // Ligne horizontale
+                [{df: 0, dr: 0}, {df: 1, dr: 0}, {df: 2, dr: 0}],
+                // Ligne verticale
+                [{df: 0, dr: 0}, {df: 0, dr: 1}, {df: 0, dr: 2}]
+            ],
+            // === FORMES 4 CARRÉS ===
+            'T4': [
+                [{df: 0, dr: 0}, {df: 1, dr: 0}, {df: 2, dr: 0}, {df: 1, dr: 1}],
+                [{df: 0, dr: 0}, {df: 0, dr: 1}, {df: 0, dr: 2}, {df: 1, dr: 1}],
+                [{df: 0, dr: 1}, {df: 1, dr: 0}, {df: 1, dr: 1}, {df: 2, dr: 1}],
+                [{df: 1, dr: 0}, {df: 1, dr: 1}, {df: 1, dr: 2}, {df: 0, dr: 1}]
+            ],
+            'L4': [
+                [{df: 0, dr: 0}, {df: 0, dr: 1}, {df: 0, dr: 2}, {df: 1, dr: 2}],
+                [{df: 0, dr: 0}, {df: 1, dr: 0}, {df: 2, dr: 0}, {df: 0, dr: 1}],
+                [{df: 0, dr: 0}, {df: 1, dr: 0}, {df: 1, dr: 1}, {df: 1, dr: 2}],
+                [{df: 2, dr: 0}, {df: 0, dr: 1}, {df: 1, dr: 1}, {df: 2, dr: 1}]
+            ],
+            'S4': [
+                [{df: 1, dr: 0}, {df: 2, dr: 0}, {df: 0, dr: 1}, {df: 1, dr: 1}],
+                [{df: 0, dr: 0}, {df: 0, dr: 1}, {df: 1, dr: 1}, {df: 1, dr: 2}]
+            ],
+            'Z4': [
+                [{df: 0, dr: 0}, {df: 1, dr: 0}, {df: 1, dr: 1}, {df: 2, dr: 1}],
+                [{df: 1, dr: 0}, {df: 0, dr: 1}, {df: 1, dr: 1}, {df: 0, dr: 2}]
+            ],
+            'I4': [
+                [{df: 0, dr: 0}, {df: 1, dr: 0}, {df: 2, dr: 0}, {df: 3, dr: 0}],
+                [{df: 0, dr: 0}, {df: 0, dr: 1}, {df: 0, dr: 2}, {df: 0, dr: 3}]
+            ],
+            'O4': [
+                [{df: 0, dr: 0}, {df: 1, dr: 0}, {df: 0, dr: 1}, {df: 1, dr: 1}]
+            ]
+        };
 
         function initGrid() {
             gridByFace = [];
@@ -1461,6 +1701,12 @@
         function triggerSwap(frontFace, row) {
             if (isSwapping || frontFace === null || row === null) return;
             
+            // Réactiver la gravité si elle était pausée après un flip
+            if (gravityPausedAfterFlip) {
+                gravityPausedAfterFlip = false;
+                console.log('[GRAVITY] Réactivée après swap');
+            }
+            
             const backFace = getBackFace(frontFace);
             
             const frontAlive = cellState[frontFace][row];
@@ -1536,8 +1782,12 @@
                 isSwapping = false;
                 cancelLongPress();
                 
-                // Vérifier les lignes (pas de gravité automatique)
+                // Vérifier les lignes puis appliquer la gravité immédiatement
                 checkVerticalLines();
+                // Si pas de destruction en cours, appliquer la gravité
+                if (!isDestroying) {
+                    applyGravity();
+                }
             }, 400);
         }
         
@@ -1571,18 +1821,21 @@
         }
 
         // =====================================================
-        // VÉRIFICATION LIGNES VERTICALES ET HORIZONTALES
+        // VÉRIFICATION LIGNES VERTICALES, HORIZONTALES ET C-SHAPE
         // =====================================================
         function checkVerticalLines() {
             if (isDestroying) return;
             
-            // Collecter TOUTES les colonnes verticales valides
-            const allColumnsToDestroy = [];
+            // Collecter tous les patterns à détruire
+            const allPatternsToDestroy = [];
             
-            for (let f = 0; f < FACES; f++) {
-                const columnData = getValidColumn(f);
-                if (columnData) {
-                    allColumnsToDestroy.push(columnData);
+            // Collecter les colonnes verticales si l'option est activée
+            if (vertical5Enabled) {
+                for (let f = 0; f < FACES; f++) {
+                    const columnData = getValidColumn(f);
+                    if (columnData) {
+                        allPatternsToDestroy.push(columnData);
+                    }
                 }
             }
             
@@ -1590,14 +1843,184 @@
             if (horizontal5Enabled) {
                 const horizontalLines = checkHorizontalLines();
                 if (horizontalLines.length > 0) {
-                    allColumnsToDestroy.push(...horizontalLines);
+                    allPatternsToDestroy.push(...horizontalLines);
                 }
             }
             
-            // Si des colonnes/lignes à détruire, les traiter toutes
-            if (allColumnsToDestroy.length > 0) {
-                destroyMultipleColumns(allColumnsToDestroy);
+            // Collecter les motifs en C si l'option est activée
+            if (cShapeEnabled) {
+                const cShapePatterns = checkCShapePatterns();
+                if (cShapePatterns.length > 0) {
+                    allPatternsToDestroy.push(...cShapePatterns);
+                }
             }
+            
+            // Collecter les formes Tetris (3 et 4 carrés)
+            const tetrisPatterns = checkTetrisShapes();
+            if (tetrisPatterns.length > 0) {
+                allPatternsToDestroy.push(...tetrisPatterns);
+            }
+            
+            // Si des patterns à détruire, les traiter tous
+            if (allPatternsToDestroy.length > 0) {
+                destroyMultipleColumns(allPatternsToDestroy);
+            }
+        }
+        
+        /**
+         * Détecte les motifs en C de 5 carrés de même couleur
+         * Un C est composé de 3 carrés alignés + 2 carrés perpendiculaires aux extrémités
+         * 4 orientations possibles: ⊂ (ouvert à droite), ⊃ (ouvert à gauche), ∩ (ouvert en bas), ∪ (ouvert en haut)
+         */
+        function checkCShapePatterns() {
+            const patternsFound = [];
+            const processedKeys = new Set(); // Pour éviter les doublons
+            
+            // Pour chaque face et row, chercher les motifs en C possibles
+            for (let f = 0; f < FACES; f++) {
+                for (let r = 0; r < ROWS; r++) {
+                    // Vérifier les 4 orientations de C à partir de ce point
+                    
+                    // ⊂ Ouvert à droite (barre verticale à gauche, branches vers la droite)
+                    // Position: le point actuel est le coin supérieur gauche du C
+                    const cRight = checkCShapeOrientation(f, r, 'right');
+                    if (cRight && !isDuplicatePattern(cRight, processedKeys)) {
+                        patternsFound.push(cRight);
+                        markPatternProcessed(cRight, processedKeys);
+                    }
+                    
+                    // ⊃ Ouvert à gauche (barre verticale à droite, branches vers la gauche)
+                    const cLeft = checkCShapeOrientation(f, r, 'left');
+                    if (cLeft && !isDuplicatePattern(cLeft, processedKeys)) {
+                        patternsFound.push(cLeft);
+                        markPatternProcessed(cLeft, processedKeys);
+                    }
+                    
+                    // ∪ Ouvert en haut (barre horizontale en bas, branches vers le haut)
+                    const cUp = checkCShapeOrientation(f, r, 'up');
+                    if (cUp && !isDuplicatePattern(cUp, processedKeys)) {
+                        patternsFound.push(cUp);
+                        markPatternProcessed(cUp, processedKeys);
+                    }
+                    
+                    // ∩ Ouvert en bas (barre horizontale en haut, branches vers le bas)
+                    const cDown = checkCShapeOrientation(f, r, 'down');
+                    if (cDown && !isDuplicatePattern(cDown, processedKeys)) {
+                        patternsFound.push(cDown);
+                        markPatternProcessed(cDown, processedKeys);
+                    }
+                }
+            }
+            
+            return patternsFound;
+        }
+        
+        /**
+         * Vérifie si un motif en C existe dans une orientation donnée
+         * @param startFace - Face de départ (coin du C)
+         * @param startRow - Row de départ
+         * @param orientation - 'right', 'left', 'up', 'down' (direction d'ouverture)
+         */
+        function checkCShapeOrientation(startFace, startRow, orientation) {
+            // Définir les 5 positions du C selon l'orientation
+            // Le C est composé de: 3 carrés pour la barre + 2 carrés pour les branches
+            let positions = [];
+            
+            switch (orientation) {
+                case 'right': // ⊂ - barre verticale (3) + branches à droite (2)
+                    // Barre verticale de 3 carrés
+                    // Branche haute vers la droite
+                    // Branche basse vers la droite
+                    if (startRow + 2 >= ROWS) return null; // Pas assez d'espace vertical
+                    positions = [
+                        { f: startFace, r: startRow },     // Haut de la barre
+                        { f: startFace, r: startRow + 1 }, // Milieu de la barre
+                        { f: startFace, r: startRow + 2 }, // Bas de la barre
+                        { f: (startFace + 1) % FACES, r: startRow },     // Branche haute
+                        { f: (startFace + 1) % FACES, r: startRow + 2 }  // Branche basse
+                    ];
+                    break;
+                    
+                case 'left': // ⊃ - barre verticale (3) + branches à gauche (2)
+                    if (startRow + 2 >= ROWS) return null;
+                    positions = [
+                        { f: startFace, r: startRow },
+                        { f: startFace, r: startRow + 1 },
+                        { f: startFace, r: startRow + 2 },
+                        { f: ((startFace - 1) % FACES + FACES) % FACES, r: startRow },
+                        { f: ((startFace - 1) % FACES + FACES) % FACES, r: startRow + 2 }
+                    ];
+                    break;
+                    
+                case 'up': // ∪ - barre horizontale (3) + branches vers le haut (2)
+                    if (startRow < 1) return null; // Pas assez d'espace vers le haut
+                    positions = [
+                        { f: startFace, r: startRow },                           // Gauche de la barre
+                        { f: (startFace + 1) % FACES, r: startRow },             // Milieu de la barre
+                        { f: (startFace + 2) % FACES, r: startRow },             // Droite de la barre
+                        { f: startFace, r: startRow - 1 },                       // Branche gauche (haut)
+                        { f: (startFace + 2) % FACES, r: startRow - 1 }          // Branche droite (haut)
+                    ];
+                    break;
+                    
+                case 'down': // ∩ - barre horizontale (3) + branches vers le bas (2)
+                    if (startRow + 1 >= ROWS) return null;
+                    positions = [
+                        { f: startFace, r: startRow },
+                        { f: (startFace + 1) % FACES, r: startRow },
+                        { f: (startFace + 2) % FACES, r: startRow },
+                        { f: startFace, r: startRow + 1 },
+                        { f: (startFace + 2) % FACES, r: startRow + 1 }
+                    ];
+                    break;
+            }
+            
+            // Convertir les positions visuelles en positions data (en tenant compte des rotations des couronnes)
+            const dataPositions = positions.map(pos => {
+                const rowRotationOffset = Math.round(crownRotations[pos.r] / ANGLE_STEP);
+                const dataFace = ((pos.f - rowRotationOffset) % FACES + FACES) % FACES;
+                return { f: dataFace, r: pos.r };
+            });
+            
+            // Vérifier que toutes les cellules sont vivantes et de même couleur
+            let firstColor = null;
+            for (const pos of dataPositions) {
+                if (!cellState[pos.f][pos.r]) {
+                    return null; // Cellule morte
+                }
+                const color = gridByFace[pos.f][pos.r];
+                if (firstColor === null) {
+                    firstColor = color;
+                } else if (color !== firstColor) {
+                    return null; // Couleurs différentes
+                }
+            }
+            
+            // Motif valide trouvé !
+            console.log(`[C-SHAPE] Motif ${orientation} trouvé, couleur ${firstColor}`);
+            
+            return {
+                type: 'cshape',
+                orientation: orientation,
+                dataPositions: dataPositions,
+                color: firstColor
+            };
+        }
+        
+        /**
+         * Vérifie si un pattern a déjà été traité (pour éviter les doublons)
+         */
+        function isDuplicatePattern(pattern, processedKeys) {
+            const key = pattern.dataPositions.map(p => `${p.f}-${p.r}`).sort().join('|');
+            return processedKeys.has(key);
+        }
+        
+        /**
+         * Marque un pattern comme traité
+         */
+        function markPatternProcessed(pattern, processedKeys) {
+            const key = pattern.dataPositions.map(p => `${p.f}-${p.r}`).sort().join('|');
+            processedKeys.add(key);
         }
         
         /**
@@ -1700,7 +2123,7 @@
         }
         
         /**
-         * Détruit plusieurs colonnes/lignes simultanément
+         * Détruit plusieurs colonnes/lignes/patterns simultanément
          */
         function destroyMultipleColumns(columns) {
             isDestroying = true;
@@ -1715,6 +2138,14 @@
                         const key = `${df}-${col.row}`;
                         if (!allCellsToDestroy.find(c => c.key === key)) {
                             allCellsToDestroy.push({ face: df, row: col.row, key });
+                        }
+                    });
+                } else if (col.type === 'cshape' || col.type === 'tetris') {
+                    // Motif en C ou forme Tetris: positions définies dans dataPositions
+                    col.dataPositions.forEach(pos => {
+                        const key = `${pos.f}-${pos.r}`;
+                        if (!allCellsToDestroy.find(c => c.key === key)) {
+                            allCellsToDestroy.push({ face: pos.f, row: pos.r, key });
                         }
                     });
                 } else {
@@ -1762,7 +2193,10 @@
                 isDestroying = false;
                 updateDebug();
                 updateGhostFrontClasses();
-                // PAS de gravité automatique - le joueur contrôle
+                // Après destruction, appliquer la gravité
+                setTimeout(() => {
+                    applyGravity();
+                }, 100);
             }, totalDelay);
         }
 
@@ -1864,18 +2298,26 @@
         }
 
         // =====================================================
-        // COLUMN FLIP SYSTEM (Swipe Vertical)
+        // COLUMN CYCLE SYSTEM (Swipe Vertical - Rotation cyclique)
         // =====================================================
         
         /**
-         * Effectue un flip miroir vertical sur une colonne visuelle
-         * Row 0 ↔ Row 4, Row 1 ↔ Row 3, Row 2 reste fixe
+         * Effectue une rotation cyclique sur une colonne visuelle
+         * Les carrés glissent vers le haut ou le bas en boucle
+         * direction: 1 = vers le bas (le haut réapparaît en bas), -1 = vers le haut
          */
-        function triggerColumnFlip(visualCol) {
+        function triggerColumnCycle(visualCol, direction = 1) {
             if (isFlipping || isSwapping || isDestroying || isApplyingGravity) return;
             
             isFlipping = true;
-            console.log(`[FLIP] Colonne visuelle ${visualCol}`);
+            
+            // Si l'option est activée, suspendre la gravité après ce cycle
+            if (flipGravityPauseEnabled) {
+                gravityPausedAfterFlip = true;
+                console.log(`[CYCLE] Colonne visuelle ${visualCol} direction ${direction > 0 ? '↓' : '↑'} - Gravité SUSPENDUE`);
+            } else {
+                console.log(`[CYCLE] Colonne visuelle ${visualCol} direction ${direction > 0 ? '↓' : '↑'}`);
+            }
             
             // Récupérer les faces data pour chaque row de cette colonne visuelle
             const columnFaces = [];
@@ -1893,57 +2335,72 @@
                 savedStates.push(cellState[df][r]);
             }
             
-            // Effectuer le miroir : 0↔4, 1↔3, 2 reste
-            // Nouvelle position = 4 - ancienne position
+            // Effectuer la rotation cyclique
+            // direction = 1 (swipe vers le bas): row 0 reçoit ce qui était en row 4, etc.
+            // direction = -1 (swipe vers le haut): row 0 reçoit ce qui était en row 1, etc.
             for (let r = 0; r < ROWS; r++) {
-                const mirrorR = ROWS - 1 - r; // 0→4, 1→3, 2→2, 3→1, 4→0
+                const sourceR = ((r - direction) % ROWS + ROWS) % ROWS;
                 const df = columnFaces[r];
                 
-                gridByFace[df][r] = savedColors[mirrorR];
-                cellState[df][r] = savedStates[mirrorR];
+                gridByFace[df][r] = savedColors[sourceR];
+                cellState[df][r] = savedStates[sourceR];
             }
             
             // Animation visuelle
-            animateColumnFlip(columnFaces, () => {
+            animateColumnCycle(columnFaces, direction, () => {
                 isFlipping = false;
                 updateDebug();
                 
-                // Vérifier les lignes après le flip (pas de gravité auto)
+                // Vérifier les lignes après le cycle
                 setTimeout(() => {
                     checkVerticalLines();
+                    // Puis gravité si pas de destruction ET si pas pausée après flip
+                    setTimeout(() => {
+                        if (!isDestroying && !gravityPausedAfterFlip) {
+                            applyGravity();
+                        }
+                    }, 100);
                 }, 50);
             });
         }
         
         /**
-         * Animation du flip de colonne
+         * Animation de la rotation cyclique de colonne
+         * Effet de "porte magique" : le carré disparaît progressivement d'un côté
+         * et réapparaît de l'autre
          */
-        function animateColumnFlip(columnFaces, callback) {
-            // Ajouter une classe d'animation aux cellules concernées
+        function animateColumnCycle(columnFaces, direction, callback) {
             const cells = [];
             for (let r = 0; r < ROWS; r++) {
                 const df = columnFaces[r];
                 const cell = document.querySelector(`.cell[data-face="${df}"][data-row="${r}"]`);
                 if (cell) {
                     cells.push({ cell, face: df, row: r });
-                    cell.style.transition = 'transform 0.3s ease-in-out, opacity 0.15s';
-                    cell.style.opacity = '0.5';
-                    cell.style.transform += ' scale(0.8)';
                 }
             }
             
-            // À mi-chemin, mettre à jour l'apparence
+            // Phase 1: Compression vers le centre avec léger décalage
+            cells.forEach(({ cell, face, row }) => {
+                const angle = face * ANGLE_STEP;
+                cell.style.transition = 'transform 0.15s ease-in, opacity 0.15s ease-in';
+                cell.style.opacity = '0.6';
+                // Décalage vertical selon la direction
+                const offset = direction > 0 ? 15 : -15;
+                cell.style.transform = `rotateY(${angle}deg) translateZ(${RADIUS}px) translateY(${offset}px) scale(0.9)`;
+            });
+            
+            // Phase 2: Mise à jour de l'apparence et expansion
             setTimeout(() => {
                 cells.forEach(({ cell, face, row }) => {
                     updateCellAppearance(cell, face, row);
                 });
             }, 150);
             
-            // Fin de l'animation
+            // Phase 3: Retour à la position normale
             setTimeout(() => {
                 cells.forEach(({ cell, face, row }) => {
                     const angle = face * ANGLE_STEP;
-                    cell.style.transition = 'transform 0.3s ease-out';
+                    cell.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
                     cell.style.opacity = cellState[face][row] ? '1' : '0';
                     cell.style.transform = `rotateY(${angle}deg) translateZ(${RADIUS}px)`;
                 });
@@ -1955,8 +2412,8 @@
                     });
                     updateGhostFrontClasses();
                     if (callback) callback();
-                }, 300);
-            }, 150);
+                }, 200);
+            }, 180);
         }
         
         function toggleOutline() {
@@ -2035,14 +2492,34 @@
         function snapGlobal() {
             globalRotation = snapToViewPosition(globalRotation);
             updateAllRotations();
+            
+            // Réactiver la gravité si elle était pausée après un flip
+            if (gravityPausedAfterFlip) {
+                gravityPausedAfterFlip = false;
+                console.log('[GRAVITY] Réactivée après rotation globale');
+                // Appliquer la gravité maintenant
+                setTimeout(() => {
+                    if (!isDestroying) applyGravity();
+                }, 100);
+            }
         }
 
         function snapCrown(crownIndex) {
             crownRotations[crownIndex] = Math.round(crownRotations[crownIndex] / ANGLE_STEP) * ANGLE_STEP;
             updateAllRotations();
             
+            // Réactiver la gravité si elle était pausée après un flip
+            if (gravityPausedAfterFlip) {
+                gravityPausedAfterFlip = false;
+                console.log('[GRAVITY] Réactivée après rotation');
+            }
+            
             setTimeout(() => {
                 checkVerticalLines();
+                // Appliquer la gravité après le snap
+                setTimeout(() => {
+                    if (!isDestroying) applyGravity();
+                }, 100);
             }, 300);
         }
 
@@ -2057,6 +2534,16 @@
         function toggleCellDisplay() {
             showCellInfo = document.getElementById('optShowOnCells').checked;
             buildCylinder();
+        }
+
+        function toggleGravity() {
+            gravityEnabled = document.getElementById('optGravity').checked;
+            console.log('[GRAVITY] ' + (gravityEnabled ? 'Activée' : 'Désactivée'));
+        }
+
+        function toggleFlipGravityPause() {
+            flipGravityPauseEnabled = document.getElementById('optFlipPause').checked;
+            console.log('[FLIP PAUSE] ' + (flipGravityPauseEnabled ? 'Activée' : 'Désactivée'));
         }
 
         function toggleHorizontal5() {
@@ -2081,6 +2568,273 @@
             }
         }
 
+        function toggleVertical5() {
+            vertical5Enabled = document.getElementById('optVertical5').checked;
+            console.log('[VERTICAL 5] ' + (vertical5Enabled ? 'Activée' : 'Désactivée'));
+            
+            // Mise à jour visuelle du contrôle
+            const controls = document.getElementById('verticalControls');
+            if (vertical5Enabled) {
+                controls.classList.remove('disabled');
+            } else {
+                controls.classList.add('disabled');
+            }
+            
+            updateDebug();
+            
+            // Vérifier immédiatement les lignes si activé
+            if (vertical5Enabled) {
+                setTimeout(() => {
+                    checkVerticalLines();
+                }, 100);
+            }
+        }
+
+        function toggleCShape() {
+            cShapeEnabled = document.getElementById('optCShape').checked;
+            console.log('[C SHAPE] ' + (cShapeEnabled ? 'Activée' : 'Désactivée'));
+            
+            // Mise à jour visuelle du contrôle
+            const controls = document.getElementById('cshapeControls');
+            if (cShapeEnabled) {
+                controls.classList.remove('disabled');
+            } else {
+                controls.classList.add('disabled');
+            }
+            
+            updateDebug();
+            
+            // Vérifier immédiatement les motifs si activé
+            if (cShapeEnabled) {
+                setTimeout(() => {
+                    checkVerticalLines();
+                }, 100);
+            }
+        }
+
+        // =====================================================
+        // TETRIS MODE - FONCTIONS
+        // =====================================================
+        
+        function toggleTetrisMode() {
+            tetrisModeEnabled = !tetrisModeEnabled;
+            console.log('[TETRIS] ' + (tetrisModeEnabled ? 'PLAY' : 'PAUSE'));
+            
+            const btn = document.getElementById('btnPlayPause');
+            if (tetrisModeEnabled) {
+                btn.innerHTML = '⏸️ PAUSE';
+                btn.style.borderColor = '#0f0';
+                btn.style.color = '#0f0';
+                startTetrisSpawn();
+            } else {
+                btn.innerHTML = '▶️ PLAY';
+                btn.style.borderColor = '#ffa500';
+                btn.style.color = '#ffa500';
+                stopTetrisSpawn();
+            }
+            
+            updateDebug();
+        }
+        
+        function updateSpawnTimer() {
+            const slider = document.getElementById('spawnTimer');
+            tetrisSpawnDelay = parseFloat(slider.value) * 1000;
+            document.getElementById('timerValue').textContent = slider.value + 's';
+            
+            // Si le mode est actif, redémarrer avec le nouveau délai
+            if (tetrisModeEnabled) {
+                stopTetrisSpawn();
+                startTetrisSpawn();
+            }
+        }
+        
+        function updateFallTimer() {
+            const slider = document.getElementById('fallTimer');
+            tetrisFallDelay = parseFloat(slider.value) * 1000;
+            document.getElementById('fallTimerValue').textContent = slider.value + 's';
+        }
+        
+        function toggleShape(shapeName) {
+            shapesEnabled[shapeName] = document.getElementById(`optShape-${shapeName}`).checked;
+            
+            // Mise à jour visuelle du badge
+            const badge = document.getElementById(`badge-${shapeName}`);
+            if (shapesEnabled[shapeName]) {
+                badge.classList.add('active');
+            } else {
+                badge.classList.remove('active');
+            }
+            
+            console.log(`[SHAPE] ${shapeName}: ${shapesEnabled[shapeName] ? 'ON' : 'OFF'}`);
+            
+            // Vérifier immédiatement les formes si activé
+            if (shapesEnabled[shapeName]) {
+                setTimeout(() => {
+                    checkVerticalLines();
+                }, 100);
+            }
+        }
+        
+        function startTetrisSpawn() {
+            if (tetrisSpawnInterval) return;
+            
+            console.log(`[TETRIS] Démarrage spawn (${tetrisSpawnDelay}ms)`);
+            
+            // Spawner un premier carré immédiatement
+            spawnRandomSquare();
+            
+            // Puis continuer à intervalle régulier
+            tetrisSpawnInterval = setInterval(() => {
+                spawnRandomSquare();
+            }, tetrisSpawnDelay);
+        }
+        
+        function stopTetrisSpawn() {
+            if (tetrisSpawnInterval) {
+                clearInterval(tetrisSpawnInterval);
+                tetrisSpawnInterval = null;
+            }
+            console.log('[TETRIS] Spawn arrêté');
+        }
+        
+        function spawnRandomSquare() {
+            if (isDestroying || isApplyingGravity) return;
+            
+            // Trouver une face aléatoire sur la row 0 qui est vide
+            const availableFaces = [];
+            for (let f = 0; f < FACES; f++) {
+                // Tenir compte de la rotation de la couronne 0
+                const rowRotationOffset = Math.round(crownRotations[0] / ANGLE_STEP);
+                const dataFace = ((f - rowRotationOffset) % FACES + FACES) % FACES;
+                
+                if (!cellState[dataFace][0]) {
+                    availableFaces.push(dataFace);
+                }
+            }
+            
+            if (availableFaces.length === 0) {
+                console.log('[TETRIS] Row 0 pleine !');
+                return;
+            }
+            
+            // Choisir une face aléatoire
+            const randomFace = availableFaces[Math.floor(Math.random() * availableFaces.length)];
+            
+            // Choisir une couleur aléatoire
+            const randomColor = Math.floor(Math.random() * COLORS);
+            
+            // Faire apparaître le carré
+            gridByFace[randomFace][0] = randomColor;
+            cellState[randomFace][0] = true;
+            
+            tetrisSpawnedCount++;
+            document.getElementById('dbgSpawnedCount').textContent = tetrisSpawnedCount;
+            
+            console.log(`[TETRIS] Spawn F${randomFace}/R0 couleur ${randomColor} - chute dans ${tetrisFallDelay}ms`);
+            
+            // Reconstruire le visuel
+            buildCylinder();
+            updateDebug();
+            
+            // Attendre le délai de chute PUIS appliquer la gravité
+            setTimeout(() => {
+                if (!isDestroying && tetrisModeEnabled) {
+                    applyGravity();
+                }
+            }, tetrisFallDelay);
+        }
+        
+        function clearGrid() {
+            console.log('[TETRIS] Vidage de la grille');
+            
+            // Mettre toutes les cellules en état "détruit"
+            for (let f = 0; f < FACES; f++) {
+                for (let r = 0; r < ROWS; r++) {
+                    cellState[f][r] = false;
+                }
+            }
+            
+            tetrisSpawnedCount = 0;
+            document.getElementById('dbgSpawnedCount').textContent = '0';
+            
+            buildCylinder();
+            updateDebug();
+        }
+        
+        /**
+         * Vérifie les formes Tetris (3 et 4 carrés)
+         */
+        function checkTetrisShapes() {
+            const patternsFound = [];
+            const processedKeys = new Set();
+            
+            // Pour chaque forme activée
+            for (const [shapeName, enabled] of Object.entries(shapesEnabled)) {
+                if (!enabled) continue;
+                
+                const shapeVariants = SHAPE_DEFINITIONS[shapeName];
+                if (!shapeVariants) continue;
+                
+                // Pour chaque variante de la forme
+                for (const variant of shapeVariants) {
+                    // Pour chaque position de départ possible
+                    for (let f = 0; f < FACES; f++) {
+                        for (let r = 0; r < ROWS; r++) {
+                            const pattern = checkShapeAt(f, r, variant, shapeName);
+                            if (pattern && !isDuplicatePattern(pattern, processedKeys)) {
+                                patternsFound.push(pattern);
+                                markPatternProcessed(pattern, processedKeys);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return patternsFound;
+        }
+        
+        /**
+         * Vérifie si une forme existe à une position donnée
+         */
+        function checkShapeAt(startFace, startRow, variant, shapeName) {
+            const dataPositions = [];
+            let firstColor = null;
+            
+            for (const offset of variant) {
+                const f = ((startFace + offset.df) % FACES + FACES) % FACES;
+                const r = startRow + offset.dr;
+                
+                // Vérifier les limites
+                if (r < 0 || r >= ROWS) return null;
+                
+                // Convertir en position data (tenir compte des rotations)
+                const rowRotationOffset = Math.round(crownRotations[r] / ANGLE_STEP);
+                const dataFace = ((f - rowRotationOffset) % FACES + FACES) % FACES;
+                
+                // Vérifier si la cellule est vivante
+                if (!cellState[dataFace][r]) return null;
+                
+                // Vérifier la couleur
+                const color = gridByFace[dataFace][r];
+                if (firstColor === null) {
+                    firstColor = color;
+                } else if (color !== firstColor) {
+                    return null;
+                }
+                
+                dataPositions.push({ f: dataFace, r: r });
+            }
+            
+            console.log(`[SHAPE] ${shapeName} trouvé, couleur ${firstColor}`);
+            
+            return {
+                type: 'tetris',
+                shapeName: shapeName,
+                dataPositions: dataPositions,
+                color: firstColor
+            };
+        }
+
         // =====================================================
         // GESTION DES PALETTES ET MAPPINGS
         // =====================================================
@@ -2092,11 +2846,11 @@
             // Mettre à jour le CSS dynamiquement
             const styleSheet = document.styleSheets[0];
             
-            // Supprimer les anciennes règles de couleur (cylindre ET debug)
+            // Supprimer les anciennes règles de couleur
             const rulesToDelete = [];
             for (let i = 0; i < styleSheet.cssRules.length; i++) {
                 const rule = styleSheet.cssRules[i];
-                if (rule.selectorText && (rule.selectorText.startsWith('.color-') || rule.selectorText.startsWith('.debug-grid-cell.c'))) {
+                if (rule.selectorText && rule.selectorText.startsWith('.color-')) {
                     rulesToDelete.push(i);
                 }
             }
@@ -2105,15 +2859,9 @@
                 styleSheet.deleteRule(rulesToDelete[i]);
             }
             
-            // Ajouter les nouvelles règles pour le cylindre
+            // Ajouter les nouvelles règles
             for (let i = 0; i < 5; i++) {
                 const rule = `.color-${i} { background: ${palette.colors[i]}; color: ${palette.textColors[i]}; }`;
-                styleSheet.insertRule(rule, styleSheet.cssRules.length);
-            }
-            
-            // Ajouter les nouvelles règles pour la grille debug (mêmes couleurs)
-            for (let i = 0; i < 5; i++) {
-                const rule = `.debug-grid-cell.c${i} { background: ${palette.colors[i]}; color: ${palette.textColors[i]}; }`;
                 styleSheet.insertRule(rule, styleSheet.cssRules.length);
             }
             
@@ -2122,7 +2870,6 @@
             
             console.log(`[PALETTE] ${palette.name}`);
             buildCylinder();
-            updateDebugGrid(); // Rafraîchir la grille debug
         }
         
         function loadMapping(mappingName) {
@@ -2137,7 +2884,7 @@
             // Reset avec le nouveau mapping
             globalRotation = INITIAL_ROTATION;
             crownRotations = [0, 0, 0, 0, 0];
-            lastGravityAction = '-';
+            gravityPausedAfterFlip = false;
             cancelLongPress();
             initGrid();
             buildCylinder();
@@ -2146,19 +2893,23 @@
         }
 
         // =====================================================
-        // SYSTÈME DE GRAVITÉ MANUELLE
+        // SYSTÈME DE GRAVITÉ
         // =====================================================
         
         /**
-         * Applique la gravité (vers le bas) - UNE SEULE FOIS
+         * Applique la gravité sur toutes les colonnes visuelles
+         * Une colonne visuelle = une face "alignée" à travers toutes les rows
+         * en tenant compte des rotations individuelles des couronnes
          */
-        function applyGravityDown() {
-            if (isApplyingGravity || isDestroying || isSwapping) return;
+        function applyGravity() {
+            if (!gravityEnabled || isApplyingGravity || isDestroying || isSwapping) return;
             
             isApplyingGravity = true;
-            let somethingMoved = false;
+            let somethingFell = false;
             
+            // Pour chaque "colonne visuelle" (face de référence 0-9)
             for (let visualFace = 0; visualFace < FACES; visualFace++) {
+                // Construire la colonne : quelle face DATA est à cette position visuelle pour chaque row ?
                 const columnFaces = [];
                 for (let r = 0; r < ROWS; r++) {
                     const rowRotationOffset = Math.round(crownRotations[r] / ANGLE_STEP);
@@ -2166,98 +2917,52 @@
                     columnFaces.push(actualDataFace);
                 }
                 
-                // De bas en haut : chercher les trous et faire tomber
+                // Appliquer la gravité sur cette colonne (de bas en haut)
+                // On cherche les trous et on fait tomber ce qui est au-dessus
                 for (let r = ROWS - 1; r >= 0; r--) {
                     const dataFace = columnFaces[r];
                     
+                    // Si cette cellule est vide, chercher la première cellule vivante au-dessus
                     if (!cellState[dataFace][r]) {
-                        // Cellule vide, chercher la première vivante au-dessus
                         for (let above = r - 1; above >= 0; above--) {
                             const aboveDataFace = columnFaces[above];
                             
                             if (cellState[aboveDataFace][above]) {
-                                // Transférer
+                                // Trouver la cellule vivante ! La faire tomber
+                                console.log(`[GRAVITY] F${aboveDataFace}/R${above} tombe vers F${dataFace}/R${r}`);
+                                
+                                // Transférer les données
                                 gridByFace[dataFace][r] = gridByFace[aboveDataFace][above];
                                 cellState[dataFace][r] = true;
+                                
+                                // Vider l'ancienne position
                                 cellState[aboveDataFace][above] = false;
-                                somethingMoved = true;
-                                break;
+                                
+                                somethingFell = true;
+                                break; // Une seule cellule tombe par trou à la fois
                             }
                         }
                     }
                 }
             }
             
-            if (somethingMoved) {
-                lastGravityAction = '↓ DOWN';
-                console.log('[GRAVITY] ↓ Gravité appliquée');
+            if (somethingFell) {
+                // Reconstruire le visuel et vérifier les nouvelles lignes
                 buildCylinder();
                 updateDebug();
                 
+                // Attendre un peu puis vérifier si d'autres chutes ou lignes
                 setTimeout(() => {
                     isApplyingGravity = false;
+                    // D'abord vérifier les lignes créées par la chute
                     checkVerticalLines();
+                    // Puis ré-appliquer la gravité si nécessaire (cascade)
+                    setTimeout(() => {
+                        if (!isDestroying) applyGravity();
+                    }, 100);
                 }, 300);
             } else {
-                lastGravityAction = '↓ (rien)';
                 isApplyingGravity = false;
-                updateDebug();
-            }
-        }
-        
-        /**
-         * Applique l'anti-gravité (vers le haut) - UNE SEULE FOIS
-         */
-        function applyGravityUp() {
-            if (isApplyingGravity || isDestroying || isSwapping) return;
-            
-            isApplyingGravity = true;
-            let somethingMoved = false;
-            
-            for (let visualFace = 0; visualFace < FACES; visualFace++) {
-                const columnFaces = [];
-                for (let r = 0; r < ROWS; r++) {
-                    const rowRotationOffset = Math.round(crownRotations[r] / ANGLE_STEP);
-                    const actualDataFace = ((visualFace - rowRotationOffset) % FACES + FACES) % FACES;
-                    columnFaces.push(actualDataFace);
-                }
-                
-                // De haut en bas : chercher les trous et faire monter
-                for (let r = 0; r < ROWS; r++) {
-                    const dataFace = columnFaces[r];
-                    
-                    if (!cellState[dataFace][r]) {
-                        // Cellule vide, chercher la première vivante en-dessous
-                        for (let below = r + 1; below < ROWS; below++) {
-                            const belowDataFace = columnFaces[below];
-                            
-                            if (cellState[belowDataFace][below]) {
-                                // Transférer
-                                gridByFace[dataFace][r] = gridByFace[belowDataFace][below];
-                                cellState[dataFace][r] = true;
-                                cellState[belowDataFace][below] = false;
-                                somethingMoved = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-            
-            if (somethingMoved) {
-                lastGravityAction = '↑ UP';
-                console.log('[GRAVITY] ↑ Anti-gravité appliquée');
-                buildCylinder();
-                updateDebug();
-                
-                setTimeout(() => {
-                    isApplyingGravity = false;
-                    checkVerticalLines();
-                }, 300);
-            } else {
-                lastGravityAction = '↑ (rien)';
-                isApplyingGravity = false;
-                updateDebug();
             }
         }
 
@@ -2295,6 +3000,9 @@
             document.getElementById('dbgAlive').textContent = countAliveCells() + '/50';
             document.getElementById('dbgSwapping').textContent = isSwapping;
             document.getElementById('dbgDestroying').textContent = isDestroying;
+            document.getElementById('dbgGravity').textContent = gravityEnabled ? 'ON' : 'OFF';
+            document.getElementById('dbgGravity').style.color = gravityEnabled ? '#0f0' : '#f55';
+            document.getElementById('dbgApplyingGravity').textContent = isApplyingGravity;
             
             // Outline
             const outlineStatus = outlineEnabled ? `ON (${outlineThickness}px)` : 'OFF';
@@ -2305,12 +3013,18 @@
             document.getElementById('dbgHorizontal5').textContent = horizontal5Enabled ? 'ON' : 'OFF';
             document.getElementById('dbgHorizontal5').style.color = horizontal5Enabled ? '#f88' : '#888';
             
+            // Vertical 5
+            document.getElementById('dbgVertical5').textContent = vertical5Enabled ? 'ON' : 'OFF';
+            document.getElementById('dbgVertical5').style.color = vertical5Enabled ? '#8f8' : '#888';
+            
+            // C Shape
+            document.getElementById('dbgCShape').textContent = cShapeEnabled ? 'ON' : 'OFF';
+            document.getElementById('dbgCShape').style.color = cShapeEnabled ? '#8cf' : '#888';
+            
             // Flip
             document.getElementById('dbgFlipping').textContent = isFlipping;
-            
-            // Gravité manuelle - dernière action
-            document.getElementById('dbgLastGravity').textContent = lastGravityAction;
-            document.getElementById('dbgLastGravity').style.color = lastGravityAction.includes('UP') ? '#4facfe' : (lastGravityAction.includes('DOWN') ? '#f80' : '#888');
+            document.getElementById('dbgGravityPaused').textContent = gravityPausedAfterFlip;
+            document.getElementById('dbgGravityPaused').style.color = gravityPausedAfterFlip ? '#4facfe' : '#888';
             
             // Mapping actuel
             if (document.getElementById('dbgCurrentMapping')) {
@@ -2371,7 +3085,6 @@
         function resetGame() {
             globalRotation = INITIAL_ROTATION;
             crownRotations = [0, 0, 0, 0, 0];
-            lastGravityAction = '-';
             cancelLongPress();
             initGrid();
             buildCylinder();
@@ -2381,7 +3094,7 @@
         }
 
         function logFullState() {
-            console.log('=== ÉTAT COMPLET v19 ===');
+            console.log('=== ÉTAT COMPLET v18 ===');
             console.log('globalRotation:', globalRotation);
             console.log('crownRotations:', crownRotations);
             console.log('centerFacesPerRow:', Array.from({length: ROWS}, (_, r) => getCenterDataFaceForRow(r)));
@@ -2390,7 +3103,6 @@
             console.log('Cellules vivantes:', countAliveCells());
             console.log('Outline:', outlineEnabled ? `ON (${outlineThickness}px)` : 'OFF');
             console.log('Horizontal5:', horizontal5Enabled ? 'ON' : 'OFF');
-            console.log('Last Gravity:', lastGravityAction);
         }
 
         // =====================================================
@@ -2636,90 +3348,6 @@
         let dragStartX = 0;
         let dragStartY = 0;
 
-        // Variables pour les zones de gravité
-        let gravityZoneActive = null;
-        let gravityStartY = 0;
-        let gravityTriggered = false;
-
-        // =====================================================
-        // ÉVÉNEMENTS - ZONES GRAVITÉ LATÉRALES
-        // =====================================================
-        
-        function setupGravityZone(element) {
-            // Touch events
-            element.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                gravityStartY = e.touches[0].clientY;
-                gravityTriggered = false;
-                gravityZoneActive = element;
-            }, { passive: false });
-            
-            element.addEventListener('touchmove', (e) => {
-                if (gravityTriggered || gravityZoneActive !== element) return;
-                e.preventDefault();
-                
-                const currentY = e.touches[0].clientY;
-                const deltaY = currentY - gravityStartY;
-                
-                // Swipe vers le bas = gravité
-                if (deltaY > INTERACTION.gravitySwipeThreshold) {
-                    gravityTriggered = true;
-                    element.classList.add('activated-down');
-                    applyGravityDown();
-                    setTimeout(() => element.classList.remove('activated-down'), 300);
-                }
-                // Swipe vers le haut = anti-gravité
-                else if (deltaY < -INTERACTION.gravitySwipeThreshold) {
-                    gravityTriggered = true;
-                    element.classList.add('activated-up');
-                    applyGravityUp();
-                    setTimeout(() => element.classList.remove('activated-up'), 300);
-                }
-            }, { passive: false });
-            
-            element.addEventListener('touchend', () => {
-                gravityTriggered = false;
-                gravityZoneActive = null;
-            });
-            
-            // Mouse events
-            element.addEventListener('mousedown', (e) => {
-                gravityStartY = e.clientY;
-                gravityTriggered = false;
-                gravityZoneActive = element;
-            });
-        }
-        
-        // Setup des 2 zones de gravité (gauche et droite)
-        setupGravityZone(document.getElementById('gravityZoneLeft'));
-        setupGravityZone(document.getElementById('gravityZoneRight'));
-        
-        // Gestion globale du mousemove pour les zones gravité
-        document.addEventListener('mousemove', (e) => {
-            if (!gravityZoneActive || gravityTriggered) return;
-            
-            const deltaY = e.clientY - gravityStartY;
-            
-            // Swipe vers le bas = gravité
-            if (deltaY > INTERACTION.gravitySwipeThreshold) {
-                gravityTriggered = true;
-                gravityZoneActive.classList.add('activated-down');
-                applyGravityDown();
-                setTimeout(() => {
-                    if (gravityZoneActive) gravityZoneActive.classList.remove('activated-down');
-                }, 300);
-            }
-            // Swipe vers le haut = anti-gravité
-            else if (deltaY < -INTERACTION.gravitySwipeThreshold) {
-                gravityTriggered = true;
-                gravityZoneActive.classList.add('activated-up');
-                applyGravityUp();
-                setTimeout(() => {
-                    if (gravityZoneActive) gravityZoneActive.classList.remove('activated-up');
-                }, 300);
-            }
-        });
-
         // =====================================================
         // ÉVÉNEMENTS - SWIPE ZONE
         // =====================================================
@@ -2798,15 +3426,16 @@
                     if (activeCrown >= 0) setDragging(activeCrown, true);
                     updateDebug();
                 }
-                // Swipe VERTICAL → Column Flip (seulement si on était sur une cellule valide)
+                // Swipe VERTICAL → Column Cycle (rotation cyclique)
                 else if (currentGesture === 'pending' && 
                          Math.abs(deltaY) > INTERACTION.verticalSwipeThreshold && 
                          Math.abs(deltaX) < INTERACTION.horizontalMaxForVertical &&
                          longPressFrozenVisualCol !== null) {
-                    const visualColToFlip = longPressFrozenVisualCol; // Sauvegarder AVANT cancel
+                    const visualColToCycle = longPressFrozenVisualCol; // Sauvegarder AVANT cancel
+                    const direction = deltaY > 0 ? 1 : -1; // 1 = vers le bas, -1 = vers le haut
                     cancelLongPress();
-                    currentGesture = 'flip';
-                    triggerColumnFlip(visualColToFlip);
+                    currentGesture = 'cycle';
+                    triggerColumnCycle(visualColToCycle, direction);
                     updateDebug();
                 }
             }
@@ -2884,15 +3513,16 @@
                     if (activeCrown >= 0) setDragging(activeCrown, true);
                     updateDebug();
                 }
-                // Swipe VERTICAL → Column Flip (seulement si on était sur une cellule valide)
+                // Swipe VERTICAL → Column Cycle (rotation cyclique)
                 else if (currentGesture === 'pending' && 
                          Math.abs(deltaY) > INTERACTION.verticalSwipeThreshold && 
                          Math.abs(deltaX) < INTERACTION.horizontalMaxForVertical &&
                          longPressFrozenVisualCol !== null) {
-                    const visualColToFlip = longPressFrozenVisualCol; // Sauvegarder AVANT cancel
+                    const visualColToCycle = longPressFrozenVisualCol; // Sauvegarder AVANT cancel
+                    const direction = deltaY > 0 ? 1 : -1; // 1 = vers le bas, -1 = vers le haut
                     cancelLongPress();
-                    currentGesture = 'flip';
-                    triggerColumnFlip(visualColToFlip);
+                    currentGesture = 'cycle';
+                    triggerColumnCycle(visualColToCycle, direction);
                     updateDebug();
                 }
             }
@@ -2912,8 +3542,6 @@
 
         document.addEventListener('mouseup', () => {
             cancelLongPress();
-            gravityZoneActive = null;
-            gravityTriggered = false;
             
             if (isDraggingGlobal) {
                 isDraggingGlobal = false;
