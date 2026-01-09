@@ -140,15 +140,7 @@
     </style>
 </head>
 <body>
-    <h1>Fusion Square 4×6</h1>
-    <div class="info">
-        <span><div class="dot white"></div>Blanc</span>
-        <span><div class="dot silver"></div>Argent</span>
-        <span><div class="dot gold"></div>Or</span>
-        <span><div class="dot diamond"></div>Diamant</span>
-        <span><div class="dot emerald"></div>Émeraude</span>
-        <span><div class="dot cosmic"></div>Cosmique</span>
-    </div>
+    <h1>ADAM</h1>
     <div class="grid" id="grid"></div>
     <div class="stats" id="stats">25 dominos</div>
     <div class="controls">
@@ -364,6 +356,35 @@
         function checkFusions() {
             if (isAnimating || isLocalRotating) return;
             
+            // PRIORITÉ 0 : Chercher les dominos JUMEAUX (identiques à 100%)
+            for (let i = 0; i < TOTAL; i++) {
+                if (!dominos[i]) continue;
+                const { x, y } = getPos(i);
+                const d1 = dominos[i];
+                
+                // Vérifier le voisin de droite (horizontal)
+                const iRight = getIndex(x + 1, y);
+                if (iRight !== -1 && dominos[iRight]) {
+                    const d2 = dominos[iRight];
+                    // Jumeaux = même face1, même face2, même rotation
+                    if (d1.face1 === d2.face1 && d1.face2 === d2.face2 && d1.rotation === d2.rotation) {
+                        performTwinFusion(i, iRight, 'h');
+                        return;
+                    }
+                }
+                
+                // Vérifier le voisin du bas (vertical)
+                const iBottom = getIndex(x, y + 1);
+                if (iBottom !== -1 && dominos[iBottom]) {
+                    const d2 = dominos[iBottom];
+                    // Jumeaux = même face1, même face2, même rotation
+                    if (d1.face1 === d2.face1 && d1.face2 === d2.face2 && d1.rotation === d2.rotation) {
+                        performTwinFusion(i, iBottom, 'v');
+                        return;
+                    }
+                }
+            }
+            
             // PRIORITÉ 1 : Chercher les fusions en chaîne (3 dominos)
             for (let i = 0; i < TOTAL; i++) {
                 if (!dominos[i]) continue;
@@ -496,6 +517,43 @@
             }, 400);
         }
 
+        function performTwinFusion(i1, i2, dir) {
+            isAnimating = true;
+            const d1 = dominos[i1], d2 = dominos[i2];
+            const el1 = grid.children[i1].querySelector('.square');
+            const el2 = grid.children[i2].querySelector('.square');
+            if (!el1 || !el2) { isAnimating = false; return; }
+
+            // Animation spectaculaire : les 2 jumeaux fusionnent en COSMIC
+            el1.classList.add('fusing'); el2.classList.add('fusing');
+            const r1 = d1.rotation, r2 = d2.rotation;
+            
+            // Les deux se rapprochent et tournent
+            if (dir === 'h') {
+                el1.style.transform = `rotate(${r1 + 180}deg) translateX(30px) scale(0.5)`;
+                el2.style.transform = `rotate(${r2 + 180}deg) translateX(-30px) scale(0.5)`;
+            } else {
+                el1.style.transform = `rotate(${r1 + 180}deg) translateY(30px) scale(0.5)`;
+                el2.style.transform = `rotate(${r2 + 180}deg) translateY(-30px) scale(0.5)`;
+            }
+
+            setTimeout(() => {
+                el1.style.opacity = el2.style.opacity = '0';
+                setTimeout(() => {
+                    // Fusion directe en COSMIC au premier emplacement
+                    dominos[i1] = { 
+                        face1: d1.face1, 
+                        face2: d1.face2, 
+                        rotation: d1.rotation, 
+                        state: 'cosmic' 
+                    };
+                    dominos[i2] = null;
+                    render();
+                    setTimeout(() => { isAnimating = false; checkFusions(); }, 500);
+                }, 200);
+            }, 400);
+        }
+
         function updateStats() {
             const counts = { total: 0, silver: 0, gold: 0, diamond: 0, emerald: 0, cosmic: 0 };
             dominos.forEach(d => { if (d) { counts.total++; if (d.state !== 'white') counts[d.state]++; } });
@@ -518,12 +576,17 @@
         function resetGame() {
             if (isAnimating || isLocalRotating) return;
             stopContinuous();
-            dominos = Array.from({ length: TOTAL }, () => ({
-                face1: ICON_KEYS[Math.floor(Math.random() * ICON_KEYS.length)],
-                face2: ICON_KEYS[Math.floor(Math.random() * ICON_KEYS.length)],
-                rotation: 0,
-                state: 'white'
-            }));
+            dominos = Array.from({ length: TOTAL }, (_, i) => {
+                const { x, y } = getPos(i);
+                // Pattern damier : alternance horizontal (0°) et vertical (90°)
+                const rotation = ((x + y) % 2 === 0) ? 0 : 90;
+                return {
+                    face1: ICON_KEYS[Math.floor(Math.random() * ICON_KEYS.length)],
+                    face2: ICON_KEYS[Math.floor(Math.random() * ICON_KEYS.length)],
+                    rotation: rotation,
+                    state: 'white'
+                };
+            });
             render();
         }
 
