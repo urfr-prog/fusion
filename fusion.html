@@ -123,6 +123,16 @@
         .square.fused-result { animation: fusionAppear 0.5s cubic-bezier(0.2, 0, 0.2, 1); }
         @keyframes fusionAppear { 0% { transform: scale(0.5); opacity: 0; } 50% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
 
+        .square.twin { 
+            border: 2px solid #ffd700; 
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.6), inset 0 0 15px rgba(255, 215, 0, 0.2); 
+            animation: twinPulse 1.5s ease-in-out infinite; 
+        }
+        @keyframes twinPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.6), inset 0 0 15px rgba(255, 215, 0, 0.2); }
+            50% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.9), inset 0 0 20px rgba(255, 215, 0, 0.3); }
+        }
+
         .controls { display: flex; gap: 12px; }
         button {
             background: transparent;
@@ -142,10 +152,11 @@
 <body>
     <h1>ADAM</h1>
     <div class="grid" id="grid"></div>
-    <div class="stats" id="stats">25 dominos</div>
+    <div class="stats" id="stats">24 dominos</div>
     <div class="controls">
         <button onclick="resetGame()">Reset</button>
-        <button onclick="shuffle()">Mélanger</button>
+        <button onclick="shuffle()">Mix</button>
+        <button id="twinsBtn" onclick="toggleTwins()">Jumeaux: ON</button>
     </div>
 
     <script>
@@ -166,6 +177,7 @@
         let dominos = [], grid = document.getElementById('grid');
         let isAnimating = false, isLocalRotating = false, isRotatingDomino = false;
         let continuousState = null, continuousTimer = null, dragState = null;
+        let showTwins = true; // Mode jumeaux ON par défaut
         const ROTATION_SPEED = 800;
 
         function renderIcon(icon, isFace2) {
@@ -193,7 +205,14 @@
                 const div = document.createElement('div');
                 div.dataset.index = i;
                 if (dominos[i]) {
-                    div.className = `square ${dominos[i].state}`;
+                    let classes = `square ${dominos[i].state}`;
+                    
+                    // Ajouter classe twin si mode activé et qu'il existe un jumeau adjacent
+                    if (showTwins && isTwin(i)) {
+                        classes += ' twin';
+                    }
+                    
+                    div.className = classes;
                     div.innerHTML = renderDomino(dominos[i]);
                     div.style.transform = `rotate(${dominos[i].rotation}deg)`;
                 } else {
@@ -203,6 +222,50 @@
                 grid.appendChild(cell);
             }
             updateStats();
+        }
+
+        function isTwin(i) {
+            if (!dominos[i]) return false;
+            const { x, y } = getPos(i);
+            const d1 = dominos[i];
+            
+            // Vérifier voisin droit
+            const iRight = getIndex(x + 1, y);
+            if (iRight !== -1 && dominos[iRight]) {
+                const d2 = dominos[iRight];
+                if (d1.face1 === d2.face1 && d1.face2 === d2.face2 && d1.rotation === d2.rotation) {
+                    return true;
+                }
+            }
+            
+            // Vérifier voisin bas
+            const iBottom = getIndex(x, y + 1);
+            if (iBottom !== -1 && dominos[iBottom]) {
+                const d2 = dominos[iBottom];
+                if (d1.face1 === d2.face1 && d1.face2 === d2.face2 && d1.rotation === d2.rotation) {
+                    return true;
+                }
+            }
+            
+            // Vérifier voisin gauche
+            const iLeft = getIndex(x - 1, y);
+            if (iLeft !== -1 && dominos[iLeft]) {
+                const d2 = dominos[iLeft];
+                if (d1.face1 === d2.face1 && d1.face2 === d2.face2 && d1.rotation === d2.rotation) {
+                    return true;
+                }
+            }
+            
+            // Vérifier voisin haut
+            const iTop = getIndex(x, y - 1);
+            if (iTop !== -1 && dominos[iTop]) {
+                const d2 = dominos[iTop];
+                if (d1.face1 === d2.face1 && d1.face2 === d2.face2 && d1.rotation === d2.rotation) {
+                    return true;
+                }
+            }
+            
+            return false;
         }
 
         function getPos(i) { return { x: i % COLS, y: Math.floor(i / COLS) }; }
@@ -464,7 +527,16 @@
                     dominos[i1] = { face1: nf1 || ICON_KEYS[0], face2: nf2 || ICON_KEYS[0], rotation: dir === 'h' ? 90 : 0, state: ns };
                     dominos[i2] = null;
                     render();
-                    setTimeout(() => { isAnimating = false; checkFusions(); }, 500);
+                    
+                    // Si Émeraude créée → déclencher la gravité
+                    if (ns === 'emerald') {
+                        setTimeout(() => { 
+                            isAnimating = false; 
+                            applyGravity(); 
+                        }, 500);
+                    } else {
+                        setTimeout(() => { isAnimating = false; checkFusions(); }, 500);
+                    }
                 }, 200);
             }, 400);
         }
@@ -512,7 +584,16 @@
                     dominos[i1] = null;
                     dominos[i3] = null;
                     render();
-                    setTimeout(() => { isAnimating = false; checkFusions(); }, 500);
+                    
+                    // Si Émeraude créée → déclencher la gravité
+                    if (ns === 'emerald') {
+                        setTimeout(() => { 
+                            isAnimating = false; 
+                            applyGravity(); 
+                        }, 500);
+                    } else {
+                        setTimeout(() => { isAnimating = false; checkFusions(); }, 500);
+                    }
                 }, 200);
             }, 400);
         }
@@ -588,6 +669,54 @@
                 };
             });
             render();
+        }
+
+        function toggleTwins() {
+            showTwins = !showTwins;
+            const btn = document.getElementById('twinsBtn');
+            btn.textContent = `Jumeaux: ${showTwins ? 'ON' : 'OFF'}`;
+            render();
+        }
+
+        function applyGravity() {
+            if (isAnimating) return;
+            isAnimating = true;
+            
+            // Faire tomber les dominos ligne par ligne du bas vers le haut
+            let moved = true;
+            const animateGravity = () => {
+                moved = false;
+                
+                // Parcourir de bas en haut (sauf la dernière ligne)
+                for (let y = ROWS - 2; y >= 0; y--) {
+                    for (let x = 0; x < COLS; x++) {
+                        const i = getIndex(x, y);
+                        const iBelow = getIndex(x, y + 1);
+                        
+                        // Si case actuelle a un domino ET case en dessous est vide
+                        if (dominos[i] && !dominos[iBelow]) {
+                            dominos[iBelow] = dominos[i];
+                            dominos[i] = null;
+                            moved = true;
+                        }
+                    }
+                }
+                
+                render();
+                
+                // Si des dominos ont bougé, continuer l'animation
+                if (moved) {
+                    setTimeout(animateGravity, 200); // Animation ligne par ligne
+                } else {
+                    // Gravité terminée, vérifier les nouvelles fusions
+                    setTimeout(() => {
+                        isAnimating = false;
+                        checkFusions();
+                    }, 300);
+                }
+            };
+            
+            animateGravity();
         }
 
         grid.addEventListener('mousedown', handleStart);
