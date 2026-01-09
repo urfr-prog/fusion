@@ -137,72 +137,7 @@
         }
         button:hover { border-color: rgba(180, 180, 190, 0.6); color: rgba(220, 220, 230, 0.9); }
         .stats { color: rgba(180, 180, 190, 0.5); font-size: 0.75rem; }
-
-        /* Popup */
-        .popup-overlay {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            animation: fadeIn 0.3s ease;
-        }
-        .popup-overlay.show { display: flex; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        
-        .popup {
-            background: linear-gradient(135deg, #1a1b26 0%, #24253a 100%);
-            border: 2px solid rgba(180, 180, 190, 0.3);
-            border-radius: 20px;
-            padding: 40px 30px;
-            max-width: 90%;
-            width: 320px;
-            text-align: center;
-            animation: popIn 0.4s cubic-bezier(0.2, 0, 0.2, 1);
-        }
-        @keyframes popIn {
-            from { transform: scale(0.8); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-        
-        .popup-title {
-            font-size: 2rem;
-            margin-bottom: 10px;
-        }
-        .popup-message {
-            color: rgba(180, 180, 190, 0.8);
-            font-size: 1.1rem;
-            margin-bottom: 20px;
-            line-height: 1.4;
-        }
-        .popup-stats {
-            color: rgba(180, 180, 190, 0.6);
-            font-size: 0.9rem;
-            margin-bottom: 25px;
-        }
-        .popup-button {
-            background: rgba(180, 180, 190, 0.1);
-            border: 1px solid rgba(180, 180, 190, 0.4);
-            color: rgba(220, 220, 230, 0.9);
-            padding: 12px 30px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 1rem;
-            letter-spacing: 0.1em;
-            transition: all 0.2s;
-            margin: 0 5px;
-        }
-        .popup-button:hover {
-            background: rgba(180, 180, 190, 0.2);
-            border-color: rgba(180, 180, 190, 0.6);
-            transform: translateY(-2px);
-        }
     </style>
-
 </head>
 <body>
     <h1>ADAM</h1>
@@ -212,16 +147,6 @@
         <button onclick="undo()">← Undo</button>
         <button onclick="resetGame()">Reset</button>
         <button onclick="shuffle()">Mix</button>
-    </div>
-
-    <!-- Popup Victoire / Game Over -->
-    <div id="popup" class="popup-overlay">
-        <div class="popup">
-            <div class="popup-title" id="popupTitle">🎉</div>
-            <div class="popup-message" id="popupMessage"></div>
-            <div class="popup-stats" id="popupStats"></div>
-            <button class="popup-button" onclick="closePopup(); resetGame();">Rejouer</button>
-        </div>
     </div>
 
     <script>
@@ -243,7 +168,6 @@
         let isAnimating = false, isLocalRotating = false, isRotatingDomino = false;
         let continuousState = null, continuousTimer = null, dragState = null;
         let history = []; // Historique pour UNDO
-        let moveCount = 0; // Compteur de coups
         const MAX_HISTORY = 20; // Garder les 20 derniers coups
         const ROTATION_SPEED = 800;
 
@@ -522,46 +446,6 @@
                     if (f1 && f2 && f1 === f2) { performFusion(i, ni, dir); return; }
                 }
             }
-            
-            // Aucune fusion trouvée → vérifier victoire ou game over
-            checkWinOrGameOver();
-        }
-
-        function checkWinOrGameOver() {
-            // VICTOIRE : 2 Cosmic jumeaux adjacents
-            for (let i = 0; i < TOTAL; i++) {
-                if (!dominos[i] || dominos[i].state !== 'cosmic') continue;
-                const { x, y } = getPos(i);
-                const d1 = dominos[i];
-                
-                // Vérifier voisin droit
-                const iRight = getIndex(x + 1, y);
-                if (iRight !== -1 && dominos[iRight] && dominos[iRight].state === 'cosmic') {
-                    const d2 = dominos[iRight];
-                    if (d1.face1 === d2.face1 && d1.face2 === d2.face2 && d1.rotation === d2.rotation) {
-                        showVictory();
-                        return;
-                    }
-                }
-                
-                // Vérifier voisin bas
-                const iBottom = getIndex(x, y + 1);
-                if (iBottom !== -1 && dominos[iBottom] && dominos[iBottom].state === 'cosmic') {
-                    const d2 = dominos[iBottom];
-                    if (d1.face1 === d2.face1 && d1.face2 === d2.face2 && d1.rotation === d2.rotation) {
-                        showVictory();
-                        return;
-                    }
-                }
-            }
-            
-            // GAME OVER : Plus aucune fusion possible
-            // Si on arrive ici, aucune fusion n'est possible
-            // Vérifier qu'il reste des dominos
-            const remainingDominos = dominos.filter(d => d !== null).length;
-            if (remainingDominos > 1) {
-                showGameOver();
-            }
         }
 
         function performFusion(i1, i2, dir) {
@@ -715,8 +599,6 @@
         function resetGame() {
             if (isAnimating || isLocalRotating) return;
             stopContinuous();
-            moveCount = 0; // Reset compteur
-            history = []; // Reset historique
             dominos = Array.from({ length: TOTAL }, (_, i) => {
                 const { x, y } = getPos(i);
                 // Pattern damier : alternance horizontal (0°) et vertical (90°)
@@ -738,8 +620,6 @@
             if (history.length > MAX_HISTORY) {
                 history.shift();
             }
-            // Incrémenter le compteur de coups
-            moveCount++;
         }
 
         function undo() {
@@ -787,24 +667,6 @@
             };
             
             animateGravity();
-        }
-
-        function showVictory() {
-            document.getElementById('popupTitle').textContent = '🎉';
-            document.getElementById('popupMessage').textContent = 'VICTOIRE !';
-            document.getElementById('popupStats').textContent = `Coups joués : ${moveCount}`;
-            document.getElementById('popup').classList.add('show');
-        }
-
-        function showGameOver() {
-            document.getElementById('popupTitle').textContent = '💀';
-            document.getElementById('popupMessage').textContent = 'GAME OVER';
-            document.getElementById('popupStats').textContent = `Plus de fusion possible\nCoups joués : ${moveCount}`;
-            document.getElementById('popup').classList.add('show');
-        }
-
-        function closePopup() {
-            document.getElementById('popup').classList.remove('show');
         }
 
         grid.addEventListener('mousedown', handleStart);
