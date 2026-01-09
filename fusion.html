@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fusion Square - 5×5</title>
+    <title>Fusion Square - 4×6</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; overflow: hidden; touch-action: none; }
@@ -48,10 +48,10 @@
 
         .grid {
             display: grid;
-            grid-template-columns: repeat(5, var(--cell));
-            grid-template-rows: repeat(5, var(--cell));
+            grid-template-columns: repeat(4, var(--cell));
+            grid-template-rows: repeat(6, var(--cell));
             gap: var(--gap);
-            --cell: min(70px, 16vw);
+            --cell: min(80px, 20vw);
             --gap: 8px;
         }
         .cell { width: var(--cell); height: var(--cell); position: relative; }
@@ -140,7 +140,7 @@
     </style>
 </head>
 <body>
-    <h1>Fusion Square 5×5</h1>
+    <h1>Fusion Square 4×6</h1>
     <div class="info">
         <span><div class="dot white"></div>Blanc</span>
         <span><div class="dot silver"></div>Argent</span>
@@ -168,7 +168,7 @@
             wave: { f1: 'M10 14Q28 36 45 22Q62 8 80 30', f2: 'M10 30Q28 8 45 22Q62 36 80 14', t: 'path' }
         };
         const ICON_KEYS = Object.keys(ICONS);
-        const COLS = 5, ROWS = 5, TOTAL = 25;
+        const COLS = 4, ROWS = 6, TOTAL = 24;
         const STATE_ORDER = ['white', 'silver', 'gold', 'diamond', 'emerald', 'cosmic'];
 
         let dominos = [], grid = document.getElementById('grid');
@@ -363,6 +363,50 @@
 
         function checkFusions() {
             if (isAnimating || isLocalRotating) return;
+            
+            // PRIORITÉ 1 : Chercher les fusions en chaîne (3 dominos)
+            for (let i = 0; i < TOTAL; i++) {
+                if (!dominos[i]) continue;
+                const { x, y } = getPos(i);
+                
+                // Chaîne horizontale : vérifier si ce domino est au centre d'une chaîne [A|B] [B|C] [C|D]
+                if (x > 0 && x < COLS - 1) {
+                    const iLeft = getIndex(x - 1, y);
+                    const iRight = getIndex(x + 1, y);
+                    if (iLeft !== -1 && iRight !== -1 && dominos[iLeft] && dominos[iRight]) {
+                        const fLeftRight = getExposed(dominos[iLeft], 'right');
+                        const fCenterLeft = getExposed(dominos[i], 'left');
+                        const fCenterRight = getExposed(dominos[i], 'right');
+                        const fRightLeft = getExposed(dominos[iRight], 'left');
+                        
+                        if (fLeftRight && fCenterLeft && fLeftRight === fCenterLeft &&
+                            fCenterRight && fRightLeft && fCenterRight === fRightLeft) {
+                            performChainFusion(iLeft, i, iRight, 'h');
+                            return;
+                        }
+                    }
+                }
+                
+                // Chaîne verticale : vérifier si ce domino est au centre d'une chaîne verticale
+                if (y > 0 && y < ROWS - 1) {
+                    const iTop = getIndex(x, y - 1);
+                    const iBottom = getIndex(x, y + 1);
+                    if (iTop !== -1 && iBottom !== -1 && dominos[iTop] && dominos[iBottom]) {
+                        const fTopBottom = getExposed(dominos[iTop], 'bottom');
+                        const fCenterTop = getExposed(dominos[i], 'top');
+                        const fCenterBottom = getExposed(dominos[i], 'bottom');
+                        const fBottomTop = getExposed(dominos[iBottom], 'top');
+                        
+                        if (fTopBottom && fCenterTop && fTopBottom === fCenterTop &&
+                            fCenterBottom && fBottomTop && fCenterBottom === fBottomTop) {
+                            performChainFusion(iTop, i, iBottom, 'v');
+                            return;
+                        }
+                    }
+                }
+            }
+            
+            // PRIORITÉ 2 : Chercher les fusions simples (2 dominos)
             for (let i = 0; i < TOTAL; i++) {
                 if (!dominos[i]) continue;
                 const { x, y } = getPos(i);
@@ -398,6 +442,54 @@
                 setTimeout(() => {
                     dominos[i1] = { face1: nf1 || ICON_KEYS[0], face2: nf2 || ICON_KEYS[0], rotation: dir === 'h' ? 90 : 0, state: ns };
                     dominos[i2] = null;
+                    render();
+                    setTimeout(() => { isAnimating = false; checkFusions(); }, 500);
+                }, 200);
+            }, 400);
+        }
+
+        function performChainFusion(i1, i2, i3, dir) {
+            isAnimating = true;
+            const d1 = dominos[i1], d2 = dominos[i2], d3 = dominos[i3];
+            const el1 = grid.children[i1].querySelector('.square');
+            const el2 = grid.children[i2].querySelector('.square');
+            const el3 = grid.children[i3].querySelector('.square');
+            if (!el1 || !el2 || !el3) { isAnimating = false; return; }
+
+            // Face externe gauche/haut et face externe droite/bas
+            const nf1 = getRemaining(d1, dir === 'h' ? 'left' : 'top');
+            const nf2 = getRemaining(d3, dir === 'h' ? 'right' : 'bottom');
+            
+            // Niveau de rareté : MAX des 3 + 2 (récompense la chaîne)
+            const maxState = Math.max(STATE_ORDER.indexOf(d1.state), STATE_ORDER.indexOf(d2.state), STATE_ORDER.indexOf(d3.state));
+            const ns = STATE_ORDER[Math.min(maxState + 2, 5)];
+
+            // Animation : les 3 dominos convergent vers le centre
+            el1.classList.add('fusing'); el2.classList.add('fusing'); el3.classList.add('fusing');
+            const r1 = d1.rotation, r2 = d2.rotation, r3 = d3.rotation;
+            
+            if (dir === 'h') {
+                el1.style.transform = `rotate(${r1}deg) translateX(40px) scale(0.6)`;
+                el2.style.transform = `rotate(${r2}deg) scale(0.6)`;
+                el3.style.transform = `rotate(${r3}deg) translateX(-40px) scale(0.6)`;
+            } else {
+                el1.style.transform = `rotate(${r1}deg) translateY(40px) scale(0.6)`;
+                el2.style.transform = `rotate(${r2}deg) scale(0.6)`;
+                el3.style.transform = `rotate(${r3}deg) translateY(-40px) scale(0.6)`;
+            }
+
+            setTimeout(() => {
+                el1.style.opacity = el2.style.opacity = el3.style.opacity = '0';
+                setTimeout(() => {
+                    // Nouveau domino au centre (i2) avec orientation héritée du pont
+                    dominos[i2] = { 
+                        face1: nf1 || ICON_KEYS[0], 
+                        face2: nf2 || ICON_KEYS[0], 
+                        rotation: d2.rotation, 
+                        state: ns 
+                    };
+                    dominos[i1] = null;
+                    dominos[i3] = null;
                     render();
                     setTimeout(() => { isAnimating = false; checkFusions(); }, 500);
                 }, 200);
