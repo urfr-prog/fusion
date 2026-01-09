@@ -2,3590 +2,447 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Fusion Square v20 - Tetris Mode</title>
-    
-    <!-- PWA iOS -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Fusion">
-    
-    <!-- Icône iOS (emoji cube en SVG encodé) -->
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a1a2e'/><rect x='15' y='15' width='30' height='30' rx='6' fill='%23667eea'/><rect x='55' y='15' width='30' height='30' rx='6' fill='%2343e97b'/><rect x='15' y='55' width='30' height='30' rx='6' fill='%23fa709a'/><rect x='55' y='55' width='30' height='30' rx='6' fill='%234facfe'/></svg>">
-    
-    <!-- Couleur thème -->
-    <meta name="theme-color" content="#0a0a0f">
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Fusion Square - 5×5</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-            -webkit-touch-callout: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; overflow: hidden; touch-action: none; }
         body {
-            background: #0a0a0f;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            overflow: hidden;
-            touch-action: none;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 390px;
-            height: 100vh;
-            max-height: 844px;
-            background: linear-gradient(180deg, #0d0d15 0%, #1a1a2e 100%);
+            background-color: #12131a;
+            min-height: 100vh; min-height: -webkit-fill-available;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .scene {
-            width: 300px;
-            height: 450px;
-            perspective: 800px;
-            perspective-origin: 50% 50%;
-            display: flex;
             justify-content: center;
             align-items: center;
+            gap: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
-
-        .cylinder {
-            width: 0;
-            height: 100%;
-            position: relative;
-            transform-style: preserve-3d;
-            transform-origin: center center;
+        h1 {
+            color: rgba(180, 180, 190, 0.6);
+            font-weight: 300;
+            font-size: 1.2rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
         }
-
-        .crown {
-            position: absolute;
-            width: 0;
-            left: 0;
-            height: 82px;
-            transform-style: preserve-3d;
-            transition: transform 0.25s ease-out;
-        }
-
-        .crown.dragging {
-            transition: none;
-        }
-
-        .cell {
-            position: absolute;
-            width: 70px;
-            height: 82px;
-            left: -35px;
-            border-radius: 8px;
+        .info {
+            color: rgba(180, 180, 190, 0.5);
+            font-size: 0.75rem;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            font-weight: 700;
-            color: rgba(255,255,255,0.95);
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-            box-shadow: 
-                inset 0 2px 4px rgba(255,255,255,0.2),
-                inset 0 -2px 4px rgba(0,0,0,0.2),
-                0 4px 8px rgba(0,0,0,0.3);
-            backface-visibility: visible;
-            cursor: pointer;
-            /* Outline par défaut désactivé */
-            --outline-width: 0px;
-            --outline-opacity: 0;
-        }
-
-        /* Classes d'outline */
-        .cell.outline-1 { --outline-width: 1px; --outline-opacity: 0.9; }
-        .cell.outline-2 { --outline-width: 2px; --outline-opacity: 0.9; }
-        .cell.outline-3 { --outline-width: 3px; --outline-opacity: 0.9; }
-
-        .cell.outline-1,
-        .cell.outline-2,
-        .cell.outline-3 {
-            border: var(--outline-width) solid rgba(255, 255, 255, var(--outline-opacity));
-        }
-
-        /* Cellule détruite avec outline persistant (ghost) */
-        /* Opacité par défaut pour l'arrière: 20% */
-        .cell.destroyed.outline-ghost {
-            opacity: 1 !important;
-            background: transparent !important;
-            box-shadow: none !important;
-            border: var(--outline-width) solid rgba(255, 255, 255, 0.20);
-        }
-        
-        /* Opacité renforcée pour les 4 colonnes de façade: 35% */
-        .cell.destroyed.outline-ghost.ghost-front {
-            border: var(--outline-width) solid rgba(255, 255, 255, 0.35);
-        }
-
-        /* État pendant le long press */
-        .cell.pressing {
-            animation: pressGlow 0.4s ease-out forwards;
-        }
-
-        @keyframes pressGlow {
-            0% { 
-                box-shadow: 
-                    inset 0 2px 4px rgba(255,255,255,0.2), 
-                    inset 0 -2px 4px rgba(0,0,0,0.2), 
-                    0 4px 8px rgba(0,0,0,0.3),
-                    0 0 0 0 rgba(255,255,255,0);
-            }
-            100% { 
-                box-shadow: 
-                    inset 0 2px 4px rgba(255,255,255,0.2), 
-                    inset 0 -2px 4px rgba(0,0,0,0.2), 
-                    0 4px 8px rgba(0,0,0,0.3),
-                    0 0 25px 8px rgba(255,255,255,0.6);
-            }
-        }
-
-        /* Animation de swap */
-        .cell.swap-out {
-            animation: swapOut 0.4s ease-in-out forwards;
-        }
-
-        .cell.swap-in {
-            animation: swapIn 0.4s ease-in-out forwards;
-        }
-
-        @keyframes swapOut {
-            0% { transform: rotateY(var(--base-angle)) translateZ(140px) scale(1); opacity: 1; }
-            50% { transform: rotateY(var(--base-angle)) translateZ(70px) scale(0.3); opacity: 0.3; }
-            100% { transform: rotateY(var(--base-angle)) translateZ(140px) scale(1); opacity: 1; }
-        }
-
-        @keyframes swapIn {
-            0% { transform: rotateY(var(--base-angle)) translateZ(140px) scale(1); opacity: 0.2; }
-            50% { transform: rotateY(var(--base-angle)) translateZ(210px) scale(0.3); opacity: 0.4; }
-            100% { transform: rotateY(var(--base-angle)) translateZ(140px) scale(1); opacity: 1; }
-        }
-
-        /* 5 couleurs */
-        .color-0 { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .color-1 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-        .color-2 { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
-        .color-3 { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
-        .color-4 { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333; }
-
-        .cell.destroying {
-            animation: destroy 0.5s ease-out forwards;
-        }
-        
-        @keyframes destroy {
-            0% { transform: rotateY(var(--base-angle)) translateZ(140px) scale(1); opacity: 1; }
-            50% { transform: rotateY(var(--base-angle)) translateZ(140px) scale(1.2); opacity: 0.8; }
-            100% { transform: rotateY(var(--base-angle)) translateZ(140px) scale(0); opacity: 0; }
-        }
-        
-        /* Destroyed sans ghost = invisible */
-        .cell.destroyed:not(.outline-ghost) {
-            opacity: 0 !important;
-            pointer-events: none;
-        }
-
-        .swipe-zone {
-            position: absolute;
-            bottom: 0;
-            width: 100%;
-            height: 80px;
-            padding-bottom: env(safe-area-inset-bottom, 20px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: grab;
-        }
-
-        .swipe-zone:active {
-            cursor: grabbing;
-        }
-
-        .hint {
-            color: rgba(255,255,255,0.4);
-            font-size: 14px;
-            letter-spacing: 2px;
-            margin-bottom: env(safe-area-inset-bottom, 10px);
-        }
-
-        /* =====================================================
-           DEBUG PANEL - CONSOLE AVANCÉE COMPACTE
-           ===================================================== */
-        .debug-panel {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.95);
-            color: #0f0;
-            font-family: monospace;
-            font-size: 12px;
-            padding: 12px;
-            border-radius: 10px;
-            z-index: 1000;
-            width: 520px;
-            max-height: 95vh;
-            overflow-y: auto;
-            display: none;
-            border: 1px solid #0f0;
-        }
-
-        .debug-panel.visible {
-            display: block;
-        }
-
-        .debug-panel h4 {
-            margin: 0 0 10px 0;
-            color: #0f0;
-            font-size: 14px;
-            border-bottom: 1px solid #333;
-            padding-bottom: 6px;
-        }
-
-        .debug-row {
-            margin: 3px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .debug-row-compact {
-            margin: 2px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 10px;
-        }
-
-        .debug-label {
-            color: #888;
-        }
-
-        .debug-value {
-            color: #0f0;
-            font-weight: bold;
-        }
-
-        .debug-value.highlight {
-            color: #ff0;
-        }
-
-        .debug-value.error {
-            color: #f55;
-        }
-
-        .debug-toggle {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: rgba(0,255,0,0.3);
-            color: #fff;
-            border: 1px solid #0f0;
-            padding: 10px 16px;
-            border-radius: 6px;
-            font-size: 14px;
-            cursor: pointer;
-            z-index: 1001;
-        }
-
-        .debug-toggle:hover {
-            background: rgba(0,255,0,0.5);
-        }
-
-        .debug-section {
-            margin-top: 8px;
-            padding-top: 8px;
-            border-top: 1px solid #333;
-        }
-
-        .debug-section-title {
-            color: #ff0;
-            font-size: 11px;
-            font-weight: bold;
-            margin-bottom: 6px;
-        }
-
-        /* Layout 2 colonnes pour infos compactes */
-        .debug-two-columns {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-        }
-
-        .debug-column {
-            background: rgba(255,255,255,0.03);
-            border-radius: 6px;
-            padding: 8px;
-        }
-
-        .debug-column-title {
-            color: #ff0;
-            font-size: 10px;
-            font-weight: bold;
-            margin-bottom: 4px;
-            border-bottom: 1px solid #333;
-            padding-bottom: 4px;
-        }
-
-        /* Grille debug - compacte */
-        .debug-grid {
-            font-size: 10px;
-            line-height: 1.2;
-        }
-
-        .debug-grid-header {
-            display: flex;
-            gap: 2px;
-            margin-bottom: 3px;
-            padding-left: 26px;
-        }
-
-        .debug-grid-header span {
-            width: 24px;
-            height: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #888;
-            font-weight: bold;
-            font-size: 9px;
-        }
-
-        .debug-grid-header span.front {
-            color: #0f0;
-            background: rgba(0,255,0,0.15);
-            border-radius: 3px;
-        }
-
-        .debug-grid-header span.back {
-            color: #f80;
-            background: rgba(255,136,0,0.15);
-            border-radius: 3px;
-        }
-
-        .debug-grid-header span.active {
-            outline: 2px solid #ff0;
-        }
-
-        .debug-grid-row {
-            display: flex;
-            gap: 2px;
-            align-items: center;
-            margin-bottom: 1px;
-        }
-
-        .debug-grid-row-label {
-            width: 24px;
-            color: #888;
-            font-size: 9px;
-            text-align: right;
-            padding-right: 2px;
-        }
-
-        .debug-grid-cell {
-            width: 24px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 3px;
-            font-weight: bold;
-            font-size: 9px;
-            flex-direction: column;
-            line-height: 1;
-        }
-
-        .debug-grid-cell.c0 { background: #667eea; color: #fff; }
-        .debug-grid-cell.c1 { background: #4facfe; color: #fff; }
-        .debug-grid-cell.c2 { background: #43e97b; color: #fff; }
-        .debug-grid-cell.c3 { background: #fa709a; color: #fff; }
-        .debug-grid-cell.c4 { background: #a8edea; color: #333; }
-        .debug-grid-cell.dead { background: #333; color: #666; }
-
-        .debug-grid-cell .face-num {
-            font-size: 7px;
-            opacity: 0.7;
-        }
-
-        .debug-grid-cell.target {
-            outline: 2px solid #ff0;
-            outline-offset: 1px;
-        }
-
-        /* Options debug - inline compact */
-        .debug-options {
-            display: flex;
+            gap: 12px;
             flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 6px;
+            justify-content: center;
         }
-
-        .debug-option {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .debug-option input[type="checkbox"] {
-            width: 12px;
-            height: 12px;
-            cursor: pointer;
-        }
-
-        .debug-option label {
-            color: #aaa;
-            font-size: 10px;
-            cursor: pointer;
-        }
-
-        /* Outline thickness selector - compact */
-        .outline-controls {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-top: 6px;
-            padding: 6px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 6px;
-        }
-
-        .outline-controls label {
-            color: #aaa;
-            font-size: 10px;
-        }
-
-        .thickness-buttons {
-            display: flex;
-            gap: 3px;
-        }
-
-        .thickness-btn {
-            width: 24px;
-            height: 20px;
-            background: #222;
-            border: 1px solid #555;
-            color: #aaa;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 10px;
-            font-weight: bold;
-        }
-
-        .thickness-btn:hover {
-            background: #333;
-            border-color: #0f0;
-        }
-
-        .thickness-btn.active {
-            background: #0f0;
-            color: #000;
-            border-color: #0f0;
-        }
-
-        /* Horizontal line option - style inversé */
-        .horizontal-controls {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-left: 8px;
-            padding: 4px 8px;
-            background: rgba(255,100,100,0.1);
-            border-radius: 4px;
-            border: 1px solid rgba(255,100,100,0.3);
-        }
-
-        .horizontal-controls.disabled {
-            opacity: 0.4;
-            border-color: #333;
-        }
-
-        .horizontal-controls label {
-            color: #f88;
-            font-size: 10px;
-        }
-
-        /* Vertical 5 option - style vert */
-        .vertical-controls {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 8px;
-            background: rgba(100,255,100,0.1);
-            border-radius: 4px;
-            border: 1px solid rgba(100,255,100,0.3);
-        }
-
-        .vertical-controls.disabled {
-            opacity: 0.4;
-            border-color: #333;
-        }
-
-        .vertical-controls label {
-            color: #8f8;
-            font-size: 10px;
-        }
-
-        /* C Shape option - style cyan */
-        .cshape-controls {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 8px;
-            background: rgba(100,200,255,0.1);
-            border-radius: 4px;
-            border: 1px solid rgba(100,200,255,0.3);
-        }
-
-        .cshape-controls.disabled {
-            opacity: 0.4;
-            border-color: #333;
-        }
-
-        .cshape-controls label {
-            color: #8cf;
-            font-size: 10px;
-        }
-
-        /* Tetris Mode controls - style orange */
-        .tetris-controls {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 10px;
-            background: rgba(255,165,0,0.15);
-            border-radius: 6px;
-            border: 2px solid rgba(255,165,0,0.5);
-        }
-
-        .tetris-controls.disabled {
-            opacity: 0.4;
-            border-color: #333;
-        }
-
-        .tetris-controls label {
-            color: #ffa500;
-            font-size: 11px;
-            font-weight: bold;
-        }
-
-        /* Timer slider */
-        .timer-slider {
-            width: 80px;
-            height: 6px;
-            -webkit-appearance: none;
-            background: #333;
-            border-radius: 3px;
-            outline: none;
-        }
-
-        .timer-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 14px;
-            height: 14px;
-            background: #ffa500;
+        .info span { display: flex; align-items: center; gap: 5px; }
+        .info .dot {
+            width: 10px; height: 10px;
             border-radius: 50%;
+            border: 1px solid rgba(100,100,110,0.5);
+        }
+        .dot.white { background: rgba(180, 180, 190, 0.4); }
+        .dot.silver { background: linear-gradient(135deg, #7ec8e3, #b8d4e8, #7ec8e3); box-shadow: 0 0 4px rgba(126, 200, 227, 0.5); }
+        .dot.gold { background: linear-gradient(135deg, #b8860b, #ffd700, #b8860b); box-shadow: 0 0 4px rgba(255, 215, 0, 0.5); }
+        .dot.diamond { background: linear-gradient(135deg, #06b6d4, #fff, #06b6d4); box-shadow: 0 0 6px rgba(6, 182, 212, 0.7); }
+        .dot.emerald { background: linear-gradient(135deg, #059669, #34d399, #059669); box-shadow: 0 0 6px rgba(52, 211, 153, 0.7); }
+        .dot.cosmic { background: conic-gradient(from 0deg, #ff006e, #8338ec, #06b6d4, #34d399, #ffd700, #ff006e); box-shadow: 0 0 8px rgba(131, 56, 236, 0.8); animation: cosmicDotSpin 3s linear infinite; }
+        @keyframes cosmicDotSpin { to { transform: rotate(360deg); } }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(5, var(--cell));
+            grid-template-rows: repeat(5, var(--cell));
+            gap: var(--gap);
+            --cell: min(70px, 16vw);
+            --gap: 8px;
+        }
+        .cell { width: var(--cell); height: var(--cell); position: relative; }
+        .square {
+            width: 100%; height: 100%;
+            background-color: transparent;
+            border: 1px solid rgba(180, 180, 190, 0.35);
+            border-radius: 12px;
+            position: absolute;
+            top: 0; left: 0;
+            overflow: hidden;
             cursor: pointer;
         }
+        .square:hover { border-color: rgba(180, 180, 190, 0.6); }
+        .square.empty { border-style: dashed; border-color: rgba(180, 180, 190, 0.2); cursor: default; }
+        .square.empty:hover { border-color: rgba(180, 180, 190, 0.3); }
+        .square svg { width: 100%; height: 100%; }
+        svg .separator { stroke-width: 1; }
+        svg line.icon, svg path.icon, svg circle.icon { stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; }
 
-        .timer-value {
-            color: #ffa500;
-            font-size: 10px;
-            min-width: 30px;
-            text-align: center;
+        /* États */
+        .square.white { border-color: rgba(180, 180, 190, 0.35); }
+        .square.white svg line.icon, .square.white svg path.icon, .square.white svg circle.icon { stroke: rgba(180, 180, 190, 0.5); }
+        .square.white svg circle.point { fill: rgba(180, 180, 190, 0.5); }
+        .square.white svg .separator { stroke: rgba(180, 180, 190, 0.3); }
+
+        .square.silver { border-color: rgba(126, 200, 227, 0.7); box-shadow: 0 0 15px rgba(126, 200, 227, 0.25), inset 0 0 20px rgba(126, 200, 227, 0.05); }
+        .square.silver svg line.icon, .square.silver svg path.icon, .square.silver svg circle.icon { stroke: #7ec8e3; filter: drop-shadow(0 0 3px rgba(126, 200, 227, 0.5)); }
+        .square.silver svg circle.point { fill: #7ec8e3; filter: drop-shadow(0 0 3px rgba(126, 200, 227, 0.5)); }
+        .square.silver svg .separator { stroke: rgba(126, 200, 227, 0.4); }
+
+        .square.gold { border-color: rgba(255, 215, 0, 0.7); box-shadow: 0 0 20px rgba(255, 215, 0, 0.3), inset 0 0 20px rgba(255, 215, 0, 0.05); }
+        .square.gold svg line.icon, .square.gold svg path.icon, .square.gold svg circle.icon { stroke: #ffd700; filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.6)); }
+        .square.gold svg circle.point { fill: #ffd700; filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.6)); }
+        .square.gold svg .separator { stroke: rgba(255, 215, 0, 0.4); }
+
+        .square.diamond { border-color: rgba(6, 182, 212, 0.9); box-shadow: 0 0 30px rgba(6, 182, 212, 0.5), 0 0 50px rgba(255, 255, 255, 0.2), inset 0 0 30px rgba(6, 182, 212, 0.1); animation: diamondPulse 2s ease-in-out infinite; }
+        .square.diamond svg line.icon, .square.diamond svg path.icon, .square.diamond svg circle.icon { stroke: #22d3ee; filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.8)) drop-shadow(0 0 10px rgba(255, 255, 255, 0.4)); }
+        .square.diamond svg circle.point { fill: #22d3ee; filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.8)); }
+        .square.diamond svg .separator { stroke: rgba(34, 211, 238, 0.6); }
+        @keyframes diamondPulse {
+            0%, 100% { box-shadow: 0 0 30px rgba(6, 182, 212, 0.5), 0 0 50px rgba(255, 255, 255, 0.2), inset 0 0 30px rgba(6, 182, 212, 0.1); }
+            50% { box-shadow: 0 0 40px rgba(6, 182, 212, 0.7), 0 0 60px rgba(255, 255, 255, 0.3), inset 0 0 40px rgba(6, 182, 212, 0.15); }
         }
 
-        /* Shape options - petits badges */
-        .shape-options {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-            margin-top: 4px;
+        .square.emerald { border-color: rgba(52, 211, 153, 0.9); box-shadow: 0 0 25px rgba(5, 150, 105, 0.5), 0 0 40px rgba(52, 211, 153, 0.3), inset 0 0 25px rgba(52, 211, 153, 0.1); animation: emeraldGlow 2.5s ease-in-out infinite; }
+        .square.emerald svg line.icon, .square.emerald svg path.icon, .square.emerald svg circle.icon { stroke: #34d399; filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.9)) drop-shadow(0 0 12px rgba(5, 150, 105, 0.5)); }
+        .square.emerald svg circle.point { fill: #34d399; filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.9)); }
+        .square.emerald svg .separator { stroke: rgba(52, 211, 153, 0.6); }
+        @keyframes emeraldGlow {
+            0%, 100% { box-shadow: 0 0 25px rgba(5, 150, 105, 0.5), 0 0 40px rgba(52, 211, 153, 0.3), inset 0 0 25px rgba(52, 211, 153, 0.1); }
+            50% { box-shadow: 0 0 35px rgba(5, 150, 105, 0.7), 0 0 55px rgba(52, 211, 153, 0.4), inset 0 0 35px rgba(52, 211, 153, 0.15); }
         }
 
-        .shape-badge {
-            display: flex;
-            align-items: center;
-            gap: 3px;
-            padding: 2px 6px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 4px;
-            border: 1px solid #444;
-            font-size: 9px;
-            color: #888;
+        .square.cosmic { border: 2px solid transparent; background: linear-gradient(#12131a, #12131a) padding-box, conic-gradient(from var(--cosmic-angle, 0deg), #ff006e, #8338ec, #06b6d4, #34d399, #ffd700, #ff006e) border-box; box-shadow: 0 0 40px rgba(131, 56, 236, 0.6), 0 0 60px rgba(255, 0, 110, 0.3), 0 0 80px rgba(6, 182, 212, 0.3), inset 0 0 40px rgba(131, 56, 236, 0.15); animation: cosmicRotate 4s linear infinite, cosmicPulse 2s ease-in-out infinite; }
+        .square.cosmic svg line.icon, .square.cosmic svg path.icon, .square.cosmic svg circle.icon { stroke: #c4b5fd; filter: drop-shadow(0 0 8px rgba(131, 56, 236, 0.9)) drop-shadow(0 0 12px rgba(255, 0, 110, 0.6)); animation: cosmicIconShift 3s ease-in-out infinite; }
+        .square.cosmic svg circle.point { fill: #c4b5fd; filter: drop-shadow(0 0 8px rgba(131, 56, 236, 0.9)); animation: cosmicPointPulse 1.5s ease-in-out infinite; }
+        .square.cosmic svg .separator { stroke: rgba(196, 181, 253, 0.7); }
+        @property --cosmic-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+        @keyframes cosmicRotate { to { --cosmic-angle: 360deg; } }
+        @keyframes cosmicPulse {
+            0%, 100% { box-shadow: 0 0 40px rgba(131, 56, 236, 0.6), 0 0 60px rgba(255, 0, 110, 0.3), 0 0 80px rgba(6, 182, 212, 0.3), inset 0 0 40px rgba(131, 56, 236, 0.15); }
+            50% { box-shadow: 0 0 55px rgba(131, 56, 236, 0.8), 0 0 80px rgba(255, 0, 110, 0.5), 0 0 100px rgba(6, 182, 212, 0.4), inset 0 0 50px rgba(131, 56, 236, 0.2); }
         }
+        @keyframes cosmicIconShift { 0%, 100% { stroke: #c4b5fd; } 33% { stroke: #22d3ee; } 66% { stroke: #f472b6; } }
+        @keyframes cosmicPointPulse { 0%, 100% { fill: #c4b5fd; } 50% { fill: #f472b6; } }
 
-        .shape-badge.active {
-            background: rgba(255,165,0,0.2);
-            border-color: #ffa500;
-            color: #ffa500;
-        }
+        .square.fusing { transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease; }
+        .square.fused-result { animation: fusionAppear 0.5s cubic-bezier(0.2, 0, 0.2, 1); }
+        @keyframes fusionAppear { 0% { transform: scale(0.5); opacity: 0; } 50% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
 
-        .shape-badge input {
-            width: 10px;
-            height: 10px;
-        }
-
-        .debug-action {
-            margin-top: 8px;
-            padding-top: 8px;
-            border-top: 1px solid #333;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-        }
-
-        .debug-action button {
-            background: #222;
-            color: #fff;
-            border: 1px solid #555;
-            padding: 5px 10px;
-            border-radius: 4px;
+        .controls { display: flex; gap: 12px; }
+        button {
+            background: transparent;
+            border: 1px solid rgba(180, 180, 190, 0.35);
+            color: rgba(180, 180, 190, 0.7);
+            padding: 8px 20px;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 10px;
+            font-size: 0.8rem;
+            letter-spacing: 0.1em;
+            transition: all 0.2s;
         }
-
-        .debug-action button:hover {
-            background: #333;
-            border-color: #0f0;
-        }
-
-        /* Bouton Tetris spécial */
-        .debug-action button.tetris-btn {
-            background: rgba(255,165,0,0.3);
-            border-color: #ffa500;
-            color: #ffa500;
-        }
-
-        .debug-action button.tetris-btn:hover {
-            background: rgba(255,165,0,0.5);
-        }
-
-        .debug-action button.tetris-btn.active {
-            background: #ffa500;
-            color: #000;
-        }
-
-        /* Légende compacte */
-        .debug-legend {
-            display: flex;
-            gap: 10px;
-            margin-top: 4px;
-            font-size: 9px;
-        }
-
-        .debug-legend-item {
-            display: flex;
-            align-items: center;
-            gap: 3px;
-        }
-
-        .debug-legend-color {
-            width: 10px;
-            height: 10px;
-            border-radius: 2px;
-        }
-
-        .debug-legend-color.front { background: rgba(0,255,0,0.4); border: 1px solid #0f0; }
-        .debug-legend-color.back { background: rgba(255,136,0,0.4); border: 1px solid #f80; }
-        .debug-legend-color.target { background: #333; border: 2px solid #ff0; }
-
-        /* Selects compacts */
-        .debug-select-compact {
-            width: 100%;
-            padding: 4px;
-            background: #222;
-            color: #fff;
-            border: 1px solid #555;
-            border-radius: 4px;
-            font-size: 10px;
-        }
+        button:hover { border-color: rgba(180, 180, 190, 0.6); color: rgba(220, 220, 230, 0.9); }
+        .stats { color: rgba(180, 180, 190, 0.5); font-size: 0.75rem; }
     </style>
 </head>
 <body>
-    <button class="debug-toggle" onclick="toggleDebug()">🔧 DEBUG</button>
-    
-    <div class="debug-panel" id="debugPanel">
-        <h4>🎮 Fusion Square v20 - Tetris Mode</h4>
-        
-        <!-- ===================== SECTION HAUTE: Options importantes ===================== -->
-        
-        <!-- Options d'affichage + Outline + Horizontal 5 carrés -->
-        <div class="debug-section">
-            <div class="debug-section-title">⚙️ OPTIONS D'AFFICHAGE</div>
-            <div class="debug-options">
-                <div class="debug-option">
-                    <input type="checkbox" id="optShowFaceNum" checked onchange="updateDebugGrid()">
-                    <label for="optShowFaceNum">N° Face</label>
-                </div>
-                <div class="debug-option">
-                    <input type="checkbox" id="optShowColor" checked onchange="updateDebugGrid()">
-                    <label for="optShowColor">Couleur</label>
-                </div>
-                <div class="debug-option">
-                    <input type="checkbox" id="optShowOnCells" onchange="toggleCellDisplay()">
-                    <label for="optShowOnCells">Sur cylindre</label>
-                </div>
-                <div class="debug-option">
-                    <input type="checkbox" id="optGravity" checked onchange="toggleGravity()">
-                    <label for="optGravity" style="color:#0f0;font-weight:bold;">🌍 Gravité</label>
-                </div>
-                <div class="debug-option">
-                    <input type="checkbox" id="optFlipPause" checked onchange="toggleFlipGravityPause()">
-                    <label for="optFlipPause" style="color:#4facfe;">⏸️ Pause flip</label>
-                </div>
-            </div>
-            
-            <!-- Ligne Outline + Options de destruction -->
-            <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-top: 6px;">
-                <div class="outline-controls">
-                    <input type="checkbox" id="optOutline" checked onchange="toggleOutline()">
-                    <label for="optOutline" style="color:#fff;font-weight:bold;">🔲 Outline</label>
-                    <div class="thickness-buttons">
-                        <button class="thickness-btn active" data-thickness="1" onclick="setOutlineThickness(1)">1</button>
-                        <button class="thickness-btn" data-thickness="2" onclick="setOutlineThickness(2)">2</button>
-                        <button class="thickness-btn" data-thickness="3" onclick="setOutlineThickness(3)">3</button>
-                    </div>
-                    <span style="color:#666;font-size:9px;">px</span>
-                </div>
-                
-                <div class="horizontal-controls" id="horizontalControls">
-                    <input type="checkbox" id="optHorizontal5" onchange="toggleHorizontal5()">
-                    <label for="optHorizontal5">↔️ 5 Horiz.</label>
-                </div>
-            </div>
-            
-            <!-- Ligne Options de pattern de destruction -->
-            <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-top: 6px;">
-                <div class="vertical-controls" id="verticalControls">
-                    <input type="checkbox" id="optVertical5" checked onchange="toggleVertical5()">
-                    <label for="optVertical5">↕️ 5 Vertic.</label>
-                </div>
-                
-                <div class="cshape-controls" id="cshapeControls">
-                    <input type="checkbox" id="optCShape" onchange="toggleCShape()">
-                    <label for="optCShape">🇨 C Shape</label>
-                </div>
-            </div>
-        </div>
-
-        <!-- ===================== TETRIS MODE ===================== -->
-        <div class="debug-section">
-            <div class="debug-section-title">🧱 TETRIS MODE</div>
-            
-            <!-- Ligne 1: Play/Pause + Vider -->
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                <button id="btnPlayPause" onclick="toggleTetrisMode()" style="background:#222;border:2px solid #ffa500;color:#ffa500;padding:8px 16px;border-radius:6px;font-size:14px;font-weight:bold;cursor:pointer;min-width:80px;">
-                    ▶️ PLAY
-                </button>
-                <button onclick="clearGrid()" style="background:#222;border:2px solid #f55;color:#f55;padding:8px 12px;border-radius:6px;font-size:12px;cursor:pointer;">
-                    🗑️ VIDER
-                </button>
-                <span style="color:#888;font-size:11px;">Carrés: <span id="dbgSpawnedCount" style="color:#ffa500;font-weight:bold;">0</span></span>
-            </div>
-            
-            <!-- Ligne 2: Timers -->
-            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 8px;">
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <span style="color:#ffa500;font-size:10px;font-weight:bold;">⏱️ Spawn:</span>
-                    <input type="range" class="timer-slider" id="spawnTimer" min="0.5" max="5" step="0.5" value="2" onchange="updateSpawnTimer()" style="width:70px;">
-                    <span id="timerValue" style="color:#ffa500;font-size:11px;min-width:25px;">2s</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <span style="color:#4facfe;font-size:10px;font-weight:bold;">⬇️ Chute:</span>
-                    <input type="range" class="timer-slider" id="fallTimer" min="0" max="5" step="0.5" value="1" onchange="updateFallTimer()" style="width:70px;">
-                    <span id="fallTimerValue" style="color:#4facfe;font-size:11px;min-width:25px;">1s</span>
-                </div>
-            </div>
-            
-            <!-- Ligne 3: Formes 3 carrés -->
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                <span style="color:#43e97b;font-size:11px;font-weight:bold;min-width:65px;">3 carrés:</span>
-                <label class="shape-badge" id="badge-L3" style="padding:4px 10px;font-size:11px;">
-                    <input type="checkbox" id="optShape-L3" onchange="toggleShape('L3')" style="width:14px;height:14px;">
-                    <span>⌐ L</span>
-                </label>
-                <label class="shape-badge" id="badge-I3" style="padding:4px 10px;font-size:11px;">
-                    <input type="checkbox" id="optShape-I3" onchange="toggleShape('I3')" style="width:14px;height:14px;">
-                    <span>― I</span>
-                </label>
-            </div>
-            
-            <!-- Ligne 4: Formes 4 carrés -->
-            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                <span style="color:#fa709a;font-size:11px;font-weight:bold;min-width:65px;">4 carrés:</span>
-                <label class="shape-badge" id="badge-T4" style="padding:4px 10px;font-size:11px;">
-                    <input type="checkbox" id="optShape-T4" onchange="toggleShape('T4')" style="width:14px;height:14px;">
-                    <span>⊥ T</span>
-                </label>
-                <label class="shape-badge" id="badge-L4" style="padding:4px 10px;font-size:11px;">
-                    <input type="checkbox" id="optShape-L4" onchange="toggleShape('L4')" style="width:14px;height:14px;">
-                    <span>⌐ L</span>
-                </label>
-                <label class="shape-badge" id="badge-S4" style="padding:4px 10px;font-size:11px;">
-                    <input type="checkbox" id="optShape-S4" onchange="toggleShape('S4')" style="width:14px;height:14px;">
-                    <span>⌐⌐ S</span>
-                </label>
-                <label class="shape-badge" id="badge-Z4" style="padding:4px 10px;font-size:11px;">
-                    <input type="checkbox" id="optShape-Z4" onchange="toggleShape('Z4')" style="width:14px;height:14px;">
-                    <span>⌐⌐ Z</span>
-                </label>
-                <label class="shape-badge" id="badge-I4" style="padding:4px 10px;font-size:11px;">
-                    <input type="checkbox" id="optShape-I4" onchange="toggleShape('I4')" style="width:14px;height:14px;">
-                    <span>― I</span>
-                </label>
-                <label class="shape-badge" id="badge-O4" style="padding:4px 10px;font-size:11px;">
-                    <input type="checkbox" id="optShape-O4" onchange="toggleShape('O4')" style="width:14px;height:14px;">
-                    <span>▢ O</span>
-                </label>
-            </div>
-        </div>
-
-        <!-- Palettes et Niveaux -->
-        <div class="debug-section">
-            <div class="debug-section-title">🎨 PALETTES & NIVEAUX</div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                <div>
-                    <label class="debug-label" style="font-size:9px;">Palette:</label>
-                    <select id="paletteSelect" onchange="applyPalette(this.value)" class="debug-select-compact">
-                        <option value="neon">🌈 Neon Nights</option>
-                        <option value="sunset">🌅 Sunset Fire</option>
-                        <option value="cyberpunk">🤖 Cyberpunk</option>
-                        <option value="candy">🍬 Candy Pop</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="debug-label" style="font-size:9px;">Niveau:</label>
-                    <select id="mappingSelect" onchange="loadMapping(this.value)" class="debug-select-compact">
-                        <option value="mapping1">🟢 Débutant - Colonnes</option>
-                        <option value="mapping2">🟢 Débutant - Quasi-lignes</option>
-                        <option value="mapping3">🟡 Facile - Damier</option>
-                        <option value="mapping4">🟡 Facile - Vagues</option>
-                        <option value="mapping5">🟠 Moyen - Spirale</option>
-                        <option value="mapping6" selected>🟠 Moyen - Miroir brisé</option>
-                        <option value="mapping7">🔴 Difficile - Chaos</option>
-                        <option value="mapping8">🔴 Difficile - Entropie</option>
-                        <option value="mapping9">💀 Expert - Dispersion</option>
-                        <option value="mapping10">☠️ Cauchemar</option>
-                    </select>
-                </div>
-            </div>
-            <div class="debug-row" style="margin-top:4px;">
-                <span class="debug-label">Mapping:</span>
-                <span class="debug-value" id="dbgCurrentMapping" style="font-size: 10px;">Moyen - Miroir brisé</span>
-            </div>
-        </div>
-
-        <!-- Grille Visuelle -->
-        <div class="debug-section">
-            <div class="debug-section-title">📊 GRILLE VISUELLE (col -2 à +7)</div>
-            <div class="debug-legend">
-                <div class="debug-legend-item">
-                    <div class="debug-legend-color front"></div>
-                    <span style="color:#0f0">Front</span>
-                </div>
-                <div class="debug-legend-item">
-                    <div class="debug-legend-color back"></div>
-                    <span style="color:#f80">Back</span>
-                </div>
-                <div class="debug-legend-item">
-                    <div class="debug-legend-color target"></div>
-                    <span style="color:#ff0">Cible</span>
-                </div>
-            </div>
-            <div class="debug-grid-header" id="dbgGridHeader"></div>
-            <div class="debug-grid" id="dbgGrid"></div>
-        </div>
-
-        <!-- ===================== SECTION BASSE: 2 colonnes ===================== -->
-        <div class="debug-section">
-            <div class="debug-two-columns">
-                <!-- Colonne gauche: Rotations + Touch -->
-                <div class="debug-column">
-                    <div class="debug-column-title">📐 ROTATIONS</div>
-                    <div class="debug-row-compact">
-                        <span class="debug-label">globalRotation:</span>
-                        <span class="debug-value" id="dbgGlobal">18°</span>
-                    </div>
-                    <div class="debug-row-compact">
-                        <span class="debug-label">crownRotations:</span>
-                        <span class="debug-value" id="dbgCrownRot" style="font-size:9px;">[0,0,0,0,0]</span>
-                    </div>
-                    <div class="debug-row-compact">
-                        <span class="debug-label">centerFace:</span>
-                        <span class="debug-value" id="dbgCenterFaces" style="font-size:9px;">[0,0,0,0,0]</span>
-                    </div>
-                    
-                    <div class="debug-column-title" style="margin-top:6px;">👆 TOUCH</div>
-                    <div class="debug-row-compact">
-                        <span class="debug-label">offsetX:</span>
-                        <span class="debug-value" id="dbgTouchX">-</span>
-                    </div>
-                    <div class="debug-row-compact">
-                        <span class="debug-label">visualCol:</span>
-                        <span class="debug-value highlight" id="dbgVisualCol">-</span>
-                    </div>
-                    <div class="debug-row-compact">
-                        <span class="debug-label">touchRow:</span>
-                        <span class="debug-value" id="dbgTouchRow">-</span>
-                    </div>
-                    <div class="debug-row-compact">
-                        <span class="debug-label">front:</span>
-                        <span class="debug-value highlight" id="dbgTargetFront">-</span>
-                    </div>
-                    <div class="debug-row-compact">
-                        <span class="debug-label">back:</span>
-                        <span class="debug-value" id="dbgTargetBack">-</span>
-                    </div>
-                    <div class="debug-row-compact">
-                        <span class="debug-label">gesture:</span>
-                        <span class="debug-value" id="dbgGesture">idle</span>
-                    </div>
-                </div>
-
-                <!-- Colonne droite: État jeu + Difficulté -->
-                <div class="debug-column">
-                    <div class="debug-column-title">🎯 ÉTAT JEU</div>
-                    <div class="debug-row-compact">
-                        <span class="debug-label">cellules:</span>
-                        <span class="debug-value" id="dbgAlive">50/50</span>
-                    </div>
-                    <div class="debug-row-compact">
-                        <span class="debug-label">Swapping:</span>
-                        <span class="debug-value" id="dbgSwapping">false</span>
-                    </div>
-                    <div class="debug-row-compact">
-                        <span class="debug-label">Destroying:</span>
-                        <span class="debug-value" id="dbgDestroying">false</span>
-                    </div>
-                    <div class="debug-row-compact">
-                        <span class="debug-label">🌍 Gravité:</span>
-                        <span class="debug-value" id="dbgGravity">ON</span>
-                    </div>
-                    <div class="debug-row-compact">
-                        <span class="debug-label">Applying:</span>
-                        <span class="debug-value" id="dbgApplyingGravity">false</span>
-                    </div>
-                    <div class="debug-row-compact">
-                        <span class="debug-label">🔲 Outline:</span>
-                        <span class="debug-value" id="dbgOutline">OFF</span>
-                    </div>
-                    <div class="debug-row-compact">
-                        <span class="debug-label">↔️ Horiz5:</span>
-                        <span class="debug-value" id="dbgHorizontal5">OFF</span>
-                    </div>
-                    <div class="debug-row-compact">
-                        <span class="debug-label">↕️ Vertic5:</span>
-                        <span class="debug-value" id="dbgVertical5">ON</span>
-                    </div>
-                    <div class="debug-row-compact">
-                        <span class="debug-label">🇨 C Shape:</span>
-                        <span class="debug-value" id="dbgCShape">OFF</span>
-                    </div>
-                    <div class="debug-row-compact">
-                        <span class="debug-label">🔄 Flipping:</span>
-                        <span class="debug-value" id="dbgFlipping">false</span>
-                    </div>
-                    <div class="debug-row-compact">
-                        <span class="debug-label">⏸️ Pausée:</span>
-                        <span class="debug-value" id="dbgGravityPaused">false</span>
-                    </div>
-                    
-                    <div class="debug-column-title" style="margin-top:6px;">📊 DIFFICULTÉ</div>
-                    <div class="debug-row-compact">
-                        <span class="debug-label">Quasi-lignes:</span>
-                        <span class="debug-value" id="dbgQuasiLines">-</span>
-                    </div>
-                    <div class="debug-row-compact">
-                        <span class="debug-label">Adjacences:</span>
-                        <span class="debug-value" id="dbgAdjacent">-</span>
-                    </div>
-                    <div class="debug-row-compact">
-                        <span class="debug-label">Paires:</span>
-                        <span class="debug-value" id="dbgUsefulPairs">-</span>
-                    </div>
-                    <div class="debug-row-compact">
-                        <span class="debug-label">Dispersion:</span>
-                        <span class="debug-value" id="dbgDispersion">-</span>
-                    </div>
-                    <div class="debug-row-compact">
-                        <span class="debug-label" style="color:#ff0;">SCORE:</span>
-                        <span class="debug-value highlight" id="dbgDifficultyScore" style="font-size:12px;">-</span>
-                    </div>
-                    <div class="debug-row-compact">
-                        <span class="debug-label">Niveau:</span>
-                        <span class="debug-value" id="dbgDifficultyLevel" style="font-size:11px;">-</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Actions -->
-        <div class="debug-action">
-            <button onclick="resetGame()">🔄 Reset</button>
-            <button onclick="logFullState()">📋 Log</button>
-            <button onclick="analyzeDifficulty()">📊 Analyser</button>
-            <button onclick="testSwapAt(0, 0)">Test F0/R0</button>
-        </div>
+    <h1>Fusion Square 5×5</h1>
+    <div class="info">
+        <span><div class="dot white"></div>Blanc</span>
+        <span><div class="dot silver"></div>Argent</span>
+        <span><div class="dot gold"></div>Or</span>
+        <span><div class="dot diamond"></div>Diamant</span>
+        <span><div class="dot emerald"></div>Émeraude</span>
+        <span><div class="dot cosmic"></div>Cosmique</span>
     </div>
-
-    <div class="container">
-        <div class="scene" id="scene">
-            <div class="cylinder" id="cylinder"></div>
-        </div>
-        <div class="swipe-zone" id="swipeZone">
-            <div class="hint"><span>← SWIPE →</span></div>
-        </div>
+    <div class="grid" id="grid"></div>
+    <div class="stats" id="stats">25 dominos</div>
+    <div class="controls">
+        <button onclick="resetGame()">Reset</button>
+        <button onclick="shuffle()">Mélanger</button>
     </div>
 
     <script>
-        // =====================================================
-        // CONSTANTES
-        // =====================================================
-        const FACES = 10;
-        const ROWS = 5;
-        const COLORS = 5;
-        const RADIUS = 140;
-        const ANGLE_STEP = 360 / FACES; // 36°
-        const CELL_WIDTH = 70;
-
-        // Position initiale : 18° = vue de côté (5 faces visibles)
-        const INITIAL_ROTATION = 18;
-
-        // =====================================================
-        // PARAMÈTRES LONG PRESS
-        // =====================================================
-        const LONG_PRESS = {
-            duration: 400,
-            moveThreshold: 20
+        const ICONS = {
+            chevron: { f1: 'M20 12L45 32L70 12', f2: 'M20 32L45 12L70 32', t: 'path' },
+            circle: { f1: '45,22,12', f2: '45,22,12', t: 'circle' },
+            twoCircles: { f1: '30,22,8|60,22,8', f2: '30,22,8|60,22,8', t: 'circles' },
+            line: { f1: '15,22,75,22', f2: '15,22,75,22', t: 'line' },
+            threeLines: { f1: '25,10,25,34|45,10,45,34|65,10,65,34', f2: '25,10,25,34|45,10,45,34|65,10,65,34', t: 'lines' },
+            twoPoints: { f1: '30,22,4|60,22,4', f2: '30,22,4|60,22,4', t: 'points' },
+            threePoints: { f1: '45,10,4|30,32,4|60,32,4', f2: '45,34,4|30,12,4|60,12,4', t: 'points' },
+            wave: { f1: 'M10 14Q28 36 45 22Q62 8 80 30', f2: 'M10 30Q28 8 45 22Q62 36 80 14', t: 'path' }
         };
+        const ICON_KEYS = Object.keys(ICONS);
+        const COLS = 5, ROWS = 5, TOTAL = 25;
+        const STATE_ORDER = ['white', 'silver', 'gold', 'diamond', 'emerald', 'cosmic'];
 
-        // =====================================================
-        // PARAMÈTRES D'INTERACTION
-        // =====================================================
-        const INTERACTION = {
-            rotationSensitivity: 0.35,
-            maxDeltaDegrees: 12,
-            maxDeltaPixels: 80,
-            directionThreshold: 18,
-            verticalSwipeThreshold: 50,  // Pixels pour déclencher un flip
-            horizontalMaxForVertical: 30 // Max horizontal autorisé pendant un swipe vertical
-        };
+        let dominos = [], grid = document.getElementById('grid');
+        let isAnimating = false, isLocalRotating = false, isRotatingDomino = false;
+        let continuousState = null, continuousTimer = null, dragState = null;
+        const ROTATION_SPEED = 800;
 
-        // =====================================================
-        // PALETTES DE COULEURS
-        // =====================================================
-        const COLOR_PALETTES = {
-            neon: {
-                name: '🌈 Neon Nights',
-                colors: [
-                    'linear-gradient(135deg, #ff006e 0%, #ff4da6 100%)',  // Rose néon
-                    'linear-gradient(135deg, #00f5ff 0%, #00b4d8 100%)',  // Cyan électrique
-                    'linear-gradient(135deg, #39ff14 0%, #7fff00 100%)',  // Vert fluo
-                    'linear-gradient(135deg, #bf00ff 0%, #8000ff 100%)',  // Violet laser
-                    'linear-gradient(135deg, #ffff00 0%, #ffd000 100%)'   // Jaune flash
-                ],
-                textColors: ['#fff', '#000', '#000', '#fff', '#000']
-            },
-            sunset: {
-                name: '🌅 Sunset Fire',
-                colors: [
-                    'linear-gradient(135deg, #ff4500 0%, #ff6a00 100%)',  // Orange brûlant
-                    'linear-gradient(135deg, #ff0055 0%, #ff3377 100%)',  // Rouge magenta
-                    'linear-gradient(135deg, #ff9500 0%, #ffb700 100%)',  // Or soleil
-                    'linear-gradient(135deg, #9d00ff 0%, #c77dff 100%)',  // Violet crépuscule
-                    'linear-gradient(135deg, #00d4ff 0%, #0099cc 100%)'   // Bleu horizon
-                ],
-                textColors: ['#fff', '#fff', '#000', '#fff', '#000']
-            },
-            cyberpunk: {
-                name: '🤖 Cyberpunk',
-                colors: [
-                    'linear-gradient(135deg, #f72585 0%, #b5179e 100%)',  // Magenta cyber
-                    'linear-gradient(135deg, #4cc9f0 0%, #4361ee 100%)',  // Bleu néon
-                    'linear-gradient(135deg, #06ffa5 0%, #00cc7a 100%)',  // Vert matrix
-                    'linear-gradient(135deg, #fee440 0%, #ffaa00 100%)',  // Jaune warning
-                    'linear-gradient(135deg, #9b5de5 0%, #7b2cbf 100%)'   // Violet glitch
-                ],
-                textColors: ['#fff', '#fff', '#000', '#000', '#fff']
-            },
-            candy: {
-                name: '🍬 Candy Pop',
-                colors: [
-                    'linear-gradient(135deg, #ff6b9d 0%, #ff8fab 100%)',  // Rose bonbon
-                    'linear-gradient(135deg, #00e5ff 0%, #69f0ae 100%)',  // Menthe glacée
-                    'linear-gradient(135deg, #ffd93d 0%, #ffe066 100%)',  // Citron acidulé
-                    'linear-gradient(135deg, #c9b1ff 0%, #a18aff 100%)',  // Lavande douce
-                    'linear-gradient(135deg, #ff8a5c 0%, #ffa07a 100%)'   // Pêche sucrée
-                ],
-                textColors: ['#000', '#000', '#000', '#000', '#000']
-            }
-        };
-
-        // =====================================================
-        // MAPPINGS DE GRILLES (10 niveaux)
-        // =====================================================
-        const GRID_MAPPINGS = {
-            mapping1: {
-                name: '🟢 Débutant - Colonnes proches',
-                difficulty: 'Très Facile',
-                grid: [
-                    [0, 0, 1, 1, 2],
-                    [1, 1, 2, 2, 3],
-                    [2, 2, 3, 3, 4],
-                    [3, 3, 4, 4, 0],
-                    [4, 4, 0, 0, 1],
-                    [0, 1, 1, 2, 2],
-                    [1, 2, 2, 3, 3],
-                    [2, 3, 3, 4, 4],
-                    [3, 4, 4, 0, 0],
-                    [4, 0, 0, 1, 1]
-                ]
-            },
-            mapping2: {
-                name: '🟢 Débutant - Quasi-lignes',
-                difficulty: 'Très Facile',
-                grid: [
-                    [0, 0, 0, 0, 1],
-                    [1, 1, 1, 1, 2],
-                    [2, 2, 2, 2, 3],
-                    [3, 3, 3, 3, 4],
-                    [4, 4, 4, 4, 0],
-                    [0, 0, 0, 1, 0],
-                    [1, 1, 1, 2, 1],
-                    [2, 2, 2, 3, 2],
-                    [3, 3, 3, 4, 3],
-                    [4, 4, 4, 0, 4]
-                ]
-            },
-            mapping3: {
-                name: '🟡 Facile - Damier',
-                difficulty: 'Facile',
-                grid: [
-                    [0, 1, 0, 1, 0],
-                    [1, 2, 1, 2, 1],
-                    [2, 3, 2, 3, 2],
-                    [3, 4, 3, 4, 3],
-                    [4, 0, 4, 0, 4],
-                    [0, 1, 0, 1, 0],
-                    [1, 2, 1, 2, 1],
-                    [2, 3, 2, 3, 2],
-                    [3, 4, 3, 4, 3],
-                    [4, 0, 4, 0, 4]
-                ]
-            },
-            mapping4: {
-                name: '🟡 Facile - Vagues',
-                difficulty: 'Facile',
-                grid: [
-                    [0, 1, 2, 1, 0],
-                    [1, 2, 3, 2, 1],
-                    [2, 3, 4, 3, 2],
-                    [3, 4, 0, 4, 3],
-                    [4, 0, 1, 0, 4],
-                    [0, 1, 2, 1, 0],
-                    [1, 2, 3, 2, 1],
-                    [2, 3, 4, 3, 2],
-                    [3, 4, 0, 4, 3],
-                    [4, 0, 1, 0, 4]
-                ]
-            },
-            mapping5: {
-                name: '🟠 Moyen - Spirale',
-                difficulty: 'Moyen',
-                grid: [
-                    [0, 1, 2, 3, 4],
-                    [4, 0, 1, 2, 3],
-                    [3, 4, 0, 1, 2],
-                    [2, 3, 4, 0, 1],
-                    [1, 2, 3, 4, 0],
-                    [0, 1, 2, 3, 4],
-                    [4, 0, 1, 2, 3],
-                    [3, 4, 0, 1, 2],
-                    [2, 3, 4, 0, 1],
-                    [1, 2, 3, 4, 0]
-                ]
-            },
-            mapping6: {
-                name: '🟠 Moyen - Miroir brisé',
-                difficulty: 'Moyen',
-                grid: [
-                    [2, 0, 3, 1, 4],
-                    [1, 3, 0, 4, 2],
-                    [4, 2, 1, 0, 3],
-                    [0, 4, 2, 3, 1],
-                    [3, 1, 4, 2, 0],
-                    [2, 3, 0, 1, 4],
-                    [4, 0, 3, 2, 1],
-                    [1, 4, 2, 0, 3],
-                    [3, 2, 1, 4, 0],
-                    [0, 1, 4, 3, 2]
-                ]
-            },
-            mapping7: {
-                name: '🔴 Difficile - Chaos ordonné',
-                difficulty: 'Difficile',
-                grid: [
-                    [3, 1, 4, 0, 2],
-                    [0, 4, 2, 3, 1],
-                    [2, 0, 3, 1, 4],
-                    [4, 3, 1, 2, 0],
-                    [1, 2, 0, 4, 3],
-                    [2, 4, 1, 3, 0],
-                    [1, 0, 4, 2, 3],
-                    [4, 3, 0, 1, 2],
-                    [0, 2, 3, 4, 1],
-                    [3, 1, 2, 0, 4]
-                ]
-            },
-            mapping8: {
-                name: '🔴 Difficile - Entropie',
-                difficulty: 'Difficile',
-                grid: [
-                    [1, 4, 2, 0, 3],
-                    [3, 0, 4, 2, 1],
-                    [0, 2, 1, 3, 4],
-                    [4, 1, 3, 0, 2],
-                    [2, 3, 0, 4, 1],
-                    [1, 0, 4, 3, 2],
-                    [4, 2, 3, 1, 0],
-                    [3, 4, 0, 2, 1],
-                    [0, 3, 2, 1, 4],
-                    [2, 1, 1, 4, 3]
-                ]
-            },
-            mapping9: {
-                name: '💀 Expert - Dispersion max',
-                difficulty: 'Très Dur',
-                grid: [
-                    [0, 2, 4, 1, 3],
-                    [3, 1, 0, 4, 2],
-                    [1, 4, 3, 2, 0],
-                    [4, 0, 2, 3, 1],
-                    [2, 3, 1, 0, 4],
-                    [3, 1, 4, 2, 0],
-                    [0, 4, 2, 1, 3],
-                    [4, 2, 0, 3, 1],
-                    [1, 3, 4, 0, 2],
-                    [2, 0, 3, 4, 1]
-                ]
-            },
-            mapping10: {
-                name: '☠️ Cauchemar - Aucune pitié',
-                difficulty: 'Extrême',
-                grid: [
-                    [4, 1, 3, 0, 2],
-                    [2, 0, 4, 3, 1],
-                    [0, 3, 2, 1, 4],
-                    [1, 4, 0, 2, 3],
-                    [3, 2, 1, 4, 0],
-                    [1, 0, 4, 3, 2],
-                    [3, 4, 1, 2, 0],
-                    [2, 1, 3, 0, 4],
-                    [4, 2, 0, 1, 3],
-                    [0, 3, 2, 4, 1]
-                ]
-            }
-        };
-
-        let currentPalette = 'neon';
-        let currentMapping = 'mapping6'; // Celui d'origine (Moyen)
-
-        // =====================================================
-        // ÉTAT DU JEU
-        // =====================================================
-        let globalRotation = INITIAL_ROTATION;
-        let crownRotations = [0, 0, 0, 0, 0];
-        let gridByFace = [];
-        let cellState = [];
-        let isDestroying = false;
-        let isSwapping = false;
-
-        // État Touch/Swap
-        let longPressTimeout = null;
-        let longPressStartX = 0;
-        let longPressStartY = 0;
-        let longPressFrozenFace = null;  // Face figée au moment du touch
-        let longPressFrozenRow = null;
-        let longPressFrozenVisualCol = null;
-        let isLongPressing = false;
-        let currentGesture = 'idle';
-
-        // Debug
-        let dbgTouchXOffset = 0;
-        let showCellInfo = false;
-        
-        // Gravité
-        let gravityEnabled = true;
-        let isApplyingGravity = false;
-
-        // Outline
-        let outlineEnabled = true;
-        let outlineThickness = 1; // Défaut: 1px
-
-        // Column Flip
-        let isFlipping = false;
-        let gravityPausedAfterFlip = false; // Gravité suspendue après un flip
-        let flipGravityPauseEnabled = true; // Option pour activer/désactiver cette fonctionnalité
-
-        // 5 Carrés Horizontaux consécutifs (s'annule si activé avec vertical)
-        let horizontal5Enabled = false;
-
-        // 5 Carrés Verticaux (colonne) - activé par défaut
-        let vertical5Enabled = true;
-
-        // Motif en C de 5 carrés
-        let cShapeEnabled = false;
-
-        // =====================================================
-        // TETRIS MODE - VARIABLES
-        // =====================================================
-        let tetrisModeEnabled = false;
-        let tetrisSpawnInterval = null;
-        let tetrisSpawnDelay = 2000; // 2 secondes par défaut
-        let tetrisFallDelay = 1000; // 1 seconde avant chute par défaut
-        let tetrisSpawnedCount = 0;
-        
-        // Formes actives pour détection
-        let shapesEnabled = {
-            // 3 carrés
-            'L3': false,
-            'I3': false,
-            // 4 carrés
-            'T4': false,
-            'L4': false,
-            'S4': false,
-            'Z4': false,
-            'I4': false,
-            'O4': false
-        };
-        
-        // Définitions des formes (relatives à une position de départ)
-        // Chaque forme a plusieurs orientations possibles
-        const SHAPE_DEFINITIONS = {
-            // === FORMES 3 CARRÉS ===
-            'L3': [
-                // L classique
-                [{df: 0, dr: 0}, {df: 0, dr: 1}, {df: 1, dr: 1}],
-                [{df: 0, dr: 0}, {df: 1, dr: 0}, {df: 0, dr: 1}],
-                [{df: 0, dr: 0}, {df: 1, dr: 0}, {df: 1, dr: 1}],
-                [{df: 0, dr: 0}, {df: 0, dr: 1}, {df: -1, dr: 1}]
-            ],
-            'I3': [
-                // Ligne horizontale
-                [{df: 0, dr: 0}, {df: 1, dr: 0}, {df: 2, dr: 0}],
-                // Ligne verticale
-                [{df: 0, dr: 0}, {df: 0, dr: 1}, {df: 0, dr: 2}]
-            ],
-            // === FORMES 4 CARRÉS ===
-            'T4': [
-                [{df: 0, dr: 0}, {df: 1, dr: 0}, {df: 2, dr: 0}, {df: 1, dr: 1}],
-                [{df: 0, dr: 0}, {df: 0, dr: 1}, {df: 0, dr: 2}, {df: 1, dr: 1}],
-                [{df: 0, dr: 1}, {df: 1, dr: 0}, {df: 1, dr: 1}, {df: 2, dr: 1}],
-                [{df: 1, dr: 0}, {df: 1, dr: 1}, {df: 1, dr: 2}, {df: 0, dr: 1}]
-            ],
-            'L4': [
-                [{df: 0, dr: 0}, {df: 0, dr: 1}, {df: 0, dr: 2}, {df: 1, dr: 2}],
-                [{df: 0, dr: 0}, {df: 1, dr: 0}, {df: 2, dr: 0}, {df: 0, dr: 1}],
-                [{df: 0, dr: 0}, {df: 1, dr: 0}, {df: 1, dr: 1}, {df: 1, dr: 2}],
-                [{df: 2, dr: 0}, {df: 0, dr: 1}, {df: 1, dr: 1}, {df: 2, dr: 1}]
-            ],
-            'S4': [
-                [{df: 1, dr: 0}, {df: 2, dr: 0}, {df: 0, dr: 1}, {df: 1, dr: 1}],
-                [{df: 0, dr: 0}, {df: 0, dr: 1}, {df: 1, dr: 1}, {df: 1, dr: 2}]
-            ],
-            'Z4': [
-                [{df: 0, dr: 0}, {df: 1, dr: 0}, {df: 1, dr: 1}, {df: 2, dr: 1}],
-                [{df: 1, dr: 0}, {df: 0, dr: 1}, {df: 1, dr: 1}, {df: 0, dr: 2}]
-            ],
-            'I4': [
-                [{df: 0, dr: 0}, {df: 1, dr: 0}, {df: 2, dr: 0}, {df: 3, dr: 0}],
-                [{df: 0, dr: 0}, {df: 0, dr: 1}, {df: 0, dr: 2}, {df: 0, dr: 3}]
-            ],
-            'O4': [
-                [{df: 0, dr: 0}, {df: 1, dr: 0}, {df: 0, dr: 1}, {df: 1, dr: 1}]
-            ]
-        };
-
-        function initGrid() {
-            gridByFace = [];
-            cellState = [];
-            const mapping = GRID_MAPPINGS[currentMapping].grid;
-            for (let f = 0; f < FACES; f++) {
-                gridByFace[f] = [...mapping[f]];
-                cellState[f] = [true, true, true, true, true];
-            }
-            isDestroying = false;
-            isSwapping = false;
+        function renderIcon(icon, isFace2) {
+            const d = ICONS[icon], data = isFace2 ? d.f2 : d.f1;
+            if (d.t === 'path') return `<path class="icon" d="${data}"/>`;
+            if (d.t === 'circle') { const [cx,cy,r] = data.split(','); return `<circle class="icon" cx="${cx}" cy="${cy}" r="${r}"/>`; }
+            if (d.t === 'line') { const [x1,y1,x2,y2] = data.split(','); return `<line class="icon" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`; }
+            return data.split('|').map(p => {
+                const v = p.split(',');
+                return d.t === 'circles' || d.t === 'points' 
+                    ? `<circle class="${d.t === 'points' ? 'point' : 'icon'}" cx="${v[0]}" cy="${v[1]}" r="${v[2]}"/>` 
+                    : `<line class="icon" x1="${v[0]}" y1="${v[1]}" x2="${v[2]}" y2="${v[3]}"/>`;
+            }).join('');
         }
 
-        // =====================================================
-        // FONCTIONS DE CONVERSION - CRITIQUES
-        // =====================================================
-        
-        /**
-         * Retourne la face data au centre pour une row donnée
-         * À 18° de rotation, la face centrale est entre F9 et F0
-         * On considère que visualCol -1 = F9 et visualCol 0 = F0
-         */
-        function getCenterDataFaceForRow(row) {
-            const totalRotation = globalRotation + crownRotations[row];
-            // Normaliser entre 0 et 360
-            const normalized = ((totalRotation % 360) + 360) % 360;
-            // Convertir en index de face
-            // À 0° → face 0 est devant
-            // À 36° → face 9 est devant (rotation horaire)
-            // À 18° → entre face 9 et 0
-            const rawFace = -normalized / ANGLE_STEP;
-            const face = Math.round(rawFace);
-            return ((face % FACES) + FACES) % FACES;
-        }
-        
-        /**
-         * Convertit une colonne visuelle en face data pour une row donnée
-         * visualCol: -2, -1, 0, 1 (les 4 colonnes de façade)
-         * 
-         * À globalRotation = 18° et crownRotation = 0:
-         *   visualCol -2 → F8
-         *   visualCol -1 → F9
-         *   visualCol  0 → F0
-         *   visualCol  1 → F1
-         */
-        function getDataFaceForVisualColumnAndRow(visualCol, row) {
-            // La face "de référence" pour cette row
-            // À 18°, c'est F0 (car round(-18/36) = round(-0.5) = 0)
-            const refFace = getCenterDataFaceForRow(row);
-            
-            // Ajuster: à 18°, visualCol 0 correspond à refFace (F0)
-            // visualCol -1 → F9 (refFace - 1)
-            // visualCol -2 → F8 (refFace - 2)
-            // visualCol +1 → F1 (refFace + 1)
-            const dataFace = ((refFace + visualCol) % FACES + FACES) % FACES;
-            
-            return dataFace;
+        function renderDomino(d) {
+            return `<svg viewBox="0 0 90 90"><line class="separator" x1="0" y1="45" x2="90" y2="45"/><g>${renderIcon(d.face1, false)}</g><g transform="translate(0,45)">${renderIcon(d.face2, true)}</g></svg>`;
         }
 
-        /**
-         * Retourne la face opposée (back) d'une face donnée
-         */
-        function getBackFace(face) {
-            return (face + 5) % FACES;
-        }
-
-        // =====================================================
-        // DÉTECTION POSITION TOUCH - MESURES RÉELLES
-        // =====================================================
-        
-        // Basé sur les mesures réelles à globalRotation = 18°
-        // Seules les 4 colonnes de FAÇADE répondent au touch
-        // Les faces arrière visibles dans les interstices sont IGNORÉES
-        
-        // Structure: visualCol → plage de pixels
-        // visualCol -2 = face la plus à gauche visible (F8 dans la vue initiale)
-        // visualCol -1 = face gauche centrale (F9)
-        // visualCol  0 = face droite centrale (F0) - ATTENTION: décalé car vue à 18°
-        // visualCol +1 = face la plus à droite visible (F1)
-        
-        const FRONT_HIT_ZONES = [
-            { col: -2, min: -155, max: -105 },  // F8 - bord gauche
-            { col: -1, min: -95, max: -15 },    // F9 - centre gauche
-            // GAP: -15 à +10 = interstice central → AUCUNE DÉTECTION
-            { col: 0,  min: 10, max: 95 },      // F0 - centre droit  
-            { col: 1,  min: 105, max: 155 }     // F1 - bord droit
-        ];
-        
-        function getVisualColumnFromX(x) {
-            const scene = document.getElementById('scene');
-            const rect = scene.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const offsetX = x - centerX;
-            
-            dbgTouchXOffset = offsetX;
-            
-            // Chercher dans les zones de façade uniquement
-            for (const zone of FRONT_HIT_ZONES) {
-                if (offsetX >= zone.min && offsetX <= zone.max) {
-                    return zone.col;
+        function render() {
+            grid.innerHTML = '';
+            for (let i = 0; i < TOTAL; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                const div = document.createElement('div');
+                div.dataset.index = i;
+                if (dominos[i]) {
+                    div.className = `square ${dominos[i].state}`;
+                    div.innerHTML = renderDomino(dominos[i]);
+                    div.style.transform = `rotate(${dominos[i].rotation}deg)`;
+                } else {
+                    div.className = 'square empty';
                 }
+                cell.appendChild(div);
+                grid.appendChild(cell);
             }
-            
-            // Hors zone façade = interstice ou arrière → pas de détection
-            return null;
-        }
-        
-        function getRowFromY(y) {
-            const scene = document.getElementById('scene');
-            const rect = scene.getBoundingClientRect();
-            const relativeY = y - rect.top;
-            
-            const sceneHeight = 450;
-            const zoneHeight = sceneHeight / ROWS; // 90px
-            
-            if (relativeY < 0) return 0;
-            if (relativeY >= sceneHeight) return ROWS - 1;
-            
-            return Math.min(Math.floor(relativeY / zoneHeight), ROWS - 1);
+            updateStats();
         }
 
-        // =====================================================
-        // PROTECTION ANTI-EMBALLEMENT RENFORCÉE
-        // =====================================================
-        let lastMoveTime = 0;
-        let velocityBuffer = [];
-        const MAX_VELOCITY_SAMPLES = 5;
-        
-        function sanitizeDelta(deltaPixels) {
-            const now = performance.now();
-            
-            // Si trop de temps entre deux moves, reset (nouveau geste)
-            if (now - lastMoveTime > 100) {
-                velocityBuffer = [];
-            }
-            lastMoveTime = now;
-            
-            // Ignorer les deltas trop grands (bug ou multitouch)
-            if (Math.abs(deltaPixels) > INTERACTION.maxDeltaPixels) {
-                return 0;
-            }
-            
-            // Ignorer les micro-mouvements (bruit)
-            if (Math.abs(deltaPixels) < 1) {
-                return 0;
-            }
-            
-            // Calculer la vélocité et détecter l'emballement
-            velocityBuffer.push(Math.abs(deltaPixels));
-            if (velocityBuffer.length > MAX_VELOCITY_SAMPLES) {
-                velocityBuffer.shift();
-            }
-            
-            // Si la moyenne des derniers mouvements est trop élevée, freiner
-            if (velocityBuffer.length >= 3) {
-                const avgVelocity = velocityBuffer.reduce((a, b) => a + b, 0) / velocityBuffer.length;
-                if (avgVelocity > 30) {
-                    // Emballement détecté - appliquer une friction forte
-                    deltaPixels *= 0.3;
-                }
-            }
-            
-            // Convertir en degrés avec sensibilité
-            let deltaDegrees = deltaPixels * INTERACTION.rotationSensitivity;
-            
-            // Clamp final
-            deltaDegrees = Math.max(-INTERACTION.maxDeltaDegrees, Math.min(INTERACTION.maxDeltaDegrees, deltaDegrees));
-            
-            return deltaDegrees;
-        }
-        
-        // Reset velocity buffer quand on relâche
-        function resetVelocity() {
-            velocityBuffer = [];
-            lastMoveTime = 0;
+        function getPos(i) { return { x: i % COLS, y: Math.floor(i / COLS) }; }
+        function getIndex(x, y) { return (x < 0 || x >= COLS || y < 0 || y >= ROWS) ? -1 : y * COLS + x; }
+
+        function detectDiag(dx, dy) {
+            const ax = Math.abs(dx), ay = Math.abs(dy);
+            if (ax < 15 || ay < 15 || ax/ay < 0.5 || ax/ay > 2) return null;
+            return dy < 0 ? (dx > 0 ? 'ur' : 'ul') : (dx > 0 ? 'dr' : 'dl');
         }
 
-        // =====================================================
-        // LONG PRESS & SWAP
-        // =====================================================
-        
-        function startLongPress(x, y) {
-            if (isSwapping || isDestroying) return;
-            
-            const row = getRowFromY(y);
-            const visualCol = getVisualColumnFromX(x);
-            
-            // Toujours initialiser pour permettre le drag
-            longPressStartX = x;
-            longPressStartY = y;
-            isLongPressing = true;
-            
-            // Si on n'est pas sur une cellule valide, permettre le drag mais pas le swap
-            if (visualCol === null) {
-                console.log(`[TOUCH] Interstice détecté - drag possible, swap impossible (offset: ${dbgTouchXOffset.toFixed(0)}px)`);
-                currentGesture = 'pending_drag_only';  // Nouvel état: peut drag mais pas swap
-                longPressFrozenVisualCol = null;
-                longPressFrozenRow = row;
-                longPressFrozenFace = null;
-                updateDebug();
-                return;
-            }
-            
-            const dataFace = getDataFaceForVisualColumnAndRow(visualCol, row);
-            
-            // FIGER les valeurs au moment du touch
-            longPressFrozenVisualCol = visualCol;
-            longPressFrozenRow = row;
-            longPressFrozenFace = dataFace;
-            currentGesture = 'pending';
-            
-            console.log(`[TOUCH] Col ${visualCol}, Row ${row} → Face ${dataFace} (offset: ${dbgTouchXOffset.toFixed(0)}px)`);
-            
-            // Feedback visuel immédiat
-            const cell = document.querySelector(`.cell[data-face="${dataFace}"][data-row="${row}"]`);
-            if (cell && cellState[dataFace][row]) {
-                const angle = dataFace * ANGLE_STEP;
-                cell.style.setProperty('--base-angle', angle + 'deg');
-                cell.classList.add('pressing');
-            }
-            
-            longPressTimeout = setTimeout(() => {
-                if (isLongPressing && currentGesture === 'pending') {
-                    currentGesture = 'longpress';
-                    // Utiliser les valeurs FIGÉES
-                    triggerSwap(longPressFrozenFace, longPressFrozenRow);
-                }
-            }, LONG_PRESS.duration);
-            
-            updateDebug();
+        function getGroup(x, y, dir) {
+            const offsets = { ur: [0, -1], ul: [-1, -1], dr: [0, 0], dl: [-1, 0] };
+            const [ox, oy] = offsets[dir];
+            const tx = x + ox, ty = y + oy;
+            if (tx < 0 || tx > COLS - 2 || ty < 0 || ty > ROWS - 2) return null;
+            return [getIndex(tx, ty), getIndex(tx + 1, ty), getIndex(tx, ty + 1), getIndex(tx + 1, ty + 1)];
         }
-        
-        function cancelLongPress() {
-            if (longPressTimeout) {
-                clearTimeout(longPressTimeout);
-                longPressTimeout = null;
-            }
-            
-            document.querySelectorAll('.cell.pressing').forEach(cell => {
-                cell.classList.remove('pressing');
+
+        function isClockwise(dir) { return dir === 'ur' || dir === 'dr'; }
+
+        function stopContinuous() {
+            if (continuousTimer) { clearTimeout(continuousTimer); continuousTimer = null; }
+            continuousState = null;
+        }
+
+        function executeRotation(indices, clockwise, callback) {
+            if (isLocalRotating || isRotatingDomino) return;
+            isLocalRotating = true;
+
+            const cells = indices.map((idx, i) => ({
+                el: grid.children[idx].querySelector('.square'),
+                domino: dominos[idx],
+                sx: (idx % COLS), sy: Math.floor(idx / COLS)
+            }));
+
+            const map = clockwise ? [2, 0, 3, 1] : [1, 3, 0, 2];
+            cells.forEach((c, i) => {
+                const ti = map[i];
+                c.tx = indices[ti] % COLS;
+                c.ty = Math.floor(indices[ti] / COLS);
             });
-            
-            isLongPressing = false;
-            
-            // Ne reset l'état que si on n'est PAS en train de drag
-            if (currentGesture !== 'drag') {
-                longPressFrozenFace = null;
-                longPressFrozenRow = null;
-                longPressFrozenVisualCol = null;
-                // Ne pas mettre idle ici - laisser le touchend/mouseup le faire
-            }
-            
-            updateDebug();
-        }
-        
-        function checkLongPressMove(x, y) {
-            // Ne vérifier que si on est en attente d'un swap potentiel
-            if (!isLongPressing) return false;
-            if (currentGesture !== 'pending' && currentGesture !== 'pending_drag_only') return false;
-            
-            const dx = x - longPressStartX;
-            const dy = y - longPressStartY;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            
-            if (distance > LONG_PRESS.moveThreshold) {
-                // Ne pas appeler cancelLongPress ici, juste annuler le timeout
-                if (longPressTimeout) {
-                    clearTimeout(longPressTimeout);
-                    longPressTimeout = null;
-                }
-                document.querySelectorAll('.cell.pressing').forEach(cell => {
-                    cell.classList.remove('pressing');
+
+            const duration = continuousState ? ROTATION_SPEED * 0.7 : ROTATION_SPEED * 0.5;
+            const start = performance.now();
+            const cellSize = grid.children[0].offsetWidth;
+            const gap = parseFloat(getComputedStyle(grid).gap) || 8;
+
+            function animate(t) {
+                const p = Math.min((t - start) / duration, 1);
+                const e = 1 - Math.pow(1 - p, 3);
+                cells.forEach(c => {
+                    if (c.el) {
+                        const dx = (c.tx - c.sx) * (cellSize + gap) * e;
+                        const dy = (c.ty - c.sy) * (cellSize + gap) * e;
+                        c.el.style.transform = `translate(${dx}px, ${dy}px) rotate(${c.domino?.rotation || 0}deg)`;
+                    }
                 });
-                isLongPressing = false;
-                return true;
+                if (p < 1) requestAnimationFrame(animate);
+                else finishRotation(indices, clockwise, callback);
             }
-            return false;
+            requestAnimationFrame(animate);
         }
-        
-        function triggerSwap(frontFace, row) {
-            if (isSwapping || frontFace === null || row === null) return;
-            
-            // Réactiver la gravité si elle était pausée après un flip
-            if (gravityPausedAfterFlip) {
-                gravityPausedAfterFlip = false;
-                console.log('[GRAVITY] Réactivée après swap');
+
+        function finishRotation(indices, clockwise, callback) {
+            const saved = indices.map(i => dominos[i]);
+            const map = clockwise ? [2, 0, 3, 1] : [1, 3, 0, 2];
+            for (let i = 0; i < 4; i++) dominos[indices[map[i]]] = saved[i];
+            render();
+            isLocalRotating = false;
+            setTimeout(checkFusions, 50);
+            if (callback) callback();
+        }
+
+        function attemptRotation(x, y, dx, dy) {
+            if (isRotatingDomino) return false;
+            const dir = detectDiag(dx, dy);
+            if (!dir) return false;
+            const group = getGroup(x, y, dir);
+            if (!group || !group.some(i => dominos[i])) return false;
+
+            continuousState = { x, y, dir };
+            (function step() {
+                if (!continuousState) return;
+                const g = getGroup(continuousState.x, continuousState.y, continuousState.dir);
+                if (!g || !g.some(i => dominos[i])) { stopContinuous(); return; }
+                executeRotation(g, isClockwise(continuousState.dir), () => {
+                    if (continuousState) continuousTimer = setTimeout(step, ROTATION_SPEED * 0.3);
+                });
+            })();
+            return true;
+        }
+
+        function handleStart(e) {
+            if (isAnimating) return;
+            if (continuousState) { stopContinuous(); return; }
+            const touch = e.touches?.[0] || e;
+            const target = e.target.closest('.square');
+            if (!target) return;
+            const idx = parseInt(target.dataset.index);
+            const pos = getPos(idx);
+            dragState = { idx, x: pos.x, y: pos.y, sx: touch.clientX, sy: touch.clientY, moved: false, isEmpty: !dominos[idx] };
+            e.preventDefault();
+        }
+
+        function handleMove(e) {
+            if (!dragState || dragState.moved) return;
+            const touch = e.touches?.[0] || e;
+            const dx = touch.clientX - dragState.sx, dy = touch.clientY - dragState.sy;
+            if (detectDiag(dx, dy)) {
+                dragState.moved = true;
+                attemptRotation(dragState.x, dragState.y, dx, dy);
             }
-            
-            const backFace = getBackFace(frontFace);
-            
-            const frontAlive = cellState[frontFace][row];
-            const backAlive = cellState[backFace][row];
-            
-            console.log(`[SWAP] Front F${frontFace}/R${row} (alive:${frontAlive}) ↔ Back F${backFace}/R${row} (alive:${backAlive})`);
-            
-            if (!frontAlive && !backAlive) {
-                cancelLongPress();
-                return;
+            e.preventDefault();
+        }
+
+        function handleEnd() {
+            if (continuousState) stopContinuous();
+            if (dragState && !dragState.moved && !dragState.isEmpty) rotateDomino(dragState.idx);
+            dragState = null;
+        }
+
+        function rotateDomino(idx) {
+            const d = dominos[idx];
+            if (!d || isAnimating || isLocalRotating || isRotatingDomino) return;
+            isRotatingDomino = true;
+            d.rotation += 90;
+            const el = grid.children[idx].querySelector('.square');
+            if (el) {
+                el.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                el.style.transform = `rotate(${d.rotation - 45}deg) scale(0.85)`;
+                setTimeout(() => {
+                    el.style.transform = `rotate(${d.rotation}deg) scale(1)`;
+                    setTimeout(() => { isRotatingDomino = false; checkFusions(); }, 100);
+                }, 200);
+            } else isRotatingDomino = false;
+        }
+
+        function getExposed(d, dir) {
+            const r = ((d.rotation % 360) + 360) % 360;
+            const map = { 0: { top: 'face1', bottom: 'face2' }, 90: { right: 'face1', left: 'face2' }, 180: { top: 'face2', bottom: 'face1' }, 270: { right: 'face2', left: 'face1' } };
+            return map[r]?.[dir] ? d[map[r][dir]] : null;
+        }
+
+        function getRemaining(d, exc) {
+            const r = ((d.rotation % 360) + 360) % 360;
+            const map = { 0: { top: 'face2', bottom: 'face1' }, 90: { right: 'face2', left: 'face1' }, 180: { top: 'face1', bottom: 'face2' }, 270: { right: 'face1', left: 'face2' } };
+            return map[r]?.[exc] ? d[map[r][exc]] : null;
+        }
+
+        function checkFusions() {
+            if (isAnimating || isLocalRotating) return;
+            for (let i = 0; i < TOTAL; i++) {
+                if (!dominos[i]) continue;
+                const { x, y } = getPos(i);
+                const checks = [
+                    { ni: getIndex(x + 1, y), d1: 'right', d2: 'left', dir: 'h' },
+                    { ni: getIndex(x, y + 1), d1: 'bottom', d2: 'top', dir: 'v' }
+                ];
+                for (const { ni, d1, d2, dir } of checks) {
+                    if (ni === -1 || !dominos[ni]) continue;
+                    const f1 = getExposed(dominos[i], d1), f2 = getExposed(dominos[ni], d2);
+                    if (f1 && f2 && f1 === f2) { performFusion(i, ni, dir); return; }
+                }
             }
-            
-            isSwapping = true;
-            updateDebug();
-            
-            const frontCell = document.querySelector(`.cell[data-face="${frontFace}"][data-row="${row}"]`);
-            const backCell = document.querySelector(`.cell[data-face="${backFace}"][data-row="${row}"]`);
-            
-            if (!frontCell || !backCell) {
-                isSwapping = false;
-                cancelLongPress();
-                return;
-            }
-            
-            frontCell.classList.remove('pressing');
-            
-            const frontAngle = frontFace * ANGLE_STEP;
-            const backAngle = backFace * ANGLE_STEP;
-            
-            frontCell.style.setProperty('--base-angle', frontAngle + 'deg');
-            backCell.style.setProperty('--base-angle', backAngle + 'deg');
-            
-            if (frontAlive) frontCell.classList.add('swap-out');
-            if (backAlive) backCell.classList.add('swap-in');
-            
-            // Swap des données à mi-animation
+        }
+
+        function performFusion(i1, i2, dir) {
+            isAnimating = true;
+            const d1 = dominos[i1], d2 = dominos[i2];
+            const el1 = grid.children[i1].querySelector('.square'), el2 = grid.children[i2].querySelector('.square');
+            if (!el1 || !el2) { isAnimating = false; return; }
+
+            const nf1 = getRemaining(d1, dir === 'h' ? 'right' : 'bottom');
+            const nf2 = getRemaining(d2, dir === 'h' ? 'left' : 'top');
+            const ns = STATE_ORDER[Math.min(Math.max(STATE_ORDER.indexOf(d1.state), STATE_ORDER.indexOf(d2.state)) + 1, 5)];
+
+            el1.classList.add('fusing'); el2.classList.add('fusing');
+            const r1 = d1.rotation, r2 = d2.rotation;
+            el1.style.transform = `rotate(${r1}deg) translate${dir === 'h' ? 'X' : 'Y'}(25px) scale${dir === 'h' ? 'X' : 'Y'}(0.7)`;
+            el2.style.transform = `rotate(${r2}deg) translate${dir === 'h' ? 'X' : 'Y'}(-25px) scale${dir === 'h' ? 'X' : 'Y'}(0.7)`;
+
             setTimeout(() => {
-                const tempColor = gridByFace[frontFace][row];
-                gridByFace[frontFace][row] = gridByFace[backFace][row];
-                gridByFace[backFace][row] = tempColor;
-                
-                const tempState = cellState[frontFace][row];
-                cellState[frontFace][row] = cellState[backFace][row];
-                cellState[backFace][row] = tempState;
-                
-                updateCellAppearance(frontCell, frontFace, row);
-                updateCellAppearance(backCell, backFace, row);
-            }, 200);
-            
-            // Fin animation
-            setTimeout(() => {
-                frontCell.classList.remove('swap-out');
-                backCell.classList.remove('swap-in');
-                
-                frontCell.style.transform = `rotateY(${frontAngle}deg) translateZ(${RADIUS}px)`;
-                backCell.style.transform = `rotateY(${backAngle}deg) translateZ(${RADIUS}px)`;
-                
-                if (!cellState[frontFace][row]) {
-                    frontCell.classList.add('destroyed');
-                    if (outlineEnabled) {
-                        frontCell.classList.add('outline-ghost');
-                    }
-                    frontCell.style.opacity = '0';
-                }
-                if (!cellState[backFace][row]) {
-                    backCell.classList.add('destroyed');
-                    if (outlineEnabled) {
-                        backCell.classList.add('outline-ghost');
-                    }
-                    backCell.style.opacity = '0';
-                }
-                
-                isSwapping = false;
-                cancelLongPress();
-                
-                // Vérifier les lignes puis appliquer la gravité immédiatement
-                checkVerticalLines();
-                // Si pas de destruction en cours, appliquer la gravité
-                if (!isDestroying) {
-                    applyGravity();
-                }
+                el1.style.opacity = el2.style.opacity = '0';
+                setTimeout(() => {
+                    dominos[i1] = { face1: nf1 || ICON_KEYS[0], face2: nf2 || ICON_KEYS[0], rotation: dir === 'h' ? 90 : 0, state: ns };
+                    dominos[i2] = null;
+                    render();
+                    setTimeout(() => { isAnimating = false; checkFusions(); }, 500);
+                }, 200);
             }, 400);
         }
-        
-        function updateCellAppearance(cell, face, row) {
-            const color = gridByFace[face][row];
-            const alive = cellState[face][row];
-            
-            cell.className = cell.className.replace(/color-\d/g, '').trim();
-            cell.classList.add(`color-${color}`);
-            cell.classList.add('cell');
-            
-            // Appliquer l'outline si activé
-            applyOutlineToCell(cell);
-            
-            if (alive) {
-                cell.classList.remove('destroyed');
-                cell.classList.remove('outline-ghost');
-                cell.style.opacity = '1';
-            } else {
-                cell.classList.add('destroyed');
-                if (outlineEnabled) {
-                    cell.classList.add('outline-ghost');
-                }
-                cell.style.opacity = '0';
-            }
-            
-            // Mettre à jour le contenu si option activée
-            if (showCellInfo) {
-                cell.innerHTML = `<div style="font-size:14px;font-weight:bold;">F${face}</div><div style="font-size:10px;opacity:0.7;">c${color}</div>`;
-            }
+
+        function updateStats() {
+            const counts = { total: 0, silver: 0, gold: 0, diamond: 0, emerald: 0, cosmic: 0 };
+            dominos.forEach(d => { if (d) { counts.total++; if (d.state !== 'white') counts[d.state]++; } });
+            let s = `${counts.total} domino${counts.total > 1 ? 's' : ''}`;
+            if (counts.silver) s += ` | ${counts.silver} argent`;
+            if (counts.gold) s += ` | ${counts.gold} or`;
+            if (counts.diamond) s += ` | ${counts.diamond} 💎`;
+            if (counts.emerald) s += ` | ${counts.emerald} 💚`;
+            if (counts.cosmic) s += ` | ${counts.cosmic} ✨`;
+            document.getElementById('stats').textContent = s;
         }
 
-        // =====================================================
-        // VÉRIFICATION LIGNES VERTICALES, HORIZONTALES ET C-SHAPE
-        // =====================================================
-        function checkVerticalLines() {
-            if (isDestroying) return;
-            
-            // Collecter tous les patterns à détruire
-            const allPatternsToDestroy = [];
-            
-            // Collecter les colonnes verticales si l'option est activée
-            if (vertical5Enabled) {
-                for (let f = 0; f < FACES; f++) {
-                    const columnData = getValidColumn(f);
-                    if (columnData) {
-                        allPatternsToDestroy.push(columnData);
-                    }
-                }
-            }
-            
-            // Collecter les lignes horizontales si l'option est activée
-            if (horizontal5Enabled) {
-                const horizontalLines = checkHorizontalLines();
-                if (horizontalLines.length > 0) {
-                    allPatternsToDestroy.push(...horizontalLines);
-                }
-            }
-            
-            // Collecter les motifs en C si l'option est activée
-            if (cShapeEnabled) {
-                const cShapePatterns = checkCShapePatterns();
-                if (cShapePatterns.length > 0) {
-                    allPatternsToDestroy.push(...cShapePatterns);
-                }
-            }
-            
-            // Collecter les formes Tetris (3 et 4 carrés)
-            const tetrisPatterns = checkTetrisShapes();
-            if (tetrisPatterns.length > 0) {
-                allPatternsToDestroy.push(...tetrisPatterns);
-            }
-            
-            // Si des patterns à détruire, les traiter tous
-            if (allPatternsToDestroy.length > 0) {
-                destroyMultipleColumns(allPatternsToDestroy);
-            }
-        }
-        
-        /**
-         * Détecte les motifs en C de 5 carrés de même couleur
-         * Un C est composé de 3 carrés alignés + 2 carrés perpendiculaires aux extrémités
-         * 4 orientations possibles: ⊂ (ouvert à droite), ⊃ (ouvert à gauche), ∩ (ouvert en bas), ∪ (ouvert en haut)
-         */
-        function checkCShapePatterns() {
-            const patternsFound = [];
-            const processedKeys = new Set(); // Pour éviter les doublons
-            
-            // Pour chaque face et row, chercher les motifs en C possibles
-            for (let f = 0; f < FACES; f++) {
-                for (let r = 0; r < ROWS; r++) {
-                    // Vérifier les 4 orientations de C à partir de ce point
-                    
-                    // ⊂ Ouvert à droite (barre verticale à gauche, branches vers la droite)
-                    // Position: le point actuel est le coin supérieur gauche du C
-                    const cRight = checkCShapeOrientation(f, r, 'right');
-                    if (cRight && !isDuplicatePattern(cRight, processedKeys)) {
-                        patternsFound.push(cRight);
-                        markPatternProcessed(cRight, processedKeys);
-                    }
-                    
-                    // ⊃ Ouvert à gauche (barre verticale à droite, branches vers la gauche)
-                    const cLeft = checkCShapeOrientation(f, r, 'left');
-                    if (cLeft && !isDuplicatePattern(cLeft, processedKeys)) {
-                        patternsFound.push(cLeft);
-                        markPatternProcessed(cLeft, processedKeys);
-                    }
-                    
-                    // ∪ Ouvert en haut (barre horizontale en bas, branches vers le haut)
-                    const cUp = checkCShapeOrientation(f, r, 'up');
-                    if (cUp && !isDuplicatePattern(cUp, processedKeys)) {
-                        patternsFound.push(cUp);
-                        markPatternProcessed(cUp, processedKeys);
-                    }
-                    
-                    // ∩ Ouvert en bas (barre horizontale en haut, branches vers le bas)
-                    const cDown = checkCShapeOrientation(f, r, 'down');
-                    if (cDown && !isDuplicatePattern(cDown, processedKeys)) {
-                        patternsFound.push(cDown);
-                        markPatternProcessed(cDown, processedKeys);
-                    }
-                }
-            }
-            
-            return patternsFound;
-        }
-        
-        /**
-         * Vérifie si un motif en C existe dans une orientation donnée
-         * @param startFace - Face de départ (coin du C)
-         * @param startRow - Row de départ
-         * @param orientation - 'right', 'left', 'up', 'down' (direction d'ouverture)
-         */
-        function checkCShapeOrientation(startFace, startRow, orientation) {
-            // Définir les 5 positions du C selon l'orientation
-            // Le C est composé de: 3 carrés pour la barre + 2 carrés pour les branches
-            let positions = [];
-            
-            switch (orientation) {
-                case 'right': // ⊂ - barre verticale (3) + branches à droite (2)
-                    // Barre verticale de 3 carrés
-                    // Branche haute vers la droite
-                    // Branche basse vers la droite
-                    if (startRow + 2 >= ROWS) return null; // Pas assez d'espace vertical
-                    positions = [
-                        { f: startFace, r: startRow },     // Haut de la barre
-                        { f: startFace, r: startRow + 1 }, // Milieu de la barre
-                        { f: startFace, r: startRow + 2 }, // Bas de la barre
-                        { f: (startFace + 1) % FACES, r: startRow },     // Branche haute
-                        { f: (startFace + 1) % FACES, r: startRow + 2 }  // Branche basse
-                    ];
-                    break;
-                    
-                case 'left': // ⊃ - barre verticale (3) + branches à gauche (2)
-                    if (startRow + 2 >= ROWS) return null;
-                    positions = [
-                        { f: startFace, r: startRow },
-                        { f: startFace, r: startRow + 1 },
-                        { f: startFace, r: startRow + 2 },
-                        { f: ((startFace - 1) % FACES + FACES) % FACES, r: startRow },
-                        { f: ((startFace - 1) % FACES + FACES) % FACES, r: startRow + 2 }
-                    ];
-                    break;
-                    
-                case 'up': // ∪ - barre horizontale (3) + branches vers le haut (2)
-                    if (startRow < 1) return null; // Pas assez d'espace vers le haut
-                    positions = [
-                        { f: startFace, r: startRow },                           // Gauche de la barre
-                        { f: (startFace + 1) % FACES, r: startRow },             // Milieu de la barre
-                        { f: (startFace + 2) % FACES, r: startRow },             // Droite de la barre
-                        { f: startFace, r: startRow - 1 },                       // Branche gauche (haut)
-                        { f: (startFace + 2) % FACES, r: startRow - 1 }          // Branche droite (haut)
-                    ];
-                    break;
-                    
-                case 'down': // ∩ - barre horizontale (3) + branches vers le bas (2)
-                    if (startRow + 1 >= ROWS) return null;
-                    positions = [
-                        { f: startFace, r: startRow },
-                        { f: (startFace + 1) % FACES, r: startRow },
-                        { f: (startFace + 2) % FACES, r: startRow },
-                        { f: startFace, r: startRow + 1 },
-                        { f: (startFace + 2) % FACES, r: startRow + 1 }
-                    ];
-                    break;
-            }
-            
-            // Convertir les positions visuelles en positions data (en tenant compte des rotations des couronnes)
-            const dataPositions = positions.map(pos => {
-                const rowRotationOffset = Math.round(crownRotations[pos.r] / ANGLE_STEP);
-                const dataFace = ((pos.f - rowRotationOffset) % FACES + FACES) % FACES;
-                return { f: dataFace, r: pos.r };
-            });
-            
-            // Vérifier que toutes les cellules sont vivantes et de même couleur
-            let firstColor = null;
-            for (const pos of dataPositions) {
-                if (!cellState[pos.f][pos.r]) {
-                    return null; // Cellule morte
-                }
-                const color = gridByFace[pos.f][pos.r];
-                if (firstColor === null) {
-                    firstColor = color;
-                } else if (color !== firstColor) {
-                    return null; // Couleurs différentes
-                }
-            }
-            
-            // Motif valide trouvé !
-            console.log(`[C-SHAPE] Motif ${orientation} trouvé, couleur ${firstColor}`);
-            
-            return {
-                type: 'cshape',
-                orientation: orientation,
-                dataPositions: dataPositions,
-                color: firstColor
-            };
-        }
-        
-        /**
-         * Vérifie si un pattern a déjà été traité (pour éviter les doublons)
-         */
-        function isDuplicatePattern(pattern, processedKeys) {
-            const key = pattern.dataPositions.map(p => `${p.f}-${p.r}`).sort().join('|');
-            return processedKeys.has(key);
-        }
-        
-        /**
-         * Marque un pattern comme traité
-         */
-        function markPatternProcessed(pattern, processedKeys) {
-            const key = pattern.dataPositions.map(p => `${p.f}-${p.r}`).sort().join('|');
-            processedKeys.add(key);
-        }
-        
-        /**
-         * Vérifie les lignes horizontales (5 consécutifs même couleur sur une row)
-         * Retourne un tableau de lignes à détruire
-         */
-        function checkHorizontalLines() {
-            const linesToDestroy = [];
-            
-            // Pour chaque row
-            for (let r = 0; r < ROWS; r++) {
-                // Obtenir l'offset de rotation de cette couronne
-                const rowRotationOffset = Math.round(crownRotations[r] / ANGLE_STEP);
-                
-                // Vérifier chaque point de départ possible sur le cylindre (10 faces)
-                for (let startVisualFace = 0; startVisualFace < FACES; startVisualFace++) {
-                    let consecutiveCount = 0;
-                    let firstColor = null;
-                    const consecutiveFaces = [];
-                    
-                    // Parcourir 5 faces consécutives
-                    for (let i = 0; i < 5; i++) {
-                        const visualFace = (startVisualFace + i) % FACES;
-                        const dataFace = ((visualFace - rowRotationOffset) % FACES + FACES) % FACES;
-                        
-                        if (!cellState[dataFace][r]) {
-                            break;
-                        }
-                        
-                        const color = gridByFace[dataFace][r];
-                        
-                        if (i === 0) {
-                            firstColor = color;
-                            consecutiveCount = 1;
-                            consecutiveFaces.push(dataFace);
-                        } else if (color === firstColor) {
-                            consecutiveCount++;
-                            consecutiveFaces.push(dataFace);
-                        } else {
-                            break;
-                        }
-                    }
-                    
-                    // Si on a trouvé 5 consécutifs de même couleur
-                    if (consecutiveCount === 5) {
-                        // Créer l'objet ligne (structure compatible avec colonnes)
-                        // faces: tableau des faces pour chaque "row" - ici c'est horizontal donc on met la row fixe
-                        const facesArray = consecutiveFaces.map(f => f);
-                        
-                        // Pour être compatible avec destroyMultipleColumns, on adapte le format
-                        // On crée un objet spécial pour les lignes horizontales
-                        linesToDestroy.push({
-                            type: 'horizontal',
-                            row: r,
-                            dataFaces: consecutiveFaces,
-                            color: firstColor
-                        });
-                        
-                        console.log(`[HORIZONTAL] Ligne trouvée Row ${r}: faces ${consecutiveFaces.join(',')} couleur ${firstColor}`);
-                    }
-                }
-            }
-            
-            return linesToDestroy;
-        }
-        
-        /**
-         * Vérifie si une colonne visuelle est valide (5 cellules de même couleur)
-         * Retourne les faces concernées ou null
-         */
-        function getValidColumn(face) {
-            let allSameColor = true;
-            let allAlive = true;
-            let firstColor = null;
-            const actualFaces = [];
-            
-            for (let r = 0; r < ROWS; r++) {
-                const rowRotationOffset = Math.round(crownRotations[r] / ANGLE_STEP);
-                const actualFace = ((face - rowRotationOffset) % FACES + FACES) % FACES;
-                actualFaces.push(actualFace);
-                
-                if (!cellState[actualFace][r]) {
-                    allAlive = false;
-                    break;
-                }
-                
-                const color = gridByFace[actualFace][r];
-                if (firstColor === null) {
-                    firstColor = color;
-                } else if (color !== firstColor) {
-                    allSameColor = false;
-                    break;
-                }
-            }
-            
-            if (allAlive && allSameColor && firstColor !== null) {
-                return { type: 'vertical', faces: actualFaces, color: firstColor };
-            }
-            return null;
-        }
-        
-        /**
-         * Détruit plusieurs colonnes/lignes/patterns simultanément
-         */
-        function destroyMultipleColumns(columns) {
-            isDestroying = true;
-            updateDebug();
-            
-            // Marquer toutes les cellules comme mortes
-            const allCellsToDestroy = [];
-            columns.forEach(col => {
-                if (col.type === 'horizontal') {
-                    // Ligne horizontale: toutes les faces sont sur la même row
-                    col.dataFaces.forEach(df => {
-                        const key = `${df}-${col.row}`;
-                        if (!allCellsToDestroy.find(c => c.key === key)) {
-                            allCellsToDestroy.push({ face: df, row: col.row, key });
-                        }
-                    });
-                } else if (col.type === 'cshape' || col.type === 'tetris') {
-                    // Motif en C ou forme Tetris: positions définies dans dataPositions
-                    col.dataPositions.forEach(pos => {
-                        const key = `${pos.f}-${pos.r}`;
-                        if (!allCellsToDestroy.find(c => c.key === key)) {
-                            allCellsToDestroy.push({ face: pos.f, row: pos.r, key });
-                        }
-                    });
-                } else {
-                    // Colonne verticale: une face par row
-                    for (let r = 0; r < ROWS; r++) {
-                        const df = col.faces[r];
-                        const key = `${df}-${r}`;
-                        if (!allCellsToDestroy.find(c => c.key === key)) {
-                            allCellsToDestroy.push({ face: df, row: r, key });
-                        }
-                    }
-                }
-            });
-            
-            // Animer et détruire
-            allCellsToDestroy.forEach((cellData, index) => {
-                const { face: df, row: r } = cellData;
-                cellState[df][r] = false;
-                
-                const cell = document.querySelector(`.cell[data-face="${df}"][data-row="${r}"]`);
-                if (cell) {
-                    const angle = df * ANGLE_STEP;
-                    cell.style.setProperty('--base-angle', angle + 'deg');
-                    
-                    setTimeout(() => {
-                        cell.classList.add('destroying');
-                        setTimeout(() => {
-                            cell.classList.remove('destroying');
-                            cell.classList.add('destroyed');
-                            if (outlineEnabled) {
-                                cell.classList.add('outline-ghost');
-                            }
-                            cell.style.opacity = '0';
-                        }, 500);
-                    }, (index % ROWS) * 100); // Étaler l'animation
-                }
-            });
-            
-            console.log(`[DESTROY] ${columns.length} colonne(s) détruite(s), ${allCellsToDestroy.length} cellules`);
-            
-            // Calculer le délai total basé sur le nombre de cellules
-            const totalDelay = Math.min(allCellsToDestroy.length, ROWS) * 100 + 600;
-            
-            setTimeout(() => {
-                isDestroying = false;
-                updateDebug();
-                updateGhostFrontClasses();
-                // Après destruction, appliquer la gravité
-                setTimeout(() => {
-                    applyGravity();
-                }, 100);
-            }, totalDelay);
-        }
-
-        // =====================================================
-        // CONSTRUCTION CYLINDRE
-        // =====================================================
-        function buildCylinder() {
-            const cylinder = document.getElementById('cylinder');
-            cylinder.innerHTML = '';
-
-            const crownTops = [0, 90, 180, 270, 360];
-
-            for (let r = 0; r < ROWS; r++) {
-                const crown = document.createElement('div');
-                crown.className = 'crown';
-                crown.dataset.row = r;
-                crown.style.top = crownTops[r] + 'px';
-
-                for (let f = 0; f < FACES; f++) {
-                    const cell = document.createElement('div');
-                    const color = gridByFace[f][r];
-                    cell.className = `cell color-${color}`;
-                    cell.dataset.face = f;
-                    cell.dataset.row = r;
-                    
-                    // Appliquer l'outline si activé
-                    applyOutlineToCell(cell);
-                    
-                    if (!cellState[f][r]) {
-                        cell.classList.add('destroyed');
-                        if (outlineEnabled) {
-                            cell.classList.add('outline-ghost');
-                        }
-                        cell.style.opacity = '0';
-                    }
-                    
-                    const angle = f * ANGLE_STEP;
-                    cell.style.transform = `rotateY(${angle}deg) translateZ(${RADIUS}px)`;
-                    cell.style.setProperty('--base-angle', angle + 'deg');
-                    
-                    // Contenu selon option - SÉPARÉ PROPREMENT
-                    if (showCellInfo) {
-                        cell.innerHTML = `<div style="font-size:14px;font-weight:bold;">F${f}</div><div style="font-size:10px;opacity:0.7;">c${color}</div>`;
-                    }
-                    
-                    crown.appendChild(cell);
-                }
-
-                cylinder.appendChild(crown);
-            }
-            updateAllRotations();
-            // Mettre à jour les ghost-front après construction
-            updateGhostFrontClasses();
-        }
-
-        // =====================================================
-        // OUTLINE SYSTEM
-        // =====================================================
-        
-        function applyOutlineToCell(cell) {
-            // Retirer les anciennes classes d'outline
-            cell.classList.remove('outline-1', 'outline-2', 'outline-3');
-            
-            if (outlineEnabled) {
-                cell.classList.add(`outline-${outlineThickness}`);
-            }
-        }
-        
-        /**
-         * Met à jour les classes ghost-front sur toutes les cellules détruites
-         * Les 4 colonnes de façade ont une opacité de 30%, le reste 20%
-         */
-        function updateGhostFrontClasses() {
-            if (!outlineEnabled) return;
-            
-            // Pour chaque row, déterminer quelles faces sont en façade
-            for (let r = 0; r < ROWS; r++) {
-                // Les 4 colonnes visuelles de façade: -2, -1, 0, 1
-                const frontFaces = [];
-                for (let vc = -2; vc <= 1; vc++) {
-                    frontFaces.push(getDataFaceForVisualColumnAndRow(vc, r));
-                }
-                
-                // Parcourir toutes les cellules de cette row
-                for (let f = 0; f < FACES; f++) {
-                    const cell = document.querySelector(`.cell[data-face="${f}"][data-row="${r}"]`);
-                    if (!cell) continue;
-                    
-                    // Si c'est un ghost (détruit avec outline)
-                    if (cell.classList.contains('outline-ghost')) {
-                        if (frontFaces.includes(f)) {
-                            cell.classList.add('ghost-front');
-                        } else {
-                            cell.classList.remove('ghost-front');
-                        }
-                    }
-                }
-            }
-        }
-
-        // =====================================================
-        // COLUMN CYCLE SYSTEM (Swipe Vertical - Rotation cyclique)
-        // =====================================================
-        
-        /**
-         * Effectue une rotation cyclique sur une colonne visuelle
-         * Les carrés glissent vers le haut ou le bas en boucle
-         * direction: 1 = vers le bas (le haut réapparaît en bas), -1 = vers le haut
-         */
-        function triggerColumnCycle(visualCol, direction = 1) {
-            if (isFlipping || isSwapping || isDestroying || isApplyingGravity) return;
-            
-            isFlipping = true;
-            
-            // Si l'option est activée, suspendre la gravité après ce cycle
-            if (flipGravityPauseEnabled) {
-                gravityPausedAfterFlip = true;
-                console.log(`[CYCLE] Colonne visuelle ${visualCol} direction ${direction > 0 ? '↓' : '↑'} - Gravité SUSPENDUE`);
-            } else {
-                console.log(`[CYCLE] Colonne visuelle ${visualCol} direction ${direction > 0 ? '↓' : '↑'}`);
-            }
-            
-            // Récupérer les faces data pour chaque row de cette colonne visuelle
-            const columnFaces = [];
-            for (let r = 0; r < ROWS; r++) {
-                const df = getDataFaceForVisualColumnAndRow(visualCol, r);
-                columnFaces.push(df);
-            }
-            
-            // Sauvegarder les données actuelles
-            const savedColors = [];
-            const savedStates = [];
-            for (let r = 0; r < ROWS; r++) {
-                const df = columnFaces[r];
-                savedColors.push(gridByFace[df][r]);
-                savedStates.push(cellState[df][r]);
-            }
-            
-            // Effectuer la rotation cyclique
-            // direction = 1 (swipe vers le bas): row 0 reçoit ce qui était en row 4, etc.
-            // direction = -1 (swipe vers le haut): row 0 reçoit ce qui était en row 1, etc.
-            for (let r = 0; r < ROWS; r++) {
-                const sourceR = ((r - direction) % ROWS + ROWS) % ROWS;
-                const df = columnFaces[r];
-                
-                gridByFace[df][r] = savedColors[sourceR];
-                cellState[df][r] = savedStates[sourceR];
-            }
-            
-            // Animation visuelle
-            animateColumnCycle(columnFaces, direction, () => {
-                isFlipping = false;
-                updateDebug();
-                
-                // Vérifier les lignes après le cycle
-                setTimeout(() => {
-                    checkVerticalLines();
-                    // Puis gravité si pas de destruction ET si pas pausée après flip
-                    setTimeout(() => {
-                        if (!isDestroying && !gravityPausedAfterFlip) {
-                            applyGravity();
-                        }
-                    }, 100);
-                }, 50);
-            });
-        }
-        
-        /**
-         * Animation de la rotation cyclique de colonne
-         * Effet de "porte magique" : le carré disparaît progressivement d'un côté
-         * et réapparaît de l'autre
-         */
-        function animateColumnCycle(columnFaces, direction, callback) {
-            const cells = [];
-            for (let r = 0; r < ROWS; r++) {
-                const df = columnFaces[r];
-                const cell = document.querySelector(`.cell[data-face="${df}"][data-row="${r}"]`);
-                if (cell) {
-                    cells.push({ cell, face: df, row: r });
-                }
-            }
-            
-            // Phase 1: Compression vers le centre avec léger décalage
-            cells.forEach(({ cell, face, row }) => {
-                const angle = face * ANGLE_STEP;
-                cell.style.transition = 'transform 0.15s ease-in, opacity 0.15s ease-in';
-                cell.style.opacity = '0.6';
-                // Décalage vertical selon la direction
-                const offset = direction > 0 ? 15 : -15;
-                cell.style.transform = `rotateY(${angle}deg) translateZ(${RADIUS}px) translateY(${offset}px) scale(0.9)`;
-            });
-            
-            // Phase 2: Mise à jour de l'apparence et expansion
-            setTimeout(() => {
-                cells.forEach(({ cell, face, row }) => {
-                    updateCellAppearance(cell, face, row);
-                });
-            }, 150);
-            
-            // Phase 3: Retour à la position normale
-            setTimeout(() => {
-                cells.forEach(({ cell, face, row }) => {
-                    const angle = face * ANGLE_STEP;
-                    cell.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
-                    cell.style.opacity = cellState[face][row] ? '1' : '0';
-                    cell.style.transform = `rotateY(${angle}deg) translateZ(${RADIUS}px)`;
-                });
-                
-                // Reset des transitions après animation
-                setTimeout(() => {
-                    cells.forEach(({ cell }) => {
-                        cell.style.transition = '';
-                    });
-                    updateGhostFrontClasses();
-                    if (callback) callback();
-                }, 200);
-            }, 180);
-        }
-        
-        function toggleOutline() {
-            outlineEnabled = document.getElementById('optOutline').checked;
-            console.log('[OUTLINE] ' + (outlineEnabled ? `Activé (${outlineThickness}px)` : 'Désactivé'));
-            
-            // Mettre à jour l'affichage des boutons
-            updateThicknessButtons();
-            
-            // Reconstruire le cylindre pour appliquer
-            buildCylinder();
-            updateDebug();
-        }
-        
-        function setOutlineThickness(thickness) {
-            outlineThickness = thickness;
-            console.log(`[OUTLINE] Épaisseur: ${thickness}px`);
-            
-            // Mettre à jour les boutons
-            updateThicknessButtons();
-            
-            // Activer automatiquement l'outline si on change l'épaisseur
-            if (!outlineEnabled) {
-                outlineEnabled = true;
-                document.getElementById('optOutline').checked = true;
-            }
-            
-            // Reconstruire
-            buildCylinder();
-            updateDebug();
-        }
-        
-        function updateThicknessButtons() {
-            document.querySelectorAll('.thickness-btn').forEach(btn => {
-                const t = parseInt(btn.dataset.thickness);
-                if (t === outlineThickness && outlineEnabled) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-            });
-        }
-
-        function updateAllRotations() {
-            const cylinder = document.getElementById('cylinder');
-            const crowns = cylinder.querySelectorAll('.crown');
-            
-            crowns.forEach((crown, index) => {
-                const totalRotation = globalRotation + crownRotations[index];
-                crown.style.transform = `rotateY(${totalRotation}deg)`;
-            });
-            
-            // Mettre à jour les classes ghost-front selon la nouvelle rotation
-            updateGhostFrontClasses();
-            
-            updateDebug();
-        }
-
-        function setDragging(crownIndex, isDragging) {
-            const crowns = document.querySelectorAll('.crown');
-            if (crownIndex < 0) {
-                crowns.forEach(c => {
-                    if (isDragging) c.classList.add('dragging');
-                    else c.classList.remove('dragging');
-                });
-            } else {
-                if (isDragging) crowns[crownIndex].classList.add('dragging');
-                else crowns[crownIndex].classList.remove('dragging');
-            }
-        }
-
-        function snapToViewPosition(rotation) {
-            return Math.round(rotation / ANGLE_STEP) * ANGLE_STEP + INITIAL_ROTATION % ANGLE_STEP;
-        }
-
-        function snapGlobal() {
-            globalRotation = snapToViewPosition(globalRotation);
-            updateAllRotations();
-            
-            // Réactiver la gravité si elle était pausée après un flip
-            if (gravityPausedAfterFlip) {
-                gravityPausedAfterFlip = false;
-                console.log('[GRAVITY] Réactivée après rotation globale');
-                // Appliquer la gravité maintenant
-                setTimeout(() => {
-                    if (!isDestroying) applyGravity();
-                }, 100);
-            }
-        }
-
-        function snapCrown(crownIndex) {
-            crownRotations[crownIndex] = Math.round(crownRotations[crownIndex] / ANGLE_STEP) * ANGLE_STEP;
-            updateAllRotations();
-            
-            // Réactiver la gravité si elle était pausée après un flip
-            if (gravityPausedAfterFlip) {
-                gravityPausedAfterFlip = false;
-                console.log('[GRAVITY] Réactivée après rotation');
-            }
-            
-            setTimeout(() => {
-                checkVerticalLines();
-                // Appliquer la gravité après le snap
-                setTimeout(() => {
-                    if (!isDestroying) applyGravity();
-                }, 100);
-            }, 300);
-        }
-
-        // =====================================================
-        // DEBUG - CONSOLE AVANCÉE
-        // =====================================================
-        function toggleDebug() {
-            document.getElementById('debugPanel').classList.toggle('visible');
-            updateDebug();
-        }
-
-        function toggleCellDisplay() {
-            showCellInfo = document.getElementById('optShowOnCells').checked;
-            buildCylinder();
-        }
-
-        function toggleGravity() {
-            gravityEnabled = document.getElementById('optGravity').checked;
-            console.log('[GRAVITY] ' + (gravityEnabled ? 'Activée' : 'Désactivée'));
-        }
-
-        function toggleFlipGravityPause() {
-            flipGravityPauseEnabled = document.getElementById('optFlipPause').checked;
-            console.log('[FLIP PAUSE] ' + (flipGravityPauseEnabled ? 'Activée' : 'Désactivée'));
-        }
-
-        function toggleHorizontal5() {
-            horizontal5Enabled = document.getElementById('optHorizontal5').checked;
-            console.log('[HORIZONTAL 5] ' + (horizontal5Enabled ? 'Activée' : 'Désactivée'));
-            
-            // Mise à jour visuelle du contrôle
-            const controls = document.getElementById('horizontalControls');
-            if (horizontal5Enabled) {
-                controls.classList.remove('disabled');
-            } else {
-                controls.classList.add('disabled');
-            }
-            
-            updateDebug();
-            
-            // Vérifier immédiatement les lignes si activé
-            if (horizontal5Enabled) {
-                setTimeout(() => {
-                    checkVerticalLines();
-                }, 100);
-            }
-        }
-
-        function toggleVertical5() {
-            vertical5Enabled = document.getElementById('optVertical5').checked;
-            console.log('[VERTICAL 5] ' + (vertical5Enabled ? 'Activée' : 'Désactivée'));
-            
-            // Mise à jour visuelle du contrôle
-            const controls = document.getElementById('verticalControls');
-            if (vertical5Enabled) {
-                controls.classList.remove('disabled');
-            } else {
-                controls.classList.add('disabled');
-            }
-            
-            updateDebug();
-            
-            // Vérifier immédiatement les lignes si activé
-            if (vertical5Enabled) {
-                setTimeout(() => {
-                    checkVerticalLines();
-                }, 100);
-            }
-        }
-
-        function toggleCShape() {
-            cShapeEnabled = document.getElementById('optCShape').checked;
-            console.log('[C SHAPE] ' + (cShapeEnabled ? 'Activée' : 'Désactivée'));
-            
-            // Mise à jour visuelle du contrôle
-            const controls = document.getElementById('cshapeControls');
-            if (cShapeEnabled) {
-                controls.classList.remove('disabled');
-            } else {
-                controls.classList.add('disabled');
-            }
-            
-            updateDebug();
-            
-            // Vérifier immédiatement les motifs si activé
-            if (cShapeEnabled) {
-                setTimeout(() => {
-                    checkVerticalLines();
-                }, 100);
-            }
-        }
-
-        // =====================================================
-        // TETRIS MODE - FONCTIONS
-        // =====================================================
-        
-        function toggleTetrisMode() {
-            tetrisModeEnabled = !tetrisModeEnabled;
-            console.log('[TETRIS] ' + (tetrisModeEnabled ? 'PLAY' : 'PAUSE'));
-            
-            const btn = document.getElementById('btnPlayPause');
-            if (tetrisModeEnabled) {
-                btn.innerHTML = '⏸️ PAUSE';
-                btn.style.borderColor = '#0f0';
-                btn.style.color = '#0f0';
-                startTetrisSpawn();
-            } else {
-                btn.innerHTML = '▶️ PLAY';
-                btn.style.borderColor = '#ffa500';
-                btn.style.color = '#ffa500';
-                stopTetrisSpawn();
-            }
-            
-            updateDebug();
-        }
-        
-        function updateSpawnTimer() {
-            const slider = document.getElementById('spawnTimer');
-            tetrisSpawnDelay = parseFloat(slider.value) * 1000;
-            document.getElementById('timerValue').textContent = slider.value + 's';
-            
-            // Si le mode est actif, redémarrer avec le nouveau délai
-            if (tetrisModeEnabled) {
-                stopTetrisSpawn();
-                startTetrisSpawn();
-            }
-        }
-        
-        function updateFallTimer() {
-            const slider = document.getElementById('fallTimer');
-            tetrisFallDelay = parseFloat(slider.value) * 1000;
-            document.getElementById('fallTimerValue').textContent = slider.value + 's';
-        }
-        
-        function toggleShape(shapeName) {
-            shapesEnabled[shapeName] = document.getElementById(`optShape-${shapeName}`).checked;
-            
-            // Mise à jour visuelle du badge
-            const badge = document.getElementById(`badge-${shapeName}`);
-            if (shapesEnabled[shapeName]) {
-                badge.classList.add('active');
-            } else {
-                badge.classList.remove('active');
-            }
-            
-            console.log(`[SHAPE] ${shapeName}: ${shapesEnabled[shapeName] ? 'ON' : 'OFF'}`);
-            
-            // Vérifier immédiatement les formes si activé
-            if (shapesEnabled[shapeName]) {
-                setTimeout(() => {
-                    checkVerticalLines();
-                }, 100);
-            }
-        }
-        
-        function startTetrisSpawn() {
-            if (tetrisSpawnInterval) return;
-            
-            console.log(`[TETRIS] Démarrage spawn (${tetrisSpawnDelay}ms)`);
-            
-            // Spawner un premier carré immédiatement
-            spawnRandomSquare();
-            
-            // Puis continuer à intervalle régulier
-            tetrisSpawnInterval = setInterval(() => {
-                spawnRandomSquare();
-            }, tetrisSpawnDelay);
-        }
-        
-        function stopTetrisSpawn() {
-            if (tetrisSpawnInterval) {
-                clearInterval(tetrisSpawnInterval);
-                tetrisSpawnInterval = null;
-            }
-            console.log('[TETRIS] Spawn arrêté');
-        }
-        
-        function spawnRandomSquare() {
-            if (isDestroying || isApplyingGravity) return;
-            
-            // Trouver une face aléatoire sur la row 0 qui est vide
-            const availableFaces = [];
-            for (let f = 0; f < FACES; f++) {
-                // Tenir compte de la rotation de la couronne 0
-                const rowRotationOffset = Math.round(crownRotations[0] / ANGLE_STEP);
-                const dataFace = ((f - rowRotationOffset) % FACES + FACES) % FACES;
-                
-                if (!cellState[dataFace][0]) {
-                    availableFaces.push(dataFace);
-                }
-            }
-            
-            if (availableFaces.length === 0) {
-                console.log('[TETRIS] Row 0 pleine !');
-                return;
-            }
-            
-            // Choisir une face aléatoire
-            const randomFace = availableFaces[Math.floor(Math.random() * availableFaces.length)];
-            
-            // Choisir une couleur aléatoire
-            const randomColor = Math.floor(Math.random() * COLORS);
-            
-            // Faire apparaître le carré
-            gridByFace[randomFace][0] = randomColor;
-            cellState[randomFace][0] = true;
-            
-            tetrisSpawnedCount++;
-            document.getElementById('dbgSpawnedCount').textContent = tetrisSpawnedCount;
-            
-            console.log(`[TETRIS] Spawn F${randomFace}/R0 couleur ${randomColor} - chute dans ${tetrisFallDelay}ms`);
-            
-            // Reconstruire le visuel
-            buildCylinder();
-            updateDebug();
-            
-            // Attendre le délai de chute PUIS appliquer la gravité
-            setTimeout(() => {
-                if (!isDestroying && tetrisModeEnabled) {
-                    applyGravity();
-                }
-            }, tetrisFallDelay);
-        }
-        
-        function clearGrid() {
-            console.log('[TETRIS] Vidage de la grille');
-            
-            // Mettre toutes les cellules en état "détruit"
-            for (let f = 0; f < FACES; f++) {
-                for (let r = 0; r < ROWS; r++) {
-                    cellState[f][r] = false;
-                }
-            }
-            
-            tetrisSpawnedCount = 0;
-            document.getElementById('dbgSpawnedCount').textContent = '0';
-            
-            buildCylinder();
-            updateDebug();
-        }
-        
-        /**
-         * Vérifie les formes Tetris (3 et 4 carrés)
-         */
-        function checkTetrisShapes() {
-            const patternsFound = [];
-            const processedKeys = new Set();
-            
-            // Pour chaque forme activée
-            for (const [shapeName, enabled] of Object.entries(shapesEnabled)) {
-                if (!enabled) continue;
-                
-                const shapeVariants = SHAPE_DEFINITIONS[shapeName];
-                if (!shapeVariants) continue;
-                
-                // Pour chaque variante de la forme
-                for (const variant of shapeVariants) {
-                    // Pour chaque position de départ possible
-                    for (let f = 0; f < FACES; f++) {
-                        for (let r = 0; r < ROWS; r++) {
-                            const pattern = checkShapeAt(f, r, variant, shapeName);
-                            if (pattern && !isDuplicatePattern(pattern, processedKeys)) {
-                                patternsFound.push(pattern);
-                                markPatternProcessed(pattern, processedKeys);
-                            }
-                        }
-                    }
-                }
-            }
-            
-            return patternsFound;
-        }
-        
-        /**
-         * Vérifie si une forme existe à une position donnée
-         */
-        function checkShapeAt(startFace, startRow, variant, shapeName) {
-            const dataPositions = [];
-            let firstColor = null;
-            
-            for (const offset of variant) {
-                const f = ((startFace + offset.df) % FACES + FACES) % FACES;
-                const r = startRow + offset.dr;
-                
-                // Vérifier les limites
-                if (r < 0 || r >= ROWS) return null;
-                
-                // Convertir en position data (tenir compte des rotations)
-                const rowRotationOffset = Math.round(crownRotations[r] / ANGLE_STEP);
-                const dataFace = ((f - rowRotationOffset) % FACES + FACES) % FACES;
-                
-                // Vérifier si la cellule est vivante
-                if (!cellState[dataFace][r]) return null;
-                
-                // Vérifier la couleur
-                const color = gridByFace[dataFace][r];
-                if (firstColor === null) {
-                    firstColor = color;
-                } else if (color !== firstColor) {
-                    return null;
-                }
-                
-                dataPositions.push({ f: dataFace, r: r });
-            }
-            
-            console.log(`[SHAPE] ${shapeName} trouvé, couleur ${firstColor}`);
-            
-            return {
-                type: 'tetris',
-                shapeName: shapeName,
-                dataPositions: dataPositions,
-                color: firstColor
-            };
-        }
-
-        // =====================================================
-        // GESTION DES PALETTES ET MAPPINGS
-        // =====================================================
-        
-        function applyPalette(paletteName) {
-            currentPalette = paletteName;
-            const palette = COLOR_PALETTES[paletteName];
-            
-            // Mettre à jour le CSS dynamiquement
-            const styleSheet = document.styleSheets[0];
-            
-            // Supprimer les anciennes règles de couleur
-            const rulesToDelete = [];
-            for (let i = 0; i < styleSheet.cssRules.length; i++) {
-                const rule = styleSheet.cssRules[i];
-                if (rule.selectorText && rule.selectorText.startsWith('.color-')) {
-                    rulesToDelete.push(i);
-                }
-            }
-            // Supprimer en ordre inverse pour ne pas décaler les indices
-            for (let i = rulesToDelete.length - 1; i >= 0; i--) {
-                styleSheet.deleteRule(rulesToDelete[i]);
-            }
-            
-            // Ajouter les nouvelles règles
-            for (let i = 0; i < 5; i++) {
-                const rule = `.color-${i} { background: ${palette.colors[i]}; color: ${palette.textColors[i]}; }`;
-                styleSheet.insertRule(rule, styleSheet.cssRules.length);
-            }
-            
-            // Mettre à jour le sélecteur
-            document.getElementById('paletteSelect').value = paletteName;
-            
-            console.log(`[PALETTE] ${palette.name}`);
-            buildCylinder();
-        }
-        
-        function loadMapping(mappingName) {
-            currentMapping = mappingName;
-            const mapping = GRID_MAPPINGS[mappingName];
-            
-            // Mettre à jour le sélecteur
-            document.getElementById('mappingSelect').value = mappingName;
-            
-            console.log(`[MAPPING] ${mapping.name} (${mapping.difficulty})`);
-            
-            // Reset avec le nouveau mapping
-            globalRotation = INITIAL_ROTATION;
-            crownRotations = [0, 0, 0, 0, 0];
-            gravityPausedAfterFlip = false;
-            cancelLongPress();
-            initGrid();
-            buildCylinder();
-            updateDebug();
-            analyzeDifficulty();
-        }
-
-        // =====================================================
-        // SYSTÈME DE GRAVITÉ
-        // =====================================================
-        
-        /**
-         * Applique la gravité sur toutes les colonnes visuelles
-         * Une colonne visuelle = une face "alignée" à travers toutes les rows
-         * en tenant compte des rotations individuelles des couronnes
-         */
-        function applyGravity() {
-            if (!gravityEnabled || isApplyingGravity || isDestroying || isSwapping) return;
-            
-            isApplyingGravity = true;
-            let somethingFell = false;
-            
-            // Pour chaque "colonne visuelle" (face de référence 0-9)
-            for (let visualFace = 0; visualFace < FACES; visualFace++) {
-                // Construire la colonne : quelle face DATA est à cette position visuelle pour chaque row ?
-                const columnFaces = [];
-                for (let r = 0; r < ROWS; r++) {
-                    const rowRotationOffset = Math.round(crownRotations[r] / ANGLE_STEP);
-                    const actualDataFace = ((visualFace - rowRotationOffset) % FACES + FACES) % FACES;
-                    columnFaces.push(actualDataFace);
-                }
-                
-                // Appliquer la gravité sur cette colonne (de bas en haut)
-                // On cherche les trous et on fait tomber ce qui est au-dessus
-                for (let r = ROWS - 1; r >= 0; r--) {
-                    const dataFace = columnFaces[r];
-                    
-                    // Si cette cellule est vide, chercher la première cellule vivante au-dessus
-                    if (!cellState[dataFace][r]) {
-                        for (let above = r - 1; above >= 0; above--) {
-                            const aboveDataFace = columnFaces[above];
-                            
-                            if (cellState[aboveDataFace][above]) {
-                                // Trouver la cellule vivante ! La faire tomber
-                                console.log(`[GRAVITY] F${aboveDataFace}/R${above} tombe vers F${dataFace}/R${r}`);
-                                
-                                // Transférer les données
-                                gridByFace[dataFace][r] = gridByFace[aboveDataFace][above];
-                                cellState[dataFace][r] = true;
-                                
-                                // Vider l'ancienne position
-                                cellState[aboveDataFace][above] = false;
-                                
-                                somethingFell = true;
-                                break; // Une seule cellule tombe par trou à la fois
-                            }
-                        }
-                    }
-                }
-            }
-            
-            if (somethingFell) {
-                // Reconstruire le visuel et vérifier les nouvelles lignes
-                buildCylinder();
-                updateDebug();
-                
-                // Attendre un peu puis vérifier si d'autres chutes ou lignes
-                setTimeout(() => {
-                    isApplyingGravity = false;
-                    // D'abord vérifier les lignes créées par la chute
-                    checkVerticalLines();
-                    // Puis ré-appliquer la gravité si nécessaire (cascade)
-                    setTimeout(() => {
-                        if (!isDestroying) applyGravity();
-                    }, 100);
-                }, 300);
-            } else {
-                isApplyingGravity = false;
-            }
-        }
-
-        function countAliveCells() {
-            let count = 0;
-            for (let f = 0; f < FACES; f++) {
-                for (let r = 0; r < ROWS; r++) {
-                    if (cellState[f][r]) count++;
-                }
-            }
-            return count;
-        }
-
-        function updateDebug() {
-            // Rotations
-            document.getElementById('dbgGlobal').textContent = globalRotation.toFixed(1) + '°';
-            document.getElementById('dbgCrownRot').textContent = '[' + crownRotations.map(r => r.toFixed(0)).join(',') + ']';
-            
-            // Center faces per row
-            const centerFaces = [];
-            for (let r = 0; r < ROWS; r++) {
-                centerFaces.push(getCenterDataFaceForRow(r));
-            }
-            document.getElementById('dbgCenterFaces').textContent = JSON.stringify(centerFaces);
-            
-            // Touch info
-            document.getElementById('dbgTouchX').textContent = dbgTouchXOffset.toFixed(0) + 'px';
-            document.getElementById('dbgVisualCol').textContent = longPressFrozenVisualCol !== null ? longPressFrozenVisualCol : (dbgTouchXOffset !== 0 ? '⚠️ interstice' : '-');
-            document.getElementById('dbgTouchRow').textContent = longPressFrozenRow !== null ? longPressFrozenRow : '-';
-            document.getElementById('dbgTargetFront').textContent = longPressFrozenFace !== null ? `F${longPressFrozenFace}` : '-';
-            document.getElementById('dbgTargetBack').textContent = longPressFrozenFace !== null ? `F${getBackFace(longPressFrozenFace)}` : '-';
-            document.getElementById('dbgGesture').textContent = currentGesture;
-            
-            // État jeu
-            document.getElementById('dbgAlive').textContent = countAliveCells() + '/50';
-            document.getElementById('dbgSwapping').textContent = isSwapping;
-            document.getElementById('dbgDestroying').textContent = isDestroying;
-            document.getElementById('dbgGravity').textContent = gravityEnabled ? 'ON' : 'OFF';
-            document.getElementById('dbgGravity').style.color = gravityEnabled ? '#0f0' : '#f55';
-            document.getElementById('dbgApplyingGravity').textContent = isApplyingGravity;
-            
-            // Outline
-            const outlineStatus = outlineEnabled ? `ON (${outlineThickness}px)` : 'OFF';
-            document.getElementById('dbgOutline').textContent = outlineStatus;
-            document.getElementById('dbgOutline').style.color = outlineEnabled ? '#0f0' : '#f55';
-            
-            // Horizontal 5
-            document.getElementById('dbgHorizontal5').textContent = horizontal5Enabled ? 'ON' : 'OFF';
-            document.getElementById('dbgHorizontal5').style.color = horizontal5Enabled ? '#f88' : '#888';
-            
-            // Vertical 5
-            document.getElementById('dbgVertical5').textContent = vertical5Enabled ? 'ON' : 'OFF';
-            document.getElementById('dbgVertical5').style.color = vertical5Enabled ? '#8f8' : '#888';
-            
-            // C Shape
-            document.getElementById('dbgCShape').textContent = cShapeEnabled ? 'ON' : 'OFF';
-            document.getElementById('dbgCShape').style.color = cShapeEnabled ? '#8cf' : '#888';
-            
-            // Flip
-            document.getElementById('dbgFlipping').textContent = isFlipping;
-            document.getElementById('dbgGravityPaused').textContent = gravityPausedAfterFlip;
-            document.getElementById('dbgGravityPaused').style.color = gravityPausedAfterFlip ? '#4facfe' : '#888';
-            
-            // Mapping actuel
-            if (document.getElementById('dbgCurrentMapping')) {
-                const mapping = GRID_MAPPINGS[currentMapping];
-                document.getElementById('dbgCurrentMapping').textContent = mapping.name.replace(/^[^\s]+\s/, '');
-            }
-            
-            // Grille
-            updateDebugGrid();
-        }
-
-        function updateDebugGrid() {
-            const showFaceNum = document.getElementById('optShowFaceNum').checked;
-            const showColor = document.getElementById('optShowColor').checked;
-            
-            // Header (colonnes -2 à +7)
-            let headerHtml = '';
-            for (let vc = -2; vc <= 7; vc++) {
-                let cls = '';
-                if (vc >= -2 && vc <= 2) cls = 'front';
-                else if (vc >= 3 && vc <= 7) cls = 'back';
-                if (longPressFrozenVisualCol !== null && vc === longPressFrozenVisualCol) cls += ' active';
-                headerHtml += `<span class="${cls}">${vc}</span>`;
-            }
-            document.getElementById('dbgGridHeader').innerHTML = headerHtml;
-            
-            // Grille
-            let gridHtml = '';
-            for (let r = 0; r < ROWS; r++) {
-                gridHtml += '<div class="debug-grid-row">';
-                gridHtml += `<span class="debug-grid-row-label">Row ${r}</span>`;
-                
-                for (let vc = -2; vc <= 7; vc++) {
-                    const df = getDataFaceForVisualColumnAndRow(vc, r);
-                    const color = gridByFace[df][r];
-                    const alive = cellState[df][r];
-                    
-                    // Est-ce la cible du swap ?
-                    const isTarget = (longPressFrozenFace !== null && longPressFrozenRow === r &&
-                                     (df === longPressFrozenFace || df === getBackFace(longPressFrozenFace)));
-                    
-                    const targetClass = isTarget ? ' target' : '';
-                    
-                    if (alive) {
-                        let content = '';
-                        if (showFaceNum) content += `<span class="face-num">F${df}</span>`;
-                        if (showColor) content += color;
-                        gridHtml += `<div class="debug-grid-cell c${color}${targetClass}">${content}</div>`;
-                    } else {
-                        gridHtml += `<div class="debug-grid-cell dead${targetClass}">X</div>`;
-                    }
-                }
-                gridHtml += '</div>';
-            }
-            document.getElementById('dbgGrid').innerHTML = gridHtml;
+        function shuffle() {
+            if (isAnimating || isLocalRotating) return;
+            dominos.forEach(d => { if (d) d.rotation = [0, 90, 180, 270][Math.floor(Math.random() * 4)]; });
+            render();
+            setTimeout(checkFusions, 300);
         }
 
         function resetGame() {
-            globalRotation = INITIAL_ROTATION;
-            crownRotations = [0, 0, 0, 0, 0];
-            cancelLongPress();
-            initGrid();
-            buildCylinder();
-            updateDebug();
-            analyzeDifficulty();
-            console.log('[RESET] Plateau réinitialisé');
+            if (isAnimating || isLocalRotating) return;
+            stopContinuous();
+            dominos = Array.from({ length: TOTAL }, () => ({
+                face1: ICON_KEYS[Math.floor(Math.random() * ICON_KEYS.length)],
+                face2: ICON_KEYS[Math.floor(Math.random() * ICON_KEYS.length)],
+                rotation: 0,
+                state: 'white'
+            }));
+            render();
         }
 
-        function logFullState() {
-            console.log('=== ÉTAT COMPLET v18 ===');
-            console.log('globalRotation:', globalRotation);
-            console.log('crownRotations:', crownRotations);
-            console.log('centerFacesPerRow:', Array.from({length: ROWS}, (_, r) => getCenterDataFaceForRow(r)));
-            console.log('gridByFace:', JSON.stringify(gridByFace));
-            console.log('cellState:', JSON.stringify(cellState));
-            console.log('Cellules vivantes:', countAliveCells());
-            console.log('Outline:', outlineEnabled ? `ON (${outlineThickness}px)` : 'OFF');
-            console.log('Horizontal5:', horizontal5Enabled ? 'ON' : 'OFF');
-        }
+        grid.addEventListener('mousedown', handleStart);
+        grid.addEventListener('touchstart', handleStart, { passive: false });
+        document.addEventListener('mousemove', handleMove);
+        document.addEventListener('touchmove', handleMove, { passive: false });
+        document.addEventListener('mouseup', handleEnd);
+        document.addEventListener('touchend', handleEnd);
 
-        // =====================================================
-        // ANALYSEUR DE DIFFICULTÉ
-        // =====================================================
-        
-        /**
-         * Compte les quasi-lignes (colonnes avec 4/5 cellules de même couleur)
-         * Plus il y en a = plus facile
-         */
-        function countQuasiLines() {
-            let count = 0;
-            
-            for (let visualFace = 0; visualFace < FACES; visualFace++) {
-                // Compter les couleurs dans cette colonne visuelle
-                const colorCount = [0, 0, 0, 0, 0];
-                let aliveCount = 0;
-                
-                for (let r = 0; r < ROWS; r++) {
-                    const rowRotationOffset = Math.round(crownRotations[r] / ANGLE_STEP);
-                    const actualDataFace = ((visualFace - rowRotationOffset) % FACES + FACES) % FACES;
-                    
-                    if (cellState[actualDataFace][r]) {
-                        const color = gridByFace[actualDataFace][r];
-                        colorCount[color]++;
-                        aliveCount++;
-                    }
-                }
-                
-                // Quasi-ligne = 4 cellules de même couleur sur 5
-                const maxSameColor = Math.max(...colorCount);
-                if (maxSameColor >= 4 && aliveCount >= 4) {
-                    count++;
-                }
-            }
-            
-            return count;
-        }
-        
-        /**
-         * Compte les adjacences verticales de même couleur
-         * (deux cellules voisines verticalement avec même couleur)
-         * Plus il y en a = plus facile
-         */
-        function countVerticalAdjacencies() {
-            let count = 0;
-            
-            for (let visualFace = 0; visualFace < FACES; visualFace++) {
-                for (let r = 0; r < ROWS - 1; r++) {
-                    const rowOffset1 = Math.round(crownRotations[r] / ANGLE_STEP);
-                    const rowOffset2 = Math.round(crownRotations[r + 1] / ANGLE_STEP);
-                    const face1 = ((visualFace - rowOffset1) % FACES + FACES) % FACES;
-                    const face2 = ((visualFace - rowOffset2) % FACES + FACES) % FACES;
-                    
-                    if (cellState[face1][r] && cellState[face2][r + 1]) {
-                        if (gridByFace[face1][r] === gridByFace[face2][r + 1]) {
-                            count++;
-                        }
-                    }
-                }
-            }
-            
-            return count;
-        }
-        
-        /**
-         * Compte les paires front/back "utiles"
-         * Une paire est utile si swapper améliorerait une quasi-ligne
-         */
-        function countUsefulPairs() {
-            let count = 0;
-            
-            for (let f = 0; f < FACES / 2; f++) {
-                const frontFace = f;
-                const backFace = (f + 5) % FACES;
-                
-                for (let r = 0; r < ROWS; r++) {
-                    if (!cellState[frontFace][r] || !cellState[backFace][r]) continue;
-                    
-                    const frontColor = gridByFace[frontFace][r];
-                    const backColor = gridByFace[backFace][r];
-                    
-                    if (frontColor === backColor) continue; // Swap inutile
-                    
-                    // Vérifier si le swap aiderait à créer une ligne
-                    // Compter combien de voisins verticaux ont la couleur du back
-                    let frontNeighborsMatchBack = 0;
-                    let backNeighborsMatchFront = 0;
-                    
-                    for (let dr = -1; dr <= 1; dr += 2) {
-                        const nr = r + dr;
-                        if (nr < 0 || nr >= ROWS) continue;
-                        
-                        // Vérifier sur la colonne front
-                        const rowOffset = Math.round(crownRotations[nr] / ANGLE_STEP);
-                        const neighborFace = ((frontFace + rowOffset) % FACES + FACES) % FACES;
-                        
-                        if (cellState[neighborFace][nr]) {
-                            if (gridByFace[neighborFace][nr] === backColor) frontNeighborsMatchBack++;
-                            if (gridByFace[neighborFace][nr] === frontColor) backNeighborsMatchFront++;
-                        }
-                    }
-                    
-                    // Si le swap améliorerait l'alignement
-                    if (frontNeighborsMatchBack > 0 || backNeighborsMatchFront > 0) {
-                        count++;
-                    }
-                }
-            }
-            
-            return count;
-        }
-        
-        /**
-         * Mesure la dispersion des couleurs (entropie)
-         * 0 = toutes les mêmes couleurs regroupées
-         * 100 = couleurs parfaitement dispersées (difficile)
-         */
-        function measureDispersion() {
-            let totalDistance = 0;
-            let pairCount = 0;
-            
-            // Pour chaque couleur, calculer la distance moyenne entre ses occurrences
-            for (let color = 0; color < COLORS; color++) {
-                const positions = [];
-                
-                // Trouver toutes les positions de cette couleur
-                for (let f = 0; f < FACES; f++) {
-                    for (let r = 0; r < ROWS; r++) {
-                        if (cellState[f][r] && gridByFace[f][r] === color) {
-                            positions.push({ face: f, row: r });
-                        }
-                    }
-                }
-                
-                // Calculer distance entre chaque paire
-                for (let i = 0; i < positions.length; i++) {
-                    for (let j = i + 1; j < positions.length; j++) {
-                        const p1 = positions[i];
-                        const p2 = positions[j];
-                        
-                        // Distance sur le cylindre (faces sont circulaires)
-                        const faceDist = Math.min(
-                            Math.abs(p1.face - p2.face),
-                            FACES - Math.abs(p1.face - p2.face)
-                        );
-                        const rowDist = Math.abs(p1.row - p2.row);
-                        
-                        totalDistance += faceDist + rowDist;
-                        pairCount++;
-                    }
-                }
-            }
-            
-            if (pairCount === 0) return 0;
-            
-            const avgDistance = totalDistance / pairCount;
-            // Normaliser sur 100 (distance max théorique ≈ 7)
-            return Math.round((avgDistance / 7) * 100);
-        }
-        
-        /**
-         * Calcule le score de difficulté global (0-100)
-         */
-        function calculateDifficultyScore() {
-            const quasiLines = countQuasiLines();
-            const adjacencies = countVerticalAdjacencies();
-            const usefulPairs = countUsefulPairs();
-            const dispersion = measureDispersion();
-            
-            // Formule de difficulté :
-            // - Moins de quasi-lignes = plus dur
-            // - Moins d'adjacences = plus dur  
-            // - Moins de paires utiles = plus dur
-            // - Plus de dispersion = plus dur
-            
-            const quasiScore = Math.max(0, 20 - quasiLines * 5);      // 0-20 points
-            const adjScore = Math.max(0, 30 - adjacencies * 2);       // 0-30 points
-            const pairsScore = Math.max(0, 20 - usefulPairs * 2);     // 0-20 points
-            const dispersionScore = dispersion * 0.3;                  // 0-30 points
-            
-            const total = Math.round(quasiScore + adjScore + pairsScore + dispersionScore);
-            
-            return {
-                quasiLines,
-                adjacencies,
-                usefulPairs,
-                dispersion,
-                score: Math.min(100, Math.max(0, total))
-            };
-        }
-        
-        /**
-         * Retourne le niveau de difficulté en texte
-         */
-        function getDifficultyLevel(score) {
-            if (score < 20) return { text: '😴 TRÈS FACILE', color: '#43e97b' };
-            if (score < 40) return { text: '🙂 FACILE', color: '#4facfe' };
-            if (score < 55) return { text: '😐 MOYEN', color: '#fee140' };
-            if (score < 70) return { text: '😤 DIFFICILE', color: '#fa709a' };
-            if (score < 85) return { text: '🔥 TRÈS DUR', color: '#f55' };
-            return { text: '💀 EXTRÊME', color: '#f00' };
-        }
-        
-        /**
-         * Lance l'analyse et met à jour l'affichage
-         */
-        function analyzeDifficulty() {
-            const analysis = calculateDifficultyScore();
-            const level = getDifficultyLevel(analysis.score);
-            
-            document.getElementById('dbgQuasiLines').textContent = analysis.quasiLines;
-            document.getElementById('dbgAdjacent').textContent = analysis.adjacencies;
-            document.getElementById('dbgUsefulPairs').textContent = analysis.usefulPairs;
-            document.getElementById('dbgDispersion').textContent = analysis.dispersion + '%';
-            document.getElementById('dbgDifficultyScore').textContent = analysis.score + '/100';
-            document.getElementById('dbgDifficultyScore').style.color = level.color;
-            document.getElementById('dbgDifficultyLevel').textContent = level.text;
-            document.getElementById('dbgDifficultyLevel').style.color = level.color;
-            
-            console.log('=== ANALYSE DIFFICULTÉ ===');
-            console.log('Quasi-lignes (4/5):', analysis.quasiLines);
-            console.log('Adjacences verticales:', analysis.adjacencies);
-            console.log('Paires utiles:', analysis.usefulPairs);
-            console.log('Dispersion:', analysis.dispersion + '%');
-            console.log('SCORE:', analysis.score + '/100');
-            console.log('NIVEAU:', level.text);
-        }
-
-        function testSwapAt(face, row) {
-            console.log(`[TEST] Swap manuel Face ${face}, Row ${row}`);
-            triggerSwap(face, row);
-        }
-
-        // =====================================================
-        // VARIABLES D'INTERACTION
-        // =====================================================
-        let isDraggingGlobal = false;
-        let isDraggingCrown = false;
-        let activeCrown = -1;
-        let lastX = 0;
-        let lastY = 0;
-        let dragStartX = 0;
-        let dragStartY = 0;
-
-        // =====================================================
-        // ÉVÉNEMENTS - SWIPE ZONE
-        // =====================================================
-        const swipeZone = document.getElementById('swipeZone');
-        const scene = document.getElementById('scene');
-
-        swipeZone.addEventListener('touchstart', (e) => {
-            isDraggingGlobal = true;
-            lastX = e.touches[0].clientX;
-            setDragging(-1, true);
-            currentGesture = 'drag';
-            updateDebug();
-        }, { passive: true });
-
-        swipeZone.addEventListener('touchmove', (e) => {
-            if (!isDraggingGlobal) return;
-            const currentX = e.touches[0].clientX;
-            const deltaPixels = currentX - lastX;
-            const deltaDegrees = sanitizeDelta(deltaPixels);
-            if (deltaDegrees !== 0) {
-                globalRotation += deltaDegrees;
-                updateAllRotations();
-            }
-            lastX = currentX;
-        }, { passive: true });
-
-        swipeZone.addEventListener('touchend', () => {
-            if (isDraggingGlobal) {
-                isDraggingGlobal = false;
-                setDragging(-1, false);
-                snapGlobal();
-                currentGesture = 'idle';
-                resetVelocity();
-                updateDebug();
-            }
-        });
-
-        swipeZone.addEventListener('mousedown', (e) => {
-            isDraggingGlobal = true;
-            lastX = e.clientX;
-            setDragging(-1, true);
-            currentGesture = 'drag';
-            updateDebug();
-        });
-
-        // =====================================================
-        // ÉVÉNEMENTS - SCENE (Touch)
-        // =====================================================
-        scene.addEventListener('touchstart', (e) => {
-            const touch = e.touches[0];
-            activeCrown = getRowFromY(touch.clientY);
-            lastX = touch.clientX;
-            lastY = touch.clientY;
-            dragStartX = lastX;
-            dragStartY = lastY;
-            
-            startLongPress(touch.clientX, touch.clientY);
-        }, { passive: true });
-
-        scene.addEventListener('touchmove', (e) => {
-            const currentX = e.touches[0].clientX;
-            const currentY = e.touches[0].clientY;
-            
-            checkLongPressMove(currentX, currentY);
-            
-            const deltaX = currentX - dragStartX;
-            const deltaY = currentY - dragStartY;
-            
-            // Détection du type de geste
-            if (currentGesture === 'pending' || currentGesture === 'pending_drag_only') {
-                // Swipe HORIZONTAL → Drag couronne
-                if (Math.abs(deltaX) > INTERACTION.directionThreshold && Math.abs(deltaX) > Math.abs(deltaY)) {
-                    cancelLongPress();
-                    currentGesture = 'drag';
-                    isDraggingCrown = true;
-                    if (activeCrown >= 0) setDragging(activeCrown, true);
-                    updateDebug();
-                }
-                // Swipe VERTICAL → Column Cycle (rotation cyclique)
-                else if (currentGesture === 'pending' && 
-                         Math.abs(deltaY) > INTERACTION.verticalSwipeThreshold && 
-                         Math.abs(deltaX) < INTERACTION.horizontalMaxForVertical &&
-                         longPressFrozenVisualCol !== null) {
-                    const visualColToCycle = longPressFrozenVisualCol; // Sauvegarder AVANT cancel
-                    const direction = deltaY > 0 ? 1 : -1; // 1 = vers le bas, -1 = vers le haut
-                    cancelLongPress();
-                    currentGesture = 'cycle';
-                    triggerColumnCycle(visualColToCycle, direction);
-                    updateDebug();
-                }
-            }
-            
-            if (currentGesture === 'drag' && activeCrown >= 0) {
-                const deltaPixels = currentX - lastX;
-                const deltaDegrees = sanitizeDelta(deltaPixels);
-                if (deltaDegrees !== 0) {
-                    crownRotations[activeCrown] += deltaDegrees;
-                    updateAllRotations();
-                }
-            }
-            
-            lastX = currentX;
-            lastY = currentY;
-        }, { passive: true });
-
-        scene.addEventListener('touchend', () => {
-            cancelLongPress();
-            
-            if (isDraggingCrown && activeCrown >= 0) {
-                setDragging(activeCrown, false);
-                snapCrown(activeCrown);
-            }
-            
-            isDraggingCrown = false;
-            activeCrown = -1;
-            currentGesture = 'idle';
-            resetVelocity();
-            updateDebug();
-        });
-
-        // =====================================================
-        // ÉVÉNEMENTS - SCENE (Mouse)
-        // =====================================================
-        scene.addEventListener('mousedown', (e) => {
-            activeCrown = getRowFromY(e.clientY);
-            lastX = e.clientX;
-            lastY = e.clientY;
-            dragStartX = lastX;
-            dragStartY = lastY;
-            
-            startLongPress(e.clientX, e.clientY);
-        });
-
-        document.addEventListener('mousemove', (e) => {
-            checkLongPressMove(e.clientX, e.clientY);
-            
-            if (isDraggingGlobal) {
-                const currentX = e.clientX;
-                const deltaPixels = currentX - lastX;
-                const deltaDegrees = sanitizeDelta(deltaPixels);
-                if (deltaDegrees !== 0) {
-                    globalRotation += deltaDegrees;
-                    updateAllRotations();
-                }
-                lastX = currentX;
-                return;
-            }
-            
-            if (activeCrown < 0) return;
-            
-            const currentX = e.clientX;
-            const currentY = e.clientY;
-            const deltaX = currentX - dragStartX;
-            const deltaY = currentY - dragStartY;
-            
-            // Détection du type de geste
-            if (currentGesture === 'pending' || currentGesture === 'pending_drag_only') {
-                // Swipe HORIZONTAL → Drag couronne
-                if (Math.abs(deltaX) > INTERACTION.directionThreshold && Math.abs(deltaX) > Math.abs(deltaY)) {
-                    cancelLongPress();
-                    currentGesture = 'drag';
-                    isDraggingCrown = true;
-                    if (activeCrown >= 0) setDragging(activeCrown, true);
-                    updateDebug();
-                }
-                // Swipe VERTICAL → Column Cycle (rotation cyclique)
-                else if (currentGesture === 'pending' && 
-                         Math.abs(deltaY) > INTERACTION.verticalSwipeThreshold && 
-                         Math.abs(deltaX) < INTERACTION.horizontalMaxForVertical &&
-                         longPressFrozenVisualCol !== null) {
-                    const visualColToCycle = longPressFrozenVisualCol; // Sauvegarder AVANT cancel
-                    const direction = deltaY > 0 ? 1 : -1; // 1 = vers le bas, -1 = vers le haut
-                    cancelLongPress();
-                    currentGesture = 'cycle';
-                    triggerColumnCycle(visualColToCycle, direction);
-                    updateDebug();
-                }
-            }
-            
-            if (currentGesture === 'drag' && activeCrown >= 0) {
-                const deltaPixels = currentX - lastX;
-                const deltaDegrees = sanitizeDelta(deltaPixels);
-                if (deltaDegrees !== 0) {
-                    crownRotations[activeCrown] += deltaDegrees;
-                    updateAllRotations();
-                }
-            }
-            
-            lastX = currentX;
-            lastY = e.clientY;
-        });
-
-        document.addEventListener('mouseup', () => {
-            cancelLongPress();
-            
-            if (isDraggingGlobal) {
-                isDraggingGlobal = false;
-                setDragging(-1, false);
-                snapGlobal();
-            }
-            if (isDraggingCrown && activeCrown >= 0) {
-                setDragging(activeCrown, false);
-                snapCrown(activeCrown);
-            }
-            
-            isDraggingCrown = false;
-            activeCrown = -1;
-            currentGesture = 'idle';
-            resetVelocity();
-            updateDebug();
-        });
-
-        // =====================================================
-        // ÉVÉNEMENTS - MOLETTE
-        // =====================================================
-        document.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            let deltaPixels = e.deltaX !== 0 ? e.deltaX : e.deltaY;
-            let deltaDegrees = sanitizeDelta(deltaPixels * 0.5);
-            if (deltaDegrees !== 0) {
-                globalRotation += deltaDegrees;
-                updateAllRotations();
-            }
-            clearTimeout(window.wheelTimeout);
-            window.wheelTimeout = setTimeout(snapGlobal, 150);
-        }, { passive: false });
-
-        // =====================================================
-        // INIT
-        // =====================================================
-        initGrid();
-        applyPalette('neon'); // Palette par défaut
-        buildCylinder();
-        
-        setTimeout(() => {
-            checkVerticalLines();
-            analyzeDifficulty();
-        }, 100);
+        resetGame();
     </script>
 </body>
 </html>
