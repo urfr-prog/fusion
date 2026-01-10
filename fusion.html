@@ -54,10 +54,10 @@
         svg .separator { stroke-width: 1; }
         svg line.icon, svg path.icon, svg circle.icon, svg rect.icon { stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; }
         
-        /* BLANC - icônes bien visibles */
+        /* BLANC - icônes même intensité que les lignes */
         .square.white { border-color: rgba(180, 180, 190, 0.35); }
-        .square.white svg line.icon, .square.white svg path.icon, .square.white svg circle.icon, .square.white svg rect.icon { stroke: rgba(220, 220, 230, 0.75); }
-        .square.white svg circle.point { fill: rgba(220, 220, 230, 0.75); }
+        .square.white svg line.icon, .square.white svg path.icon, .square.white svg circle.icon, .square.white svg rect.icon { stroke: rgba(180, 180, 190, 0.35); }
+        .square.white svg circle.point { fill: rgba(180, 180, 190, 0.35); }
         .square.white svg .separator { stroke: rgba(180, 180, 190, 0.3); }
         
         /* ARGENT - cyan subtil (ancien diamant mais moins intense) */
@@ -99,6 +99,14 @@
         .square.fusing { transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease; }
         
         .controls { display: flex; gap: 12px; }
+        .level-selector { display: flex; gap: 8px; }
+        .level-btn {
+            width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+            background: transparent; border: 1px solid rgba(180, 180, 190, 0.35); color: rgba(180, 180, 190, 0.6);
+            border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 500; transition: all 0.2s;
+        }
+        .level-btn:hover { border-color: rgba(180, 180, 190, 0.6); color: rgba(220, 220, 230, 0.9); }
+        .level-btn.active { border-color: rgba(34, 211, 153, 0.7); color: #34d399; box-shadow: 0 0 10px rgba(34, 211, 153, 0.3); }
         button {
             background: transparent; border: 1px solid rgba(180, 180, 190, 0.35); color: rgba(180, 180, 190, 0.7);
             padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; letter-spacing: 0.1em; transition: all 0.2s;
@@ -143,6 +151,12 @@
     </div>
     
     <div class="controls">
+        <div class="level-selector">
+            <button class="level-btn active" onclick="setLevel(1)">1</button>
+            <button class="level-btn" onclick="setLevel(2)">2</button>
+            <button class="level-btn" onclick="setLevel(3)">3</button>
+            <button class="level-btn" onclick="setLevel(4)">4</button>
+        </div>
         <button onclick="undo()">← Undo</button>
         <button onclick="resetGame()">Reset</button>
     </div>
@@ -173,6 +187,23 @@
         let continuousState = null, continuousTimer = null, dragState = null, history = [];
         let rotationQueue = [];
         let score = 0, bestScore = 0, comboCount = 0, lastFusionTime = 0;
+        let currentLevel = 1;
+        
+        // Configurations des 4 niveaux (disposition initiale différente)
+        const LEVEL_SEEDS = {
+            1: 12345,  // Niveau 1 - Seed aléatoire
+            2: 67890,  // Niveau 2 - Seed aléatoire différent
+            3: 24680,  // Niveau 3 - Seed aléatoire différent
+            4: 13579   // Niveau 4 - Seed aléatoire différent
+        };
+        
+        function seededRandom(seed) {
+            let state = seed;
+            return function() {
+                state = (state * 1103515245 + 12345) & 0x7fffffff;
+                return state / 0x7fffffff;
+            };
+        }
 
         function renderIcon(icon, isFace2) {
             const d = ICONS[icon], data = isFace2 ? d.f2 : d.f1;
@@ -276,13 +307,19 @@
                 if (!continuousState) return;
                 const g = getGroup(continuousState.x, continuousState.y, continuousState.dir);
                 if (!g || !g.some(i => dominos[i])) { stopContinuous(); return; }
-                executeRotation(g, isClockwise(continuousState.dir), () => { if (continuousState) continuousTimer = setTimeout(step, ROTATION_SPEED * 0.3); });
+                executeRotation(g, isClockwise(continuousState.dir), () => { 
+                    // Vérifier à nouveau que continuousState existe avant de planifier le prochain step
+                    if (continuousState && !continuousTimer) {
+                        continuousTimer = setTimeout(step, ROTATION_SPEED * 0.3);
+                    }
+                });
             })();
             return true;
         }
 
         function handleStart(e) {
-            if (isAnimating) return; if (continuousState) { stopContinuous(); return; }
+            if (isAnimating) return; 
+            if (continuousState) { stopContinuous(); return; }
             const touch = e.touches?.[0] || e, target = e.target.closest('.square'); if (!target) return;
             const idx = parseInt(target.dataset.index), pos = getPos(idx);
             dragState = { idx, x: pos.x, y: pos.y, sx: touch.clientX, sy: touch.clientY, moved: false, isEmpty: !dominos[idx] };
@@ -296,8 +333,13 @@
             e.preventDefault();
         }
 
-        function handleEnd() { 
-            if (continuousState) stopContinuous(); 
+        function handleEnd(e) { 
+            // Stopper immédiatement la rotation continue
+            if (continuousState) {
+                stopContinuous();
+                // Sur mobile, empêcher tout événement résiduel
+                e?.preventDefault?.();
+            }
             if (dragState && !dragState.moved && !dragState.isEmpty) queueRotation(dragState.idx);
             dragState = null; 
         }
@@ -516,14 +558,28 @@
             if (isAnimating || isLocalRotating) return;
             stopContinuous(); history = []; rotationQueue = [];
             score = 0; comboCount = 0; lastFusionTime = 0;
+            const rng = seededRandom(LEVEL_SEEDS[currentLevel]);
             dominos = Array.from({ length: TOTAL }, (_, i) => {
                 const { x, y } = getPos(i);
-                return { face1: ICON_KEYS[Math.floor(Math.random() * ICON_KEYS.length)], face2: ICON_KEYS[Math.floor(Math.random() * ICON_KEYS.length)], rotation: ((x + y) % 2 === 0) ? 0 : 90, state: 'white' };
+                return { 
+                    face1: ICON_KEYS[Math.floor(rng() * ICON_KEYS.length)], 
+                    face2: ICON_KEYS[Math.floor(rng() * ICON_KEYS.length)], 
+                    rotation: ((x + y) % 2 === 0) ? 0 : 90, 
+                    state: 'white' 
+                };
             });
             render();
             document.getElementById('score').textContent = '0';
             document.getElementById('combo').textContent = '×1';
             document.getElementById('combo').style.opacity = '0.5';
+        }
+        
+        function setLevel(level) {
+            if (isAnimating || isLocalRotating) return;
+            currentLevel = level;
+            document.querySelectorAll('.level-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.level-btn')[level - 1].classList.add('active');
+            resetGame();
         }
 
         try { bestScore = parseInt(localStorage.getItem('adam_best') || '0'); document.getElementById('best').textContent = bestScore.toLocaleString(); } catch(e) {}
