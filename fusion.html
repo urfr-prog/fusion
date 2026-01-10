@@ -13,27 +13,40 @@
             display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 15px;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
-        .logo { display: flex; align-items: center; gap: 4px; height: 40px; }
+        .logo { display: flex; align-items: center; gap: 4px; height: 40px; margin-top: -30px; }
         .logo-icon { width: 36px; height: 36px; }
         .logo-icon svg { width: 100%; height: 100%; }
-        .logo-icon svg path, .logo-icon svg line, .logo-icon svg rect {
-            stroke: rgba(180, 180, 190, 0.6); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none;
+        .logo-icon svg path, .logo-icon svg line, .logo-icon svg rect, .logo-icon svg polygon {
+            stroke: rgba(240, 240, 250, 0.9); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none;
+            filter: drop-shadow(0 0 8px rgba(240, 240, 250, 0.4));
         }
         
-        /* Barre de score */
+        /* Barre de score compacte avec inputs */
         .score-bar {
-            display: flex; align-items: center; justify-content: center; gap: 20px;
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
             background: rgba(255,255,255,0.03);
             border: 1px solid rgba(180, 180, 190, 0.2);
-            border-radius: 12px; padding: 8px 20px; min-width: 280px;
+            border-radius: 12px; padding: 6px 12px; 
+            width: calc(var(--cell) * 4 + var(--gap) * 3);
         }
         .score-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-        .score-label { font-size: 0.65rem; color: rgba(180, 180, 190, 0.5); text-transform: uppercase; letter-spacing: 0.1em; }
-        .score-value { font-size: 1.1rem; color: rgba(220, 220, 230, 0.9); font-weight: 500; font-variant-numeric: tabular-nums; }
+        .score-item.compact { flex-direction: row; gap: 4px; align-items: center; }
+        .score-item.with-input { flex-direction: column; gap: 2px; }
+        .score-label { font-size: 0.6rem; color: rgba(180, 180, 190, 0.5); text-transform: uppercase; letter-spacing: 0.05em; }
+        .score-value { font-size: 1rem; color: rgba(220, 220, 230, 0.9); font-weight: 500; font-variant-numeric: tabular-nums; }
+        .score-value.small { font-size: 0.85rem; }
         .score-value.highlight { animation: scoreFlash 0.5s ease-out; }
         @keyframes scoreFlash { 0% { color: #ffd700; transform: scale(1.2); } 100% { color: rgba(220, 220, 230, 0.9); transform: scale(1); } }
         .combo { color: #34d399 !important; }
         .combo-label { color: #34d399 !important; }
+        .stat-icon { font-size: 0.8rem; filter: drop-shadow(0 0 2px currentColor); }
+        .drop-input {
+            width: 30px; height: 20px; background: rgba(0,0,0,0.3); border: 1px solid rgba(180, 180, 190, 0.3);
+            border-radius: 4px; color: rgba(220, 220, 230, 0.9); text-align: center; font-size: 0.75rem;
+            padding: 2px; font-family: inherit;
+        }
+        .drop-input:focus { outline: none; border-color: #22d3ee; }
+        .stat-group { display: flex; flex-direction: column; align-items: center; gap: 2px; }
         
         .grid {
             display: grid;
@@ -98,7 +111,7 @@
         
         .square.fusing { transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease; }
         
-        .controls { display: flex; gap: 12px; }
+        .controls { display: flex; gap: 8px; width: calc(var(--cell) * 4 + var(--gap) * 3); justify-content: space-between; }
         .level-selector { display: flex; gap: 8px; }
         .level-btn {
             width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
@@ -107,9 +120,36 @@
         }
         .level-btn:hover { border-color: rgba(180, 180, 190, 0.6); color: rgba(220, 220, 230, 0.9); }
         .level-btn.active { border-color: rgba(34, 211, 153, 0.7); color: #34d399; box-shadow: 0 0 10px rgba(34, 211, 153, 0.3); }
+        
+        /* Panneau de notes */
+        .notes-panel {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(18, 19, 26, 0.95); backdrop-filter: blur(10px);
+            display: none; align-items: center; justify-content: center; z-index: 2000;
+        }
+        .notes-panel.active { display: flex; }
+        .notes-content {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(180, 180, 190, 0.3);
+            border-radius: 16px; padding: 24px; max-width: 90%; max-height: 80vh; overflow-y: auto;
+            color: rgba(220, 220, 230, 0.9);
+        }
+        .notes-content h2 { color: #22d3ee; margin-bottom: 16px; font-size: 1.2rem; }
+        .notes-content h3 { color: rgba(220, 220, 230, 0.8); margin: 16px 0 8px 0; font-size: 1rem; }
+        .notes-content pre { 
+            background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; 
+            overflow-x: auto; font-family: monospace; font-size: 0.85rem; line-height: 1.6;
+        }
+        .notes-content p { line-height: 1.6; margin: 8px 0; color: rgba(180, 180, 190, 0.9); }
+        .close-notes {
+            margin-top: 16px; width: 100%; padding: 10px;
+            background: transparent; border: 1px solid rgba(180, 180, 190, 0.35);
+            color: rgba(180, 180, 190, 0.7); border-radius: 8px; cursor: pointer;
+        }
+        .close-notes:hover { border-color: #22d3ee; color: #22d3ee; }
+        
         button {
             background: transparent; border: 1px solid rgba(180, 180, 190, 0.35); color: rgba(180, 180, 190, 0.7);
-            padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; letter-spacing: 0.1em; transition: all 0.2s;
+            padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 0.75rem; letter-spacing: 0.05em; transition: all 0.2s;
         }
         button:hover { border-color: rgba(180, 180, 190, 0.6); color: rgba(220, 220, 230, 0.9); }
         
@@ -128,7 +168,7 @@
 <body>
     <div class="logo">
         <div class="logo-icon"><svg viewBox="0 0 36 36"><path d="M8 26L18 10L28 26"/></svg></div>
-        <div class="logo-icon"><svg viewBox="0 0 36 36"><rect x="8" y="8" width="20" height="20" rx="3"/></svg></div>
+        <div class="logo-icon"><svg viewBox="0 0 36 36"><polygon points="10,10 26,18 10,26"/></svg></div>
         <div class="logo-icon"><svg viewBox="0 0 36 36"><path d="M8 26L18 10L28 26"/></svg></div>
         <div class="logo-icon"><svg viewBox="0 0 36 36"><line x1="10" y1="8" x2="10" y2="28"/><line x1="18" y1="8" x2="18" y2="28"/><line x1="26" y1="8" x2="26" y2="28"/></svg></div>
     </div>
@@ -136,14 +176,48 @@
     <div class="grid" id="grid"></div>
     
     <div class="score-bar">
+        <div class="stat-group">
+            <div style="display: flex; gap: 4px; align-items: center;">
+                <span class="stat-icon" style="color: #22d3ee;">💎</span>
+                <span class="score-value small" id="silver-count">0</span>
+            </div>
+            <input type="number" class="drop-input" id="silver-drop" value="0" min="0" max="9">
+        </div>
+        
+        <div class="stat-group">
+            <div style="display: flex; gap: 4px; align-items: center;">
+                <span class="stat-icon" style="color: #ffd700;">🏆</span>
+                <span class="score-value small" id="gold-count">0</span>
+            </div>
+            <input type="number" class="drop-input" id="gold-drop" value="1" min="0" max="9">
+        </div>
+        
+        <div class="stat-group">
+            <div style="display: flex; gap: 4px; align-items: center;">
+                <span class="stat-icon" style="color: #34d399;">💚</span>
+                <span class="score-value small" id="emerald-count">0</span>
+            </div>
+            <input type="number" class="drop-input" id="emerald-drop" value="2" min="0" max="9">
+        </div>
+        
+        <div class="stat-group">
+            <div style="display: flex; gap: 4px; align-items: center;">
+                <span class="stat-icon" style="color: #c4b5fd;">🌟</span>
+                <span class="score-value small" id="cosmic-count">0</span>
+            </div>
+            <input type="number" class="drop-input" id="cosmic-drop" value="0" min="0" max="9">
+        </div>
+        
         <div class="score-item">
             <span class="score-label">Score</span>
             <span class="score-value" id="score">0</span>
         </div>
+        
         <div class="score-item">
-            <span class="score-label combo-label" id="combo-label">Combo</span>
+            <span class="score-label combo-label">Combo</span>
             <span class="score-value combo" id="combo">×1</span>
         </div>
+        
         <div class="score-item">
             <span class="score-label">Best</span>
             <span class="score-value" id="best">0</span>
@@ -157,8 +231,37 @@
             <button class="level-btn" onclick="setLevel(3)">3</button>
             <button class="level-btn" onclick="setLevel(4)">4</button>
         </div>
-        <button onclick="undo()">← Undo</button>
-        <button onclick="resetGame()">Reset</button>
+        <button onclick="undo()">Undo</button>
+        <button onclick="toggleNotes()">Note</button>
+    </div>
+    
+    <!-- Panneau de notes -->
+    <div class="notes-panel" id="notes-panel">
+        <div class="notes-content">
+            <h2>📝 Notes & Conventions</h2>
+            
+            <h3>Convention de numérotation de la grille :</h3>
+            <p>Les dominos sont numérotés de gauche à droite, de bas en haut :</p>
+            <pre>
+21  22  23  24    ← Ligne 6 (haut)
+17  18  19  20    ← Ligne 5
+13  14  15  16    ← Ligne 4
+9   10  11  12    ← Ligne 3
+5   6   7   8     ← Ligne 2
+1   2   3   4     ← Ligne 1 (bas)
+            </pre>
+            
+            <h3>Système de chute des dominos :</h3>
+            <p>Après une fusion, de nouveaux dominos peuvent tomber selon les réglages (inputs dans le bandeau).</p>
+            <p><strong>Délai avant chute :</strong> 500ms après la fin de la gravité du plateau</p>
+            <p><strong>Vitesse de chute :</strong> 400ms entre chaque domino qui apparaît</p>
+            <p>Les dominos suivent la séquence du niveau en boucle (positions 1-24) et conservent leur orientation d'origine.</p>
+            
+            <h3>Niveaux :</h3>
+            <p>Chaque niveau (1, 2, 3, 4) génère une grille unique avec une séquence prédéfinie. Cliquer sur un niveau pendant le jeu réinitialise la partie avec ce niveau.</p>
+            
+            <button class="close-notes" onclick="toggleNotes()">Fermer</button>
+        </div>
     </div>
     
     <script>
@@ -171,6 +274,7 @@
         const MAX_HISTORY = 20;
         
         const ICONS = {
+            // Sigles niveau 1, 3, 4 (originaux)
             chevron: { f1: 'M20 32L45 12L70 32', f2: 'M20 12L45 32L70 12', t: 'path' },
             circle: { f1: '45,22,12', f2: '45,22,12', t: 'circle' },
             twoCircles: { f1: '30,22,8|60,22,8', f2: '30,22,8|60,22,8', t: 'circles' },
@@ -178,9 +282,30 @@
             threeLines: { f1: '25,10,25,34|45,10,45,34|65,10,65,34', f2: '25,10,25,34|45,10,45,34|65,10,65,34', t: 'lines' },
             twoPoints: { f1: '30,22,4|60,22,4', f2: '30,22,4|60,22,4', t: 'points' },
             square: { f1: '25,10,40,24,3', f2: '25,10,40,24,3', t: 'rect' },
-            wave: { f1: 'M10 22Q28 6 45 22Q62 38 80 22', f2: 'M10 22Q28 6 45 22Q62 38 80 22', t: 'path' }
+            wave: { f1: 'M10 22Q28 6 45 22Q62 38 80 22', f2: 'M10 22Q28 6 45 22Q62 38 80 22', t: 'path' },
+            
+            // Nouveaux sigles niveau 2
+            twoL: { f1: 'M15 10L15 22L27 22', f2: 'M75 10L75 22L63 22', t: 'path' },
+            arc: { f1: 'M20 30Q45 8 70 30', f2: 'M20 14Q45 36 70 14', t: 'path' },
+            twoSquares: { f1: '24,14,12,12,2|54,14,12,12,2', f2: '24,14,12,12,2|54,14,12,12,2', t: 'rects' },
+            target: { f1: '45,22,12|45,22,4', f2: '45,22,12|45,22,4', t: 'target' },
+            dumbbell: { f1: '30,22,5|60,22,5|30,22,60,22', f2: '30,22,5|60,22,5|30,22,60,22', t: 'dumbbell' },
+            singleLine: { f1: '45,10,45,34', f2: '45,10,45,34', t: 'line' },
+            singlePoint: { f1: '45,22,5', f2: '45,22,5', t: 'circle' },
+            diamond: { f1: 'M45 10L60 22L45 34L30 22Z', f2: 'M45 10L60 22L45 34L30 22Z', t: 'path' }
         };
-        const ICON_KEYS = Object.keys(ICONS);
+        
+        // Sets d'icônes par niveau
+        const LEVEL_ICON_SETS = {
+            1: ['chevron', 'circle', 'twoCircles', 'line', 'threeLines', 'twoPoints', 'square', 'wave'],
+            2: ['twoL', 'arc', 'twoSquares', 'target', 'dumbbell', 'singleLine', 'singlePoint', 'diamond'],
+            3: ['chevron', 'circle', 'twoCircles', 'line', 'threeLines', 'twoPoints', 'square', 'wave'],
+            4: ['chevron', 'circle', 'twoCircles', 'line', 'threeLines', 'twoPoints', 'square', 'wave']
+        };
+        
+        function getIconKeysForLevel(level) {
+            return LEVEL_ICON_SETS[level] || LEVEL_ICON_SETS[1];
+        }
         
         let dominos = [], grid = document.getElementById('grid');
         let isAnimating = false, isLocalRotating = false;
@@ -188,6 +313,9 @@
         let rotationQueue = [];
         let score = 0, bestScore = 0, comboCount = 0, lastFusionTime = 0;
         let currentLevel = 1;
+        let fusionCounts = { silver: 0, gold: 0, emerald: 0, cosmic: 0 };
+        let dropSettings = { silver: 0, gold: 1, emerald: 2, cosmic: 0 };
+        let dominoSequenceIndex = 1; // Compteur circulaire 1-24 pour les dominos qui tombent
         
         // Configurations des 4 niveaux (disposition initiale différente)
         const LEVEL_SEEDS = {
@@ -204,6 +332,72 @@
                 return state / 0x7fffffff;
             };
         }
+        
+        // Génère le domino à la position N (1-24) de la séquence du niveau actuel
+        function getDominoFromSequence(position) {
+            const rng = seededRandom(LEVEL_SEEDS[currentLevel]);
+            const iconKeys = getIconKeysForLevel(currentLevel);
+            // Avancer le générateur jusqu'à la position demandée (position 1 = index 0)
+            for (let i = 0; i < position; i++) {
+                rng(); rng(); // 2 appels pour face1 et face2
+            }
+            const x = (position - 1) % COLS;
+            const y = Math.floor((position - 1) / COLS);
+            return { 
+                face1: iconKeys[Math.floor(rng() * iconKeys.length)], 
+                face2: iconKeys[Math.floor(rng() * iconKeys.length)], 
+                rotation: ((x + y) % 2 === 0) ? 0 : 90, 
+                state: 'white' 
+            };
+        }
+        
+        // Fait tomber N dominos depuis le haut de la grille, un par un avec délai
+        function dropNewDominos(count) {
+            if (count === 0) return;
+            
+            let droppedCount = 0;
+            
+            function dropOne() {
+                if (droppedCount >= count) {
+                    // Tous les dominos sont tombés, appliquer la gravité finale
+                    setTimeout(() => applyGravity(), 200);
+                    return;
+                }
+                
+                // Trouver une colonne disponible en haut (ligne 0)
+                const availableColumns = [];
+                for (let x = 0; x < COLS; x++) {
+                    const topIndex = getIndex(x, 0);
+                    if (!dominos[topIndex]) availableColumns.push(x);
+                }
+                
+                if (availableColumns.length === 0) {
+                    // Pas de place, terminer
+                    setTimeout(() => applyGravity(), 200);
+                    return;
+                }
+                
+                // Choisir une colonne au hasard parmi les disponibles
+                const col = availableColumns[Math.floor(Math.random() * availableColumns.length)];
+                const topIndex = getIndex(col, 0);
+                
+                // Créer le domino depuis la séquence
+                dominos[topIndex] = getDominoFromSequence(dominoSequenceIndex);
+                
+                // Incrémenter et boucler 1-24
+                dominoSequenceIndex++;
+                if (dominoSequenceIndex > TOTAL) dominoSequenceIndex = 1;
+                
+                render();
+                droppedCount++;
+                
+                // Délai de 400ms entre chaque domino qui tombe
+                setTimeout(dropOne, 400);
+            }
+            
+            // Délai de 500ms avant de commencer à faire tomber les dominos
+            setTimeout(dropOne, 500);
+        }
 
         function renderIcon(icon, isFace2) {
             const d = ICONS[icon], data = isFace2 ? d.f2 : d.f1;
@@ -211,6 +405,32 @@
             if (d.t === 'circle') { const [cx,cy,r] = data.split(','); return `<circle class="icon" cx="${cx}" cy="${cy}" r="${r}"/>`; }
             if (d.t === 'line') { const [x1,y1,x2,y2] = data.split(','); return `<line class="icon" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`; }
             if (d.t === 'rect') { const [x,y,w,h,rx] = data.split(','); return `<rect class="icon" x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}"/>`; }
+            
+            // Deux rectangles
+            if (d.t === 'rects') {
+                return data.split('|').map(p => {
+                    const [x,y,w,h,rx] = p.split(',');
+                    return `<rect class="icon" x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}"/>`;
+                }).join('');
+            }
+            
+            // Cible (cercle extérieur + point central)
+            if (d.t === 'target') {
+                const parts = data.split('|');
+                const [cx1,cy1,r1] = parts[0].split(',');
+                const [cx2,cy2,r2] = parts[1].split(',');
+                return `<circle class="icon" cx="${cx1}" cy="${cy1}" r="${r1}"/><circle class="point" cx="${cx2}" cy="${cy2}" r="${r2}"/>`;
+            }
+            
+            // Haltère (2 points + ligne)
+            if (d.t === 'dumbbell') {
+                const parts = data.split('|');
+                const [cx1,cy1,r1] = parts[0].split(',');
+                const [cx2,cy2,r2] = parts[1].split(',');
+                const [x1,y1,x2,y2] = parts[2].split(',');
+                return `<circle class="point" cx="${cx1}" cy="${cy1}" r="${r1}"/><circle class="point" cx="${cx2}" cy="${cy2}" r="${r2}"/><line class="icon" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+            }
+            
             return data.split('|').map(p => {
                 const v = p.split(',');
                 return (d.t === 'circles' || d.t === 'points') 
@@ -457,6 +677,11 @@
             const nf2 = getRemainingFace(d2, dir === 'h' ? 'left' : 'top');
             const maxStateIdx = Math.max(STATE_ORDER.indexOf(d1.state), STATE_ORDER.indexOf(d2.state));
             const ns = STATE_ORDER[Math.min(maxStateIdx + 1, STATE_ORDER.length - 1)];
+            // Comptage des fusions
+            if (ns !== 'white' && fusionCounts[ns] !== undefined) {
+                fusionCounts[ns]++;
+                document.getElementById(ns + '-count').textContent = fusionCounts[ns];
+            }
             const points = addScore(POINTS.simple, 'simple', [d1.state, d2.state]);
             const rect = el1.getBoundingClientRect();
             showFloatingPoints(points, rect.left + rect.width/2, rect.top);
@@ -469,7 +694,16 @@
                 setTimeout(() => {
                     dominos[i1] = { face1: nf1 || ICON_KEYS[0], face2: nf2 || ICON_KEYS[0], rotation: dir === 'h' ? 90 : 0, state: ns };
                     dominos[i2] = null; render();
-                    setTimeout(() => { isAnimating = false; applyGravity(); }, FUSION_APPEAR);
+                    setTimeout(() => { 
+                        isAnimating = false; 
+                        // Lire le nombre de dominos à faire tomber depuis l'input
+                        const dropCount = parseInt(document.getElementById(ns + '-drop')?.value || 0);
+                        if (dropCount > 0) {
+                            dropNewDominos(dropCount);
+                        } else {
+                            applyGravity();
+                        }
+                    }, FUSION_APPEAR);
                 }, FUSION_FADE);
             }, FUSION_MOVE);
         }
@@ -483,6 +717,11 @@
             const nf2 = getRemainingFace(d3, dir === 'h' ? 'right' : 'bottom');
             const maxStateIdx = Math.max(STATE_ORDER.indexOf(d1.state), STATE_ORDER.indexOf(d2.state), STATE_ORDER.indexOf(d3.state));
             const ns = STATE_ORDER[Math.min(maxStateIdx + 2, STATE_ORDER.length - 1)];
+            // Comptage des fusions
+            if (ns !== 'white' && fusionCounts[ns] !== undefined) {
+                fusionCounts[ns]++;
+                document.getElementById(ns + '-count').textContent = fusionCounts[ns];
+            }
             const points = addScore(POINTS.chain, 'chain', [d1.state, d2.state, d3.state]);
             const rect = el2.getBoundingClientRect();
             showFloatingPoints(points, rect.left + rect.width/2, rect.top);
@@ -501,7 +740,15 @@
                 setTimeout(() => {
                     dominos[i2] = { face1: nf1 || ICON_KEYS[0], face2: nf2 || ICON_KEYS[0], rotation: d2.rotation, state: ns };
                     dominos[i1] = null; dominos[i3] = null; render();
-                    setTimeout(() => { isAnimating = false; applyGravity(); }, FUSION_APPEAR);
+                    setTimeout(() => { 
+                        isAnimating = false; 
+                        const dropCount = parseInt(document.getElementById(ns + '-drop')?.value || 0);
+                        if (dropCount > 0) {
+                            dropNewDominos(dropCount);
+                        } else {
+                            applyGravity();
+                        }
+                    }, FUSION_APPEAR);
                 }, FUSION_FADE);
             }, FUSION_MOVE);
         }
@@ -511,6 +758,9 @@
             const d1 = dominos[i1], d2 = dominos[i2];
             const el1 = grid.children[i1].querySelector('.square'), el2 = grid.children[i2].querySelector('.square');
             if (!el1 || !el2) { isAnimating = false; return; }
+            // Comptage cosmic
+            fusionCounts.cosmic++;
+            document.getElementById('cosmic-count').textContent = fusionCounts.cosmic;
             const points = addScore(POINTS.twin, 'twin', [d1.state, d2.state]);
             const rect = el1.getBoundingClientRect();
             showFloatingPoints(points, rect.left + rect.width/2, rect.top);
@@ -527,7 +777,15 @@
                 setTimeout(() => {
                     dominos[i1] = { face1: d1.face1, face2: d1.face2, rotation: d1.rotation, state: 'cosmic' };
                     dominos[i2] = null; render();
-                    setTimeout(() => { isAnimating = false; applyGravity(); }, FUSION_APPEAR);
+                    setTimeout(() => { 
+                        isAnimating = false; 
+                        const dropCount = parseInt(document.getElementById('cosmic-drop')?.value || 0);
+                        if (dropCount > 0) {
+                            dropNewDominos(dropCount);
+                        } else {
+                            applyGravity();
+                        }
+                    }, FUSION_APPEAR);
                 }, FUSION_FADE);
             }, FUSION_MOVE);
         }
@@ -558,12 +816,15 @@
             if (isAnimating || isLocalRotating) return;
             stopContinuous(); history = []; rotationQueue = [];
             score = 0; comboCount = 0; lastFusionTime = 0;
+            fusionCounts = { silver: 0, gold: 0, emerald: 0, cosmic: 0 };
+            dominoSequenceIndex = 1; // Recommencer la séquence à 1
             const rng = seededRandom(LEVEL_SEEDS[currentLevel]);
+            const iconKeys = getIconKeysForLevel(currentLevel);
             dominos = Array.from({ length: TOTAL }, (_, i) => {
                 const { x, y } = getPos(i);
                 return { 
-                    face1: ICON_KEYS[Math.floor(rng() * ICON_KEYS.length)], 
-                    face2: ICON_KEYS[Math.floor(rng() * ICON_KEYS.length)], 
+                    face1: iconKeys[Math.floor(rng() * iconKeys.length)], 
+                    face2: iconKeys[Math.floor(rng() * iconKeys.length)], 
                     rotation: ((x + y) % 2 === 0) ? 0 : 90, 
                     state: 'white' 
                 };
@@ -572,6 +833,10 @@
             document.getElementById('score').textContent = '0';
             document.getElementById('combo').textContent = '×1';
             document.getElementById('combo').style.opacity = '0.5';
+            document.getElementById('silver-count').textContent = '0';
+            document.getElementById('gold-count').textContent = '0';
+            document.getElementById('emerald-count').textContent = '0';
+            document.getElementById('cosmic-count').textContent = '0';
         }
         
         function setLevel(level) {
@@ -580,6 +845,11 @@
             document.querySelectorAll('.level-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.level-btn')[level - 1].classList.add('active');
             resetGame();
+        }
+        
+        function toggleNotes() {
+            const panel = document.getElementById('notes-panel');
+            panel.classList.toggle('active');
         }
 
         try { bestScore = parseInt(localStorage.getItem('adam_best') || '0'); document.getElementById('best').textContent = bestScore.toLocaleString(); } catch(e) {}
