@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ADAM - Kaizen 1 v9</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; overflow: hidden; }
+        body {
+            background-color: #12131a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, var(--cell));
+            grid-template-rows: repeat(4, var(--cell));
+            gap: var(--gap);
+            --cell: min(80px, 20vw);
+            --gap: 8px;
+        }
+        
+        .cell {
+            width: var(--cell);
+            height: var(--cell);
+            position: relative;
+        }
+        
+        .square {
+            width: 100%;
+            height: 100%;
+            background-color: transparent;
+            border: 1px solid rgba(180, 180, 190, 0.35);
+            border-radius: 12px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            overflow: visible;
+            cursor: pointer;
+        }
+        
+        .square.empty {
+            border-style: dashed;
+            border-color: rgba(180, 180, 190, 0.15);
+            cursor: default;
+        }
+        
+        .square svg {
+            width: 100%;
+            height: 100%;
+        }
+        
+        svg .separator {
+            stroke: rgba(180, 180, 190, 0.3);
+            stroke-width: 1;
+        }
+        
+        svg line.icon,
+        svg path.icon,
+        svg circle.icon,
+        svg rect.icon {
+            stroke: rgba(180, 180, 190, 0.35);
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+        }
+        
+        svg circle.point {
+            fill: rgba(180, 180, 190, 0.35);
+        }
+        
+        /* === ÉTATS DES DOMINOS === */
+        
+        /* WHITE (défaut) */
+        .square.white { border-color: rgba(180, 180, 190, 0.35); }
+        .square.white svg line.icon, .square.white svg path.icon, 
+        .square.white svg circle.icon, .square.white svg rect.icon { stroke: rgba(180, 180, 190, 0.35); }
+        .square.white svg circle.point { fill: rgba(180, 180, 190, 0.35); }
+        .square.white svg .separator { stroke: rgba(180, 180, 190, 0.3); }
+        
+        /* SILVER */
+        .square.silver { 
+            border-color: rgba(6, 182, 212, 0.6); 
+            box-shadow: 0 0 12px rgba(6, 182, 212, 0.2), inset 0 0 15px rgba(6, 182, 212, 0.05); 
+        }
+        .square.silver svg line.icon, .square.silver svg path.icon, 
+        .square.silver svg circle.icon, .square.silver svg rect.icon { 
+            stroke: #22d3ee; 
+            filter: drop-shadow(0 0 2px rgba(34, 211, 238, 0.4)); 
+        }
+        .square.silver svg circle.point { fill: #22d3ee; filter: drop-shadow(0 0 2px rgba(34, 211, 238, 0.4)); }
+        .square.silver svg .separator { stroke: rgba(34, 211, 238, 0.4); }
+        
+        /* GOLD */
+        .square.gold { 
+            border-color: rgba(255, 215, 0, 0.7); 
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3), inset 0 0 20px rgba(255, 215, 0, 0.05); 
+        }
+        .square.gold svg line.icon, .square.gold svg path.icon, 
+        .square.gold svg circle.icon, .square.gold svg rect.icon { 
+            stroke: #ffd700; 
+            filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.6)); 
+        }
+        .square.gold svg circle.point { fill: #ffd700; filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.6)); }
+        .square.gold svg .separator { stroke: rgba(255, 215, 0, 0.4); }
+        
+        /* EMERALD */
+        .square.emerald { 
+            border-color: rgba(52, 211, 153, 0.9); 
+            box-shadow: 0 0 25px rgba(5, 150, 105, 0.5), 0 0 40px rgba(52, 211, 153, 0.3), inset 0 0 25px rgba(52, 211, 153, 0.1); 
+            animation: emeraldGlow 2.5s ease-in-out infinite; 
+        }
+        .square.emerald svg line.icon, .square.emerald svg path.icon, 
+        .square.emerald svg circle.icon, .square.emerald svg rect.icon { 
+            stroke: #34d399; 
+            filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.9)) drop-shadow(0 0 12px rgba(5, 150, 105, 0.5)); 
+        }
+        .square.emerald svg circle.point { fill: #34d399; filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.9)); }
+        .square.emerald svg .separator { stroke: rgba(52, 211, 153, 0.6); }
+        @keyframes emeraldGlow {
+            0%, 100% { box-shadow: 0 0 25px rgba(5, 150, 105, 0.5), 0 0 40px rgba(52, 211, 153, 0.3), inset 0 0 25px rgba(52, 211, 153, 0.1); }
+            50% { box-shadow: 0 0 35px rgba(5, 150, 105, 0.7), 0 0 55px rgba(52, 211, 153, 0.4), inset 0 0 35px rgba(52, 211, 153, 0.15); }
+        }
+        
+        /* COSMIC */
+        .square.cosmic { 
+            border: 2px solid transparent; 
+            background: linear-gradient(#12131a, #12131a) padding-box, 
+                        conic-gradient(from var(--cosmic-angle, 0deg), #ff006e, #8338ec, #06b6d4, #34d399, #ffd700, #ff006e) border-box; 
+            box-shadow: 0 0 40px rgba(131, 56, 236, 0.6), 0 0 60px rgba(255, 0, 110, 0.3), 0 0 80px rgba(6, 182, 212, 0.3), inset 0 0 40px rgba(131, 56, 236, 0.15); 
+            animation: cosmicRotate 4s linear infinite, cosmicPulse 2s ease-in-out infinite; 
+        }
+        .square.cosmic svg line.icon, .square.cosmic svg path.icon, 
+        .square.cosmic svg circle.icon, .square.cosmic svg rect.icon { 
+            stroke: #c4b5fd; 
+            filter: drop-shadow(0 0 8px rgba(131, 56, 236, 0.9)) drop-shadow(0 0 12px rgba(255, 0, 110, 0.6)); 
+            animation: cosmicIconShift 3s ease-in-out infinite; 
+        }
+        .square.cosmic svg circle.point { fill: #c4b5fd; filter: drop-shadow(0 0 8px rgba(131, 56, 236, 0.9)); animation: cosmicPointPulse 1.5s ease-in-out infinite; }
+        .square.cosmic svg .separator { stroke: rgba(196, 181, 253, 0.7); }
+        @property --cosmic-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+        @keyframes cosmicRotate { to { --cosmic-angle: 360deg; } }
+        @keyframes cosmicPulse {
+            0%, 100% { box-shadow: 0 0 40px rgba(131, 56, 236, 0.6), 0 0 60px rgba(255, 0, 110, 0.3), 0 0 80px rgba(6, 182, 212, 0.3), inset 0 0 40px rgba(131, 56, 236, 0.15); }
+            50% { box-shadow: 0 0 55px rgba(131, 56, 236, 0.8), 0 0 80px rgba(255, 0, 110, 0.5), 0 0 100px rgba(6, 182, 212, 0.4), inset 0 0 50px rgba(131, 56, 236, 0.2); }
+        }
+        @keyframes cosmicIconShift { 0%, 100% { stroke: #c4b5fd; } 33% { stroke: #22d3ee; } 66% { stroke: #f472b6; } }
+        @keyframes cosmicPointPulse { 0%, 100% { fill: #c4b5fd; } 50% { fill: #f472b6; } }
+        
+        /* Face individuelle SILVER (pour fusion) */
+        .face-silver line.icon, .face-silver path.icon, 
+        .face-silver circle.icon, .face-silver rect.icon {
+            stroke: #22d3ee !important;
+            filter: drop-shadow(0 0 4px rgba(34, 211, 238, 0.6)) !important;
+        }
+        .face-silver circle.point {
+            fill: #22d3ee !important;
+            filter: drop-shadow(0 0 4px rgba(34, 211, 238, 0.6)) !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="grid" id="grid"></div>
+
+    <script>
+        const COLS = 4;
+        const ROWS = 4;
+        const TOTAL = 16;
+        const ROTATION_SPEED = 400;
+        const STATE_ORDER = ['white', 'silver', 'gold', 'emerald', 'cosmic'];
+        
+        let grid = document.getElementById('grid');
+        let isAnimating = false;
+        let isLocalRotating = false;
+        let dragState = null;
+        let dominos = [];
+        
+        // Icônes niveau 1
+        const ICONS = {
+            chevron: { f1: 'M20 32L45 12L70 32', f2: 'M20 12L45 32L70 12', t: 'path' },
+            circle: { f1: '45,22,12', f2: '45,22,12', t: 'circle' },
+            twoCircles: { f1: '30,22,8|60,22,8', f2: '30,22,8|60,22,8', t: 'circles' },
+            line: { f1: '15,22,75,22', f2: '15,22,75,22', t: 'line' },
+            threeLines: { f1: '25,10,25,34|45,10,45,34|65,10,65,34', f2: '25,10,25,34|45,10,45,34|65,10,65,34', t: 'lines' },
+            twoPoints: { f1: '30,22,4|60,22,4', f2: '30,22,4|60,22,4', t: 'points' },
+            square: { f1: '25,10,40,24,3', f2: '25,10,40,24,3', t: 'rect' },
+            wave: { f1: 'M10 22Q28 6 45 22Q62 38 80 22', f2: 'M10 22Q28 6 45 22Q62 38 80 22', t: 'path' }
+        };
+        
+        const iconKeys = Object.keys(ICONS);
+        
+        function seededRandom(seed) {
+            let state = seed;
+            return function() {
+                state = (state * 1103515245 + 12345) & 0x7fffffff;
+                return state / 0x7fffffff;
+            };
+        }
+        
+        function initDominos() {
+            const rng = seededRandom(12345);
+            dominos = [];
+            
+            for (let i = 0; i < TOTAL; i++) {
+                const x = i % COLS;
+                const y = Math.floor(i / COLS);
+                dominos.push({
+                    face1: iconKeys[Math.floor(rng() * iconKeys.length)],
+                    face2: iconKeys[Math.floor(rng() * iconKeys.length)],
+                    rotation: ((x + y) % 2 === 0) ? 0 : 90,
+                    state: 'white'
+                });
+            }
+        }
+        
+        function renderIcon(icon, isFace2) {
+            const d = ICONS[icon];
+            if (!d) return '';
+            const data = isFace2 ? d.f2 : d.f1;
+            
+            if (d.t === 'path') return `<path class="icon" d="${data}"/>`;
+            if (d.t === 'circle') {
+                const [cx, cy, r] = data.split(',');
+                return `<circle class="icon" cx="${cx}" cy="${cy}" r="${r}"/>`;
+            }
+            if (d.t === 'line') {
+                const [x1, y1, x2, y2] = data.split(',');
+                return `<line class="icon" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+            }
+            if (d.t === 'rect') {
+                const [x, y, w, h, rx] = data.split(',');
+                return `<rect class="icon" x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}"/>`;
+            }
+            if (d.t === 'lines') {
+                return data.split('|').map(p => {
+                    const [x1, y1, x2, y2] = p.split(',');
+                    return `<line class="icon" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+                }).join('');
+            }
+            return data.split('|').map(p => {
+                const v = p.split(',');
+                return (d.t === 'circles' || d.t === 'points')
+                    ? `<circle class="${d.t === 'points' ? 'point' : 'icon'}" cx="${v[0]}" cy="${v[1]}" r="${v[2]}"/>`
+                    : `<line class="icon" x1="${v[0]}" y1="${v[1]}" x2="${v[2]}" y2="${v[3]}"/>`;
+            }).join('');
+        }
+        
+        function renderDomino(d) {
+            return `<svg viewBox="0 0 90 90">
+                <line class="separator" x1="0" y1="45" x2="90" y2="45"/>
+                <g>${renderIcon(d.face1, false)}</g>
+                <g transform="translate(0,45)">${renderIcon(d.face2, true)}</g>
+            </svg>`;
+        }
+        
+        function render() {
+            grid.innerHTML = '';
+            
+            for (let i = 0; i < TOTAL; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                
+                const square = document.createElement('div');
+                square.dataset.index = i;
+                
+                if (dominos[i]) {
+                    square.className = `square ${dominos[i].state}`;
+                    square.innerHTML = renderDomino(dominos[i]);
+                    square.style.transform = `rotate(${dominos[i].rotation}deg)`;
+                } else {
+                    square.className = 'square empty';
+                }
+                
+                cell.appendChild(square);
+                grid.appendChild(cell);
+            }
+        }
+        
+        // Utilitaires
+        function getPos(i) { return { x: i % COLS, y: Math.floor(i / COLS) }; }
+        function getIndex(x, y) { return (x < 0 || x >= COLS || y < 0 || y >= ROWS) ? -1 : y * COLS + x; }
+        
+        // Obtenir la face exposée dans une direction selon la rotation
+        function getExposedFace(domino, dir) {
+            if (!domino) return null;
+            const r = ((domino.rotation % 360) + 360) % 360;
+            // Avec rotation 90° : face1 → droite, face2 → gauche
+            // Avec rotation 0° : face1 → haut, face2 → bas
+            const map = {
+                0:   { top: 'face1', bottom: 'face2', left: null, right: null },
+                90:  { top: null, bottom: null, left: 'face2', right: 'face1' },
+                180: { top: 'face2', bottom: 'face1', left: null, right: null },
+                270: { top: null, bottom: null, left: 'face1', right: 'face2' }
+            };
+            const face = map[r]?.[dir];
+            return face ? domino[face] : null;
+        }
+        
+        // Obtenir quelle propriété (face1 ou face2) est exposée dans une direction
+        function getExposedFaceKey(domino, dir) {
+            if (!domino) return null;
+            const r = ((domino.rotation % 360) + 360) % 360;
+            const map = {
+                0:   { top: 'face1', bottom: 'face2', left: null, right: null },
+                90:  { top: null, bottom: null, left: 'face2', right: 'face1' },
+                180: { top: 'face2', bottom: 'face1', left: null, right: null },
+                270: { top: null, bottom: null, left: 'face1', right: 'face2' }
+            };
+            return map[r]?.[dir] || null;
+        }
+        
+        // Direction opposée
+        function oppositeDir(dir) {
+            return { top: 'bottom', bottom: 'top', left: 'right', right: 'left' }[dir];
+        }
+        
+        // ============================================
+        // DÉTECTION DES FUSIONS
+        // ============================================
+        
+        function checkFusions() {
+            if (isAnimating || isLocalRotating) return;
+            
+            // Parcourir tous les dominos pour trouver des faces identiques adjacentes
+            for (let i = 0; i < TOTAL; i++) {
+                if (!dominos[i]) continue;
+                const { x, y } = getPos(i);
+                
+                // Vérifier à droite
+                const iR = getIndex(x + 1, y);
+                if (iR !== -1 && dominos[iR]) {
+                    const faceLeft = getExposedFace(dominos[i], 'right');
+                    const faceRight = getExposedFace(dominos[iR], 'left');
+                    if (faceLeft && faceRight && faceLeft === faceRight) {
+                        performCompressionFusion(i, iR, 'horizontal');
+                        return;
+                    }
+                }
+                
+                // Vérifier en bas
+                const iB = getIndex(x, y + 1);
+                if (iB !== -1 && dominos[iB]) {
+                    const faceTop = getExposedFace(dominos[i], 'bottom');
+                    const faceBottom = getExposedFace(dominos[iB], 'top');
+                    if (faceTop && faceBottom && faceTop === faceBottom) {
+                        performCompressionFusion(i, iB, 'vertical');
+                        return;
+                    }
+                }
+            }
+        }
+        
+        // ============================================
+        // ANIMATION DE FUSION PAR COMPRESSION
+        // ============================================
+        
+        function performCompressionFusion(receiverIdx, projectileIdx, direction) {
+            if (isAnimating) return;
+            isAnimating = true;
+            
+            const receiver = dominos[receiverIdx];
+            const projectile = dominos[projectileIdx];
+            
+            const receiverEl = grid.children[receiverIdx].querySelector('.square');
+            const projectileEl = grid.children[projectileIdx].querySelector('.square');
+            
+            if (!receiverEl || !projectileEl || !receiver || !projectile) {
+                isAnimating = false;
+                return;
+            }
+            
+            const cellSize = grid.children[0].offsetWidth;
+            const gap = parseFloat(getComputedStyle(grid).gap) || 8;
+            
+            // Distance jusqu'à la médiane du receveur
+            const distanceToMedian = gap + (cellSize / 2);
+            
+            projectileEl.style.zIndex = '100';
+            
+            const phase1Duration = 350;
+            const phase2Duration = 180;
+            
+            let startTime = null;
+            
+            // Déterminer l'axe de compression selon direction et rotation du projectile
+            const rotation = ((projectile.rotation % 360) + 360) % 360;
+            const isHorizontal = (direction === 'horizontal');
+            
+            // Pour compression visuelle dans le sens du mouvement :
+            // - Horizontal + rotation 90° ou 270° → scaleY
+            // - Horizontal + rotation 0° ou 180° → scaleX
+            // - Vertical + rotation 0° ou 180° → scaleY
+            // - Vertical + rotation 90° ou 270° → scaleX
+            const rotatedHorizontally = (rotation === 90 || rotation === 270);
+            const useScaleY = (isHorizontal && rotatedHorizontally) || (!isHorizontal && !rotatedHorizontally);
+            
+            // Direction du translate
+            const translateProp = isHorizontal ? 'translateX' : 'translateY';
+            const translateValue = isHorizontal ? -distanceToMedian : -distanceToMedian;
+            
+            function animatePhase1(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+                const progress = Math.min(elapsed / phase1Duration, 1);
+                
+                const ease = progress * progress;
+                const translate = translateValue * ease;
+                const scale = 1 - (0.5 * ease);
+                
+                const scaleTransform = useScaleY ? `scaleY(${scale})` : `scaleX(${scale})`;
+                projectileEl.style.transform = `${translateProp}(${translate}px) rotate(${projectile.rotation}deg) ${scaleTransform}`;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animatePhase1);
+                } else {
+                    startTime = null;
+                    requestAnimationFrame(animatePhase2);
+                }
+            }
+            
+            function animatePhase2(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+                const progress = Math.min(elapsed / phase2Duration, 1);
+                
+                const scale = 0.5 * (1 - progress);
+                const opacity = 1 - progress;
+                
+                const scaleTransform = useScaleY ? `scaleY(${Math.max(0.01, scale)})` : `scaleX(${Math.max(0.01, scale)})`;
+                projectileEl.style.transform = `${translateProp}(${translateValue}px) rotate(${projectile.rotation}deg) ${scaleTransform}`;
+                projectileEl.style.opacity = opacity;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animatePhase2);
+                } else {
+                    applyFusionResult();
+                }
+            }
+            
+            function applyFusionResult() {
+                // Déterminer les faces qui se touchent et s'annulent
+                let receiverExternalFaceKey, projectileExternalFaceKey;
+                
+                if (isHorizontal) {
+                    // Receiver est à gauche, projectile à droite
+                    // Face droite du receiver touche face gauche du projectile → s'annulent
+                    // Reste : face gauche du receiver + face droite du projectile
+                    receiverExternalFaceKey = getExposedFaceKey(receiver, 'left');
+                    projectileExternalFaceKey = getExposedFaceKey(projectile, 'right');
+                } else {
+                    // Receiver est en haut, projectile en bas
+                    // Face bas du receiver touche face haut du projectile → s'annulent
+                    // Reste : face haut du receiver + face bas du projectile
+                    receiverExternalFaceKey = getExposedFaceKey(receiver, 'top');
+                    projectileExternalFaceKey = getExposedFaceKey(projectile, 'bottom');
+                }
+                
+                // Construire le nouveau domino
+                // La face du receveur qui reste passe à l'état supérieur (silver si white, etc.)
+                const newState = STATE_ORDER[Math.min(
+                    STATE_ORDER.indexOf(receiver.state) + 1,
+                    STATE_ORDER.length - 1
+                )];
+                
+                // Garder la même rotation que le receiver
+                const newDomino = {
+                    face1: receiver.face1,
+                    face2: receiver.face2,
+                    rotation: receiver.rotation,
+                    state: newState
+                };
+                
+                // Remplacer les faces : la face externe du receiver reste, 
+                // la face interne est remplacée par la face externe du projectile
+                if (isHorizontal) {
+                    // Face gauche du receiver (externe) reste
+                    // Face droite du receiver est remplacée par face droite du projectile
+                    const receiverLeftKey = getExposedFaceKey(receiver, 'left');
+                    const receiverRightKey = getExposedFaceKey(receiver, 'right');
+                    const projectileRightKey = getExposedFaceKey(projectile, 'right');
+                    
+                    if (receiverRightKey && projectileRightKey) {
+                        newDomino[receiverRightKey] = projectile[projectileRightKey];
+                    }
+                } else {
+                    // Face haut du receiver (externe) reste
+                    // Face bas du receiver est remplacée par face bas du projectile
+                    const receiverTopKey = getExposedFaceKey(receiver, 'top');
+                    const receiverBottomKey = getExposedFaceKey(receiver, 'bottom');
+                    const projectileBottomKey = getExposedFaceKey(projectile, 'bottom');
+                    
+                    if (receiverBottomKey && projectileBottomKey) {
+                        newDomino[receiverBottomKey] = projectile[projectileBottomKey];
+                    }
+                }
+                
+                dominos[receiverIdx] = newDomino;
+                dominos[projectileIdx] = null;
+                
+                render();
+                
+                // Effet de halo
+                const newEl = grid.children[receiverIdx].querySelector('.square');
+                if (newEl) {
+                    const haloDir = isHorizontal ? '6px 0' : '0 6px';
+                    newEl.style.boxShadow = `${haloDir} 20px rgba(34, 211, 238, 0.5), 0 0 10px rgba(34, 211, 238, 0.2)`;
+                    
+                    setTimeout(() => {
+                        newEl.style.transition = 'box-shadow 0.4s ease-out';
+                        newEl.style.boxShadow = '';
+                    }, 150);
+                }
+                
+                setTimeout(() => {
+                    isAnimating = false;
+                    // Vérifier s'il y a d'autres fusions
+                    checkFusions();
+                }, 300);
+            }
+            
+            requestAnimationFrame(animatePhase1);
+        }
+        
+        // ============================================
+        // SYSTÈME DE ROTATION 2x2
+        // ============================================
+        
+        function executeRotation(indices, clockwise, cb) {
+            if (isLocalRotating || isAnimating) return;
+            isLocalRotating = true;
+            
+            const cells = indices.map(idx => ({
+                el: grid.children[idx]?.querySelector('.square'),
+                domino: dominos[idx],
+                sx: idx % COLS,
+                sy: Math.floor(idx / COLS)
+            }));
+            
+            const map = clockwise ? [2, 0, 3, 1] : [1, 3, 0, 2];
+            cells.forEach((c, i) => {
+                c.tx = indices[map[i]] % COLS;
+                c.ty = Math.floor(indices[map[i]] / COLS);
+            });
+            
+            const dur = ROTATION_SPEED * 0.5;
+            const start = performance.now();
+            const cellSize = grid.children[0].offsetWidth;
+            const gap = parseFloat(getComputedStyle(grid).gap) || 8;
+            
+            function animate(t) {
+                const p = Math.min((t - start) / dur, 1);
+                const e = 1 - Math.pow(1 - p, 3);
+                
+                cells.forEach(c => {
+                    if (c.el && c.domino) {
+                        const dx = (c.tx - c.sx) * (cellSize + gap) * e;
+                        const dy = (c.ty - c.sy) * (cellSize + gap) * e;
+                        c.el.style.transform = `translate(${dx}px, ${dy}px) rotate(${c.domino.rotation}deg)`;
+                    }
+                });
+                
+                if (p < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    finishRotation(indices, clockwise, cb);
+                }
+            }
+            
+            requestAnimationFrame(animate);
+        }
+        
+        function finishRotation(indices, clockwise, cb) {
+            const saved = indices.map(i => dominos[i]);
+            const map = clockwise ? [2, 0, 3, 1] : [1, 3, 0, 2];
+            
+            for (let i = 0; i < 4; i++) {
+                dominos[indices[map[i]]] = saved[i];
+            }
+            
+            render();
+            isLocalRotating = false;
+            
+            // Vérifier les fusions après rotation
+            setTimeout(checkFusions, 50);
+            
+            if (cb) cb();
+        }
+        
+        // Rotation individuelle d'un domino
+        function rotateIndividual(idx, clockwise) {
+            const domino = dominos[idx];
+            if (!domino || isLocalRotating || isAnimating) return;
+            
+            isLocalRotating = true;
+            domino.rotation += clockwise ? 90 : -90;
+            
+            const el = grid.children[idx].querySelector('.square');
+            if (el) {
+                el.style.transition = 'transform 0.15s cubic-bezier(0.4, 0, 0.2, 1)';
+                el.style.transform = `rotate(${domino.rotation}deg)`;
+                setTimeout(() => {
+                    isLocalRotating = false;
+                    checkFusions();
+                }, 150);
+            } else {
+                isLocalRotating = false;
+            }
+        }
+        
+        function attemptVerticalRotation(x, y, dy) {
+            let blockCol = Math.min(x, COLS - 2);
+            let blockRow, clockwise;
+            
+            if (dy < 0) {
+                blockRow = Math.max(0, Math.min(y - 1, ROWS - 2));
+                clockwise = false;
+            } else {
+                blockRow = Math.min(y, ROWS - 2);
+                clockwise = true;
+            }
+            
+            const indices = [
+                getIndex(blockCol, blockRow),
+                getIndex(blockCol + 1, blockRow),
+                getIndex(blockCol, blockRow + 1),
+                getIndex(blockCol + 1, blockRow + 1)
+            ];
+            
+            // Vérifier qu'il y a au moins un domino
+            if (indices.some(i => dominos[i])) {
+                executeRotation(indices, clockwise);
+            }
+        }
+        
+        // ============================================
+        // GESTION TACTILE
+        // ============================================
+        
+        function handleStart(e) {
+            if (isLocalRotating || isAnimating) return;
+            
+            const touch = e.touches?.[0] || e;
+            const target = e.target.closest('.square');
+            if (!target || target.classList.contains('empty')) return;
+            
+            const idx = parseInt(target.dataset.index);
+            const pos = getPos(idx);
+            
+            dragState = {
+                idx,
+                x: pos.x,
+                y: pos.y,
+                sx: touch.clientX,
+                sy: touch.clientY,
+                moved: false
+            };
+            
+            e.preventDefault();
+        }
+        
+        function handleMove(e) {
+            if (!dragState || dragState.moved || isAnimating) return;
+            
+            const touch = e.touches?.[0] || e;
+            const dx = touch.clientX - dragState.sx;
+            const dy = touch.clientY - dragState.sy;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < 30) return;
+            
+            const absDx = Math.abs(dx);
+            const absDy = Math.abs(dy);
+            
+            const isVertical = absDx < 10 && absDy > 40;
+            const isDiagonal = !isVertical && absDx > 15 && absDy > 15;
+            
+            if (isVertical) {
+                dragState.moved = true;
+                attemptVerticalRotation(dragState.x, dragState.y, dy);
+            } else if (isDiagonal) {
+                const direction = (dy < 0) ? (dx > 0 ? 'ur' : 'ul') : (dx > 0 ? 'dr' : 'dl');
+                const clockwise = (direction === 'ur' || direction === 'dr');
+                dragState.moved = true;
+                rotateIndividual(dragState.idx, clockwise);
+            }
+            
+            e.preventDefault();
+        }
+        
+        function handleEnd(e) {
+            dragState = null;
+        }
+        
+        // Events
+        grid.addEventListener('touchstart', handleStart, { passive: false });
+        grid.addEventListener('touchmove', handleMove, { passive: false });
+        grid.addEventListener('touchend', handleEnd, { passive: false });
+        grid.addEventListener('mousedown', handleStart, { passive: false });
+        grid.addEventListener('mousemove', handleMove, { passive: false });
+        grid.addEventListener('mouseup', handleEnd, { passive: false });
+        
+        // Initialisation
+        initDominos();
+        render();
+    </script>
+</body>
+</html>
