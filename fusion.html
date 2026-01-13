@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ADAM - Kaizen 1 v9</title>
+    <title>ADAM - Kaizen 1 v10</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; overflow: hidden; }
@@ -218,6 +218,9 @@
         }
         
         function renderIcon(icon, isFace2) {
+            // Gérer le cas 'empty' (face vide)
+            if (icon === 'empty') return '';
+            
             const d = ICONS[icon];
             if (!d) return '';
             const data = isFace2 ? d.f2 : d.f1;
@@ -328,27 +331,40 @@
             // Parcourir tous les dominos pour trouver des faces identiques adjacentes
             for (let i = 0; i < TOTAL; i++) {
                 if (!dominos[i]) continue;
+                
+                // Empêcher la fusion si le domino est totalement vide
+                const isDominoEmpty = (dominos[i].face1 === 'empty' && dominos[i].face2 === 'empty');
+                if (isDominoEmpty) continue;
+                
                 const { x, y } = getPos(i);
                 
                 // Vérifier à droite
                 const iR = getIndex(x + 1, y);
                 if (iR !== -1 && dominos[iR]) {
-                    const faceLeft = getExposedFace(dominos[i], 'right');
-                    const faceRight = getExposedFace(dominos[iR], 'left');
-                    if (faceLeft && faceRight && faceLeft === faceRight) {
-                        performCompressionFusion(i, iR, 'horizontal');
-                        return;
+                    const isRightDominoEmpty = (dominos[iR].face1 === 'empty' && dominos[iR].face2 === 'empty');
+                    
+                    if (!isRightDominoEmpty) {
+                        const faceLeft = getExposedFace(dominos[i], 'right');
+                        const faceRight = getExposedFace(dominos[iR], 'left');
+                        if (faceLeft && faceRight && faceLeft === faceRight) {
+                            performCompressionFusion(i, iR, 'horizontal');
+                            return;
+                        }
                     }
                 }
                 
                 // Vérifier en bas
                 const iB = getIndex(x, y + 1);
                 if (iB !== -1 && dominos[iB]) {
-                    const faceTop = getExposedFace(dominos[i], 'bottom');
-                    const faceBottom = getExposedFace(dominos[iB], 'top');
-                    if (faceTop && faceBottom && faceTop === faceBottom) {
-                        performCompressionFusion(i, iB, 'vertical');
-                        return;
+                    const isBottomDominoEmpty = (dominos[iB].face1 === 'empty' && dominos[iB].face2 === 'empty');
+                    
+                    if (!isBottomDominoEmpty) {
+                        const faceTop = getExposedFace(dominos[i], 'bottom');
+                        const faceBottom = getExposedFace(dominos[iB], 'top');
+                        if (faceTop && faceBottom && faceTop === faceBottom) {
+                            performCompressionFusion(i, iB, 'vertical');
+                            return;
+                        }
                     }
                 }
             }
@@ -444,6 +460,7 @@
             function applyFusionResult() {
                 // Déterminer les faces qui se touchent et s'annulent
                 let receiverExternalFaceKey, projectileExternalFaceKey;
+                let receiverInternalFaceKey, projectileInternalFaceKey;
                 
                 if (isHorizontal) {
                     // Receiver est à gauche, projectile à droite
@@ -451,15 +468,19 @@
                     // Reste : face gauche du receiver + face droite du projectile
                     receiverExternalFaceKey = getExposedFaceKey(receiver, 'left');
                     projectileExternalFaceKey = getExposedFaceKey(projectile, 'right');
+                    receiverInternalFaceKey = getExposedFaceKey(receiver, 'right');
+                    projectileInternalFaceKey = getExposedFaceKey(projectile, 'left');
                 } else {
                     // Receiver est en haut, projectile en bas
                     // Face bas du receiver touche face haut du projectile → s'annulent
                     // Reste : face haut du receiver + face bas du projectile
                     receiverExternalFaceKey = getExposedFaceKey(receiver, 'top');
                     projectileExternalFaceKey = getExposedFaceKey(projectile, 'bottom');
+                    receiverInternalFaceKey = getExposedFaceKey(receiver, 'bottom');
+                    projectileInternalFaceKey = getExposedFaceKey(projectile, 'top');
                 }
                 
-                // Construire le nouveau domino
+                // Construire le nouveau domino évolué
                 // La face du receveur qui reste passe à l'état supérieur (silver si white, etc.)
                 const newState = STATE_ORDER[Math.min(
                     STATE_ORDER.indexOf(receiver.state) + 1,
@@ -498,12 +519,23 @@
                     }
                 }
                 
+                // NOUVEAU : Créer le domino blanc recraché avec UNE SEULE face annulée
+                // Les 2 faces qui ont disparu sont identiques (condition de fusion)
+                // On recrache seulement UNE de ces faces, l'autre devient 'empty'
+                // avec rotation +90° par rapport au domino résultant
+                const recrachedDomino = {
+                    face1: receiver[receiverInternalFaceKey], // Une des faces annulées
+                    face2: 'empty', // L'autre face devient vide
+                    rotation: (newDomino.rotation + 90) % 360,
+                    state: 'white'
+                };
+                
                 dominos[receiverIdx] = newDomino;
-                dominos[projectileIdx] = null;
+                dominos[projectileIdx] = recrachedDomino;
                 
                 render();
                 
-                // Effet de halo
+                // Effet de halo sur le domino évolué
                 const newEl = grid.children[receiverIdx].querySelector('.square');
                 if (newEl) {
                     const haloDir = isHorizontal ? '6px 0' : '0 6px';
@@ -611,17 +643,30 @@
             }
         }
         
-        function attemptVerticalRotation(x, y, dy) {
-            let blockCol = Math.min(x, COLS - 2);
-            let blockRow, clockwise;
+        function attemptHorizontalRotation(x, y, dx) {
+            // On ne réagit que sur la rangée du BAS d'un groupe 2x2
+            // Donc y doit être > 0 (pas sur la première rangée)
+            if (y === 0) return;
             
-            if (dy < 0) {
-                blockRow = Math.max(0, Math.min(y - 1, ROWS - 2));
-                clockwise = false;
+            let blockCol, blockRow, clockwise;
+            
+            if (dx > 0) {
+                // Swipe vers la DROITE → rotation ANTIHORAIRE du groupe 2x2 à droite
+                // Le carré swipé fait partie du bas-gauche du groupe
+                blockCol = x;
+                blockRow = y - 1;
+                clockwise = false; // antihoraire
             } else {
-                blockRow = Math.min(y, ROWS - 2);
-                clockwise = true;
+                // Swipe vers la GAUCHE → rotation HORAIRE du groupe 2x2 à gauche
+                // Le carré swipé fait partie du bas-droit du groupe
+                blockCol = x - 1;
+                blockRow = y - 1;
+                clockwise = true; // horaire
             }
+            
+            // Vérifier que le groupe est dans la grille
+            if (blockCol < 0 || blockCol > COLS - 2) return;
+            if (blockRow < 0 || blockRow > ROWS - 2) return;
             
             const indices = [
                 getIndex(blockCol, blockRow),
@@ -630,7 +675,7 @@
                 getIndex(blockCol + 1, blockRow + 1)
             ];
             
-            // Vérifier qu'il y a au moins un domino
+            // Vérifier qu'il y a au moins un domino dans le groupe
             if (indices.some(i => dominos[i])) {
                 executeRotation(indices, clockwise);
             }
@@ -675,12 +720,12 @@
             const absDx = Math.abs(dx);
             const absDy = Math.abs(dy);
             
-            const isVertical = absDx < 10 && absDy > 40;
-            const isDiagonal = !isVertical && absDx > 15 && absDy > 15;
+            const isHorizontal = absDy < 10 && absDx > 40;
+            const isDiagonal = !isHorizontal && absDx > 15 && absDy > 15;
             
-            if (isVertical) {
+            if (isHorizontal) {
                 dragState.moved = true;
-                attemptVerticalRotation(dragState.x, dragState.y, dy);
+                attemptHorizontalRotation(dragState.x, dragState.y, dx);
             } else if (isDiagonal) {
                 const direction = (dy < 0) ? (dx > 0 ? 'ur' : 'ul') : (dx > 0 ? 'dr' : 'dl');
                 const clockwise = (direction === 'ur' || direction === 'dr');
