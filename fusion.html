@@ -2,235 +2,60 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fusion Square - Matrice 5x4 avec Drag</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ADAM - v24 Clean</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; overflow: hidden; }
         body {
             background-color: #12131a;
-            min-height: 100vh;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 20px;
-            overflow: hidden;
+            gap: 20px;
         }
-
-        /* ========== MENU DEBUG ========== */
-        .debug-toggle {
-            position: fixed;
-            top: 15px;
-            right: 15px;
-            width: 40px;
-            height: 40px;
-            background: rgba(30, 32, 42, 0.9);
+        
+        .undo-button {
+            background: rgba(40, 42, 54, 0.6);
             border: 1px solid rgba(180, 180, 190, 0.3);
             border-radius: 8px;
             color: rgba(180, 180, 190, 0.7);
-            font-size: 18px;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 8px 20px;
             cursor: pointer;
-            z-index: 1000;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
-
-        .debug-toggle:hover {
-            border-color: rgba(180, 180, 190, 0.6);
+        
+        .undo-button:hover {
+            background: rgba(50, 52, 64, 0.8);
+            border-color: rgba(180, 180, 190, 0.5);
             color: rgba(220, 220, 230, 0.9);
         }
-
-        .debug-panel {
-            position: fixed;
-            top: 0;
-            right: -420px;
-            width: 400px;
-            height: 100vh;
-            background: rgba(18, 19, 26, 0.98);
-            border-left: 1px solid rgba(180, 180, 190, 0.2);
-            padding: 20px;
-            overflow-y: auto;
-            transition: right 0.3s ease;
-            z-index: 999;
+        
+        .undo-button:active {
+            transform: scale(0.95);
         }
-
-        .debug-panel.open {
-            right: 0;
+        
+        .undo-button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: scale(1);
         }
-
-        .debug-panel h2 {
-            color: rgba(180, 180, 190, 0.8);
-            font-size: 1rem;
-            font-weight: 400;
-            letter-spacing: 0.15em;
-            text-transform: uppercase;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid rgba(180, 180, 190, 0.2);
-        }
-
-        .debug-section {
-            margin-bottom: 25px;
-        }
-
-        .debug-section h3 {
-            color: rgba(180, 180, 190, 0.6);
-            font-size: 0.75rem;
-            font-weight: 400;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            margin-bottom: 12px;
-        }
-
-        .debug-stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-
-        .debug-stat {
-            background: rgba(40, 42, 54, 0.5);
-            border: 1px solid rgba(180, 180, 190, 0.15);
-            border-radius: 8px;
-            padding: 12px;
-        }
-
-        .debug-stat .label {
-            color: rgba(180, 180, 190, 0.5);
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .debug-stat .value {
-            color: rgba(220, 220, 230, 0.9);
-            font-size: 1.4rem;
-            font-weight: 300;
-            margin-top: 4px;
-        }
-
-        .debug-textarea {
-            width: 100%;
-            height: 150px;
-            background: rgba(40, 42, 54, 0.5);
-            border: 1px solid rgba(180, 180, 190, 0.2);
-            border-radius: 8px;
-            color: rgba(220, 220, 230, 0.8);
-            font-family: inherit;
-            font-size: 0.85rem;
-            padding: 12px;
-            resize: vertical;
-        }
-
-        .debug-textarea:focus {
-            outline: none;
-            border-color: rgba(180, 180, 190, 0.4);
-        }
-
-        .debug-textarea::placeholder {
-            color: rgba(180, 180, 190, 0.3);
-        }
-
-        .debug-list {
-            max-height: 200px;
-            overflow-y: auto;
-            background: rgba(40, 42, 54, 0.3);
-            border: 1px solid rgba(180, 180, 190, 0.15);
-            border-radius: 8px;
-            padding: 8px;
-        }
-
-        .debug-list-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 6px 8px;
-            border-radius: 4px;
-            color: rgba(180, 180, 190, 0.7);
-            font-size: 0.8rem;
-        }
-
-        .debug-list-item:hover {
-            background: rgba(180, 180, 190, 0.1);
-        }
-
-        .debug-list-item .index {
-            color: rgba(180, 180, 190, 0.4);
-            font-size: 0.7rem;
-            width: 24px;
-        }
-
-        .debug-list-item .preview {
-            width: 32px;
-            height: 32px;
-            border: 1px solid rgba(180, 180, 190, 0.3);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .debug-list-item .preview svg {
-            width: 100%;
-            height: 100%;
-        }
-
-        .debug-btn {
-            background: rgba(40, 42, 54, 0.8);
-            border: 1px solid rgba(180, 180, 190, 0.3);
-            border-radius: 6px;
-            color: rgba(180, 180, 190, 0.7);
-            padding: 8px 16px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            margin-right: 8px;
-            margin-bottom: 8px;
-        }
-
-        .debug-btn:hover {
-            border-color: rgba(180, 180, 190, 0.6);
-            color: rgba(220, 220, 230, 0.9);
-        }
-
-        .debug-info {
-            color: rgba(180, 180, 190, 0.5);
-            font-size: 0.75rem;
-            line-height: 1.6;
-            margin-top: 10px;
-        }
-
-        .debug-grid-preview {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 3px;
-            margin-top: 10px;
-        }
-
-        .debug-grid-preview .mini-tile {
-            aspect-ratio: 1;
-            background: rgba(40, 42, 54, 0.5);
-            border: 1px solid rgba(180, 180, 190, 0.2);
-            border-radius: 3px;
-            font-size: 0.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: rgba(180, 180, 190, 0.5);
-        }
-
-        .separator-h { border-top: 2px solid rgba(126, 200, 227, 0.5); }
-        .separator-v { border-left: 2px solid rgba(255, 215, 0, 0.5); }
-
-        /* ========== GRILLE 5x4 ========== */
+        
+        /* ========== GRILLE AVEC MASKING ========== */
         .grid-wrapper {
             position: relative;
-            width: 350px; /* 4 * 80 + 3 * 10 = 350px */
-            height: 440px; /* 5 * 80 + 4 * 10 = 440px */
+            --cell: min(80px, 18vw);
+            --gap: 10px;
+            width: calc(4 * var(--cell) + 3 * var(--gap));
+            height: calc(5 * var(--cell) + 4 * var(--gap));
             overflow: hidden; /* LE MASQUE MAGIQUE */
         }
-
+        
         .grid-container {
             position: absolute;
             top: 0;
@@ -238,10 +63,10 @@
             width: 100%;
             height: 100%;
         }
-
+        
         .square {
-            width: 80px;
-            height: 80px;
+            width: var(--cell);
+            height: var(--cell);
             background-color: #12131a;
             border: 1px solid rgba(180, 180, 190, 0.35);
             border-radius: 14px;
@@ -251,204 +76,280 @@
             user-select: none;
             touch-action: none;
         }
-
+        
         .square:hover {
             border-color: rgba(180, 180, 190, 0.55);
         }
-
-        .square.dragging {
+        
+        .square:active {
             cursor: grabbing;
         }
-
-        .square.ghost {
-            pointer-events: none; /* Les clones ne captent pas les événements */
+        
+        .square.empty {
+            cursor: default;
+            border: 1px dashed rgba(180, 180, 190, 0.15);
+            border-radius: 14px;
+            background-color: #12131a;
         }
-
+        
+        .square.white-border {
+            cursor: grab;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 14px;
+            background-color: #12131a;
+        }
+        
+        .square.ghost {
+            pointer-events: none;
+            opacity: 0.9;
+        }
+        
+        @keyframes fusionPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        
+        .fusion-animation {
+            animation: fusionPulse 0.4s ease-in-out;
+        }
+        
         .square svg {
             width: 100%;
             height: 100%;
-            pointer-events: none;
         }
-
+        
         svg .separator {
-            stroke: rgba(180, 180, 190, 0.35);
+            stroke: rgba(180, 180, 190, 0.3);
             stroke-width: 1;
         }
-
-        svg line.icon, svg path.icon, svg circle.icon, svg rect.icon, svg polyline.icon {
-            stroke: rgba(220, 220, 230, 0.8);
+        
+        svg line.icon,
+        svg path.icon,
+        svg circle.icon,
+        svg rect.icon {
+            stroke: rgba(180, 180, 190, 0.35);
             stroke-width: 2;
             stroke-linecap: round;
             stroke-linejoin: round;
             fill: none;
         }
-
+        
         svg circle.point {
-            fill: rgba(220, 220, 230, 0.8);
-            stroke: none;
+            fill: rgba(180, 180, 190, 0.35);
         }
-
-        .square:hover svg line.icon,
-        .square:hover svg path.icon,
-        .square:hover svg circle.icon,
-        .square:hover svg rect.icon,
-        .square:hover svg polyline.icon {
-            stroke: rgba(255, 255, 255, 0.95);
+        
+        /* === ÉTATS PAR FACE INDIVIDUELLE === */
+        
+        /* Face1 states */
+        .face1-white line.icon, .face1-white path.icon, 
+        .face1-white circle.icon, .face1-white rect.icon {
+            stroke: rgba(180, 180, 190, 0.35);
         }
-
-        .square:hover svg circle.point {
-            fill: rgba(255, 255, 255, 0.95);
+        .face1-white circle.point {
+            fill: rgba(180, 180, 190, 0.35);
+        }
+        
+        .face1-silver line.icon, .face1-silver path.icon, 
+        .face1-silver circle.icon, .face1-silver rect.icon {
+            stroke: #22d3ee;
+            filter: drop-shadow(0 0 2px rgba(34, 211, 238, 0.4));
+        }
+        .face1-silver circle.point {
+            fill: #22d3ee;
+            filter: drop-shadow(0 0 2px rgba(34, 211, 238, 0.4));
+        }
+        
+        .face1-gold line.icon, .face1-gold path.icon, 
+        .face1-gold circle.icon, .face1-gold rect.icon {
+            stroke: #ffd700;
+            filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.6));
+        }
+        .face1-gold circle.point {
+            fill: #ffd700;
+            filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.6));
+        }
+        
+        .face1-emerald line.icon, .face1-emerald path.icon, 
+        .face1-emerald circle.icon, .face1-emerald rect.icon {
+            stroke: #34d399;
+            filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.9));
+        }
+        .face1-emerald circle.point {
+            fill: #34d399;
+            filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.9));
+        }
+        
+        .face1-cosmic line.icon, .face1-cosmic path.icon, 
+        .face1-cosmic circle.icon, .face1-cosmic rect.icon {
+            stroke: #c4b5fd;
+            filter: drop-shadow(0 0 8px rgba(131, 56, 236, 0.9));
+        }
+        .face1-cosmic circle.point {
+            fill: #c4b5fd;
+            filter: drop-shadow(0 0 8px rgba(131, 56, 236, 0.9));
+        }
+        
+        /* Face2 states */
+        .face2-white line.icon, .face2-white path.icon, 
+        .face2-white circle.icon, .face2-white rect.icon {
+            stroke: rgba(180, 180, 190, 0.35);
+        }
+        .face2-white circle.point {
+            fill: rgba(180, 180, 190, 0.35);
+        }
+        
+        .face2-silver line.icon, .face2-silver path.icon, 
+        .face2-silver circle.icon, .face2-silver rect.icon {
+            stroke: #22d3ee;
+            filter: drop-shadow(0 0 2px rgba(34, 211, 238, 0.4));
+        }
+        .face2-silver circle.point {
+            fill: #22d3ee;
+            filter: drop-shadow(0 0 2px rgba(34, 211, 238, 0.4));
+        }
+        
+        .face2-gold line.icon, .face2-gold path.icon, 
+        .face2-gold circle.icon, .face2-gold rect.icon {
+            stroke: #ffd700;
+            filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.6));
+        }
+        .face2-gold circle.point {
+            fill: #ffd700;
+            filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.6));
+        }
+        
+        .face2-emerald line.icon, .face2-emerald path.icon, 
+        .face2-emerald circle.icon, .face2-emerald rect.icon {
+            stroke: #34d399;
+            filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.9));
+        }
+        .face2-emerald circle.point {
+            fill: #34d399;
+            filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.9));
+        }
+        
+        .face2-cosmic line.icon, .face2-cosmic path.icon, 
+        .face2-cosmic circle.icon, .face2-cosmic rect.icon {
+            stroke: #c4b5fd;
+            filter: drop-shadow(0 0 8px rgba(131, 56, 236, 0.9));
+        }
+        .face2-cosmic circle.point {
+            fill: #c4b5fd;
+            filter: drop-shadow(0 0 8px rgba(131, 56, 236, 0.9));
+        }
+        
+        /* Face supernovae */
+        .face1-supernovae line.icon, .face1-supernovae path.icon, 
+        .face1-supernovae circle.icon, .face1-supernovae rect.icon {
+            stroke: #ffeb3b;
+            filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.7)) drop-shadow(0 0 10px rgba(255, 140, 0, 0.4));
+            animation: supernovaIconShift 2.5s ease-in-out infinite;
+        }
+        .face1-supernovae circle.point {
+            fill: #ffeb3b;
+            filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.7));
+            animation: supernovaPointPulse 1.2s ease-in-out infinite;
+        }
+        .face2-supernovae line.icon, .face2-supernovae path.icon, 
+        .face2-supernovae circle.icon, .face2-supernovae rect.icon {
+            stroke: #ffeb3b;
+            filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.7)) drop-shadow(0 0 10px rgba(255, 140, 0, 0.4));
+            animation: supernovaIconShift 2.5s ease-in-out infinite;
+        }
+        .face2-supernovae circle.point {
+            fill: #ffeb3b;
+            filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.7));
+            animation: supernovaPointPulse 1.2s ease-in-out infinite;
+        }
+        
+        /* === HALOS PAR ÉTAT === */
+        .square.white svg .separator { stroke: rgba(180, 180, 190, 0.3); }
+        .square.silver svg .separator { stroke: rgba(34, 211, 238, 0.4); }
+        .square.gold svg .separator { stroke: rgba(255, 215, 0, 0.4); }
+        .square.emerald svg .separator { stroke: rgba(52, 211, 153, 0.6); }
+        .square.cosmic svg .separator { stroke: rgba(196, 181, 253, 0.6); }
+        .square.supernovae svg .separator { stroke: rgba(255, 235, 59, 0.6); }
+        
+        @keyframes supernovaIconShift { 
+            0%, 100% { stroke: #ffeb3b; } 
+            25% { stroke: #ff8c00; } 
+            50% { stroke: #ffd700; } 
+            75% { stroke: #ff6347; } 
+        }
+        @keyframes supernovaPointPulse { 
+            0%, 100% { fill: #ffeb3b; } 
+            33% { fill: #ff8c00; } 
+            66% { fill: #ffd700; } 
         }
     </style>
 </head>
 <body>
-    <button class="debug-toggle" id="debugToggle">⚙</button>
-    
-    <div class="debug-panel" id="debugPanel">
-        <h2>Debug Panel</h2>
-        
-        <div class="debug-section">
-            <h3>Statistiques</h3>
-            <div class="debug-stats">
-                <div class="debug-stat">
-                    <div class="label">Tuiles</div>
-                    <div class="value" id="statTiles">20</div>
-                </div>
-                <div class="debug-stat">
-                    <div class="label">Colonnes</div>
-                    <div class="value" id="statCols">4</div>
-                </div>
-                <div class="debug-stat">
-                    <div class="label">Lignes</div>
-                    <div class="value" id="statRows">5</div>
-                </div>
-                <div class="debug-stat">
-                    <div class="label">Grille</div>
-                    <div class="value" id="statGrid">5×4</div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="debug-section">
-            <h3>Actions</h3>
-            <button class="debug-btn" onclick="resetRotations()">Reset Rotations</button>
-            <button class="debug-btn" onclick="randomizeRotations()">Rotations Aléatoires</button>
-        </div>
-        
-        <div class="debug-section">
-            <h3>Aperçu Grille (5×4)</h3>
-            <div class="debug-grid-preview" id="gridPreview"></div>
-        </div>
-        
-        <div class="debug-section">
-            <h3>Liste des Tuiles</h3>
-            <div class="debug-list" id="tileList"></div>
-        </div>
-        
-        <div class="debug-section">
-            <h3>Notes de Design</h3>
-            <textarea class="debug-textarea" id="designNotes" placeholder="Vos notes ici..."></textarea>
-        </div>
-        
-        <div class="debug-info">
-            <strong>Contrôles:</strong><br>
-            • Clic: Rotation 90°<br>
-            • Drag H: Déplace la ligne<br>
-            • Drag V: Déplace la colonne<br>
-            • Wrap-around avec clones fantômes
-        </div>
-    </div>
-
     <div class="grid-wrapper">
         <div class="grid-container" id="gridContainer"></div>
     </div>
+    <button class="undo-button" id="undoBtn">Undo</button>
 
     <script>
-        // ========== CONSTANTES 5x4 ==========
+        // ============================================
+        // ADAM v24 - SLIDE CONTROLS
+        // ============================================
+        // Commandes:
+        // - Drag horizontal → Glisse toute la LIGNE (wrap-around)
+        // - Drag vertical → Glisse toute la COLONNE (wrap-around)
+        // - Clic simple → Rotation 90° du domino
+        // ============================================
+        
         const COLS = 4;
         const ROWS = 5;
-        const CELL_SIZE = 80;
-        const CELL_GAP = 10;
-        const CELL_TOTAL = CELL_SIZE + CELL_GAP; // 90px
-        const GRID_WIDTH = COLS * CELL_TOTAL; // 360px (mais wrapper = 350px pour masquer)
-        const GRID_HEIGHT = ROWS * CELL_TOTAL; // 450px (mais wrapper = 440px pour masquer)
-
-        // Données des 20 tuiles (SVG content) - Sélection variée des 50 originales
-        const tilesData = [
-            // RANGÉE 1
-            `<svg viewBox="0 0 80 80"><line class="separator" x1="40" y1="0" x2="40" y2="80"/><path class="icon" d="M 12 22 L 22 35 L 32 22"/><path class="icon" d="M 48 58 L 58 45 L 68 58"/></svg>`,
-            `<svg viewBox="0 0 80 80"><line class="separator" x1="0" y1="40" x2="80" y2="40"/><circle class="icon" cx="25" cy="20" r="8"/><circle class="icon" cx="55" cy="20" r="8"/><circle class="icon" cx="40" cy="60" r="8"/></svg>`,
-            `<svg viewBox="0 0 80 80"><line class="separator" x1="40" y1="0" x2="40" y2="80"/><path class="icon" d="M 10 55 L 10 40 L 22 40 L 22 25 L 34 25"/><line class="icon" x1="46" y1="55" x2="70" y2="25"/></svg>`,
-            `<svg viewBox="0 0 80 80"><line class="separator" x1="0" y1="40" x2="80" y2="40"/><path class="icon" d="M 10 22 L 22 22 L 30 12 L 38 32 L 46 17 L 54 22 L 70 22"/><line class="icon" x1="10" y1="58" x2="70" y2="58"/></svg>`,
-            // RANGÉE 2
-            `<svg viewBox="0 0 80 80"><line class="separator" x1="0" y1="40" x2="80" y2="40"/><line class="icon" x1="40" y1="32" x2="40" y2="12"/><path class="icon" d="M 30 22 L 40 12 L 50 22"/><line class="icon" x1="40" y1="68" x2="40" y2="48"/></svg>`,
-            `<svg viewBox="0 0 80 80"><line class="separator" x1="40" y1="0" x2="40" y2="80"/><path class="icon" d="M 22 40 L 12 50 L 22 60 L 32 50 Z"/><rect class="icon" x="50" y="30" width="18" height="18" rx="2"/></svg>`,
-            `<svg viewBox="0 0 80 80"><line class="separator" x1="0" y1="40" x2="80" y2="40"/><circle class="icon" cx="40" cy="20" r="10"/><line class="icon" x1="40" y1="30" x2="40" y2="55"/><line class="icon" x1="30" y1="65" x2="50" y2="65"/></svg>`,
-            `<svg viewBox="0 0 80 80"><line class="separator" x1="40" y1="0" x2="40" y2="80"/><path class="icon" d="M 12 25 L 32 40 L 12 55"/><circle class="point" cx="58" cy="32" r="3"/><circle class="point" cx="58" cy="48" r="3"/></svg>`,
-            // RANGÉE 3
-            `<svg viewBox="0 0 80 80"><line class="separator" x1="0" y1="40" x2="80" y2="40"/><path class="icon" d="M 15 20 Q 40 35 65 20"/><path class="icon" d="M 15 60 Q 40 45 65 60"/></svg>`,
-            `<svg viewBox="0 0 80 80"><line class="separator" x1="40" y1="0" x2="40" y2="80"/><line class="icon" x1="22" y1="22" x2="22" y2="58"/><circle class="point" cx="22" cy="22" r="3"/><circle class="point" cx="22" cy="40" r="3"/><circle class="point" cx="22" cy="58" r="3"/><path class="icon" d="M 50 30 L 66 40 L 50 50"/></svg>`,
-            `<svg viewBox="0 0 80 80"><line class="separator" x1="0" y1="40" x2="80" y2="40"/><circle class="icon" cx="40" cy="20" r="8"/><line class="icon" x1="40" y1="28" x2="25" y2="55"/><line class="icon" x1="40" y1="28" x2="55" y2="55"/><line class="icon" x1="25" y1="55" x2="55" y2="55"/></svg>`,
-            `<svg viewBox="0 0 80 80"><line class="separator" x1="40" y1="0" x2="40" y2="80"/><path class="icon" d="M 10 30 Q 22 50 34 30"/><path class="icon" d="M 46 50 Q 58 30 70 50"/></svg>`,
-            // RANGÉE 4
-            `<svg viewBox="0 0 80 80"><line class="separator" x1="0" y1="40" x2="80" y2="40"/><circle class="icon" cx="22" cy="20" r="8"/><circle class="icon" cx="58" cy="20" r="8"/><path class="icon" d="M 30 55 L 40 65 L 50 55 L 40 45 Z"/></svg>`,
-            `<svg viewBox="0 0 80 80"><line class="separator" x1="40" y1="0" x2="40" y2="80"/><line class="icon" x1="10" y1="25" x2="34" y2="25"/><line class="icon" x1="22" y1="25" x2="22" y2="55"/><circle class="point" cx="58" cy="30" r="4"/><circle class="point" cx="58" cy="50" r="4"/></svg>`,
-            `<svg viewBox="0 0 80 80"><line class="separator" x1="0" y1="40" x2="80" y2="40"/><path class="icon" d="M 22 12 L 22 28 L 38 28"/><path class="icon" d="M 58 28 L 58 12 L 42 12"/><path class="icon" d="M 30 55 Q 40 68 50 55"/></svg>`,
-            `<svg viewBox="0 0 80 80"><line class="separator" x1="40" y1="0" x2="40" y2="80"/><path class="icon" d="M 22 50 Q 10 35 22 22 Q 34 35 22 50"/><line class="icon" x1="50" y1="30" x2="68" y2="30"/><line class="icon" x1="50" y1="50" x2="68" y2="50"/></svg>`,
-            // RANGÉE 5
-            `<svg viewBox="0 0 80 80"><line class="separator" x1="0" y1="40" x2="80" y2="40"/><line class="icon" x1="15" y1="20" x2="35" y2="20"/><line class="icon" x1="35" y1="20" x2="35" y2="32"/><line class="icon" x1="45" y1="20" x2="65" y2="20"/><circle class="point" cx="40" cy="60" r="5"/></svg>`,
-            `<svg viewBox="0 0 80 80"><line class="separator" x1="40" y1="0" x2="40" y2="80"/><line class="icon" x1="22" y1="60" x2="22" y2="35"/><line class="icon" x1="22" y1="35" x2="12" y2="22"/><line class="icon" x1="22" y1="35" x2="32" y2="22"/><path class="icon" d="M 50 35 L 60 25 L 70 35"/><path class="icon" d="M 50 55 L 60 45 L 70 55"/></svg>`,
-            `<svg viewBox="0 0 80 80"><line class="separator" x1="0" y1="40" x2="80" y2="40"/><path class="icon" d="M 12 12 L 12 28 L 28 28"/><path class="icon" d="M 68 12 L 68 28 L 52 28"/><path class="icon" d="M 12 68 L 12 52 L 28 52"/><path class="icon" d="M 68 68 L 68 52 L 52 52"/></svg>`,
-            `<svg viewBox="0 0 80 80"><line class="separator" x1="40" y1="0" x2="40" y2="80"/><path class="icon" d="M 28 28 A 14 14 0 1 0 28 52 A 10 10 0 1 1 28 28"/><circle class="point" cx="58" cy="40" r="6"/></svg>`
-        ];
-
-        // Matrice logique: grid[row][col] = index de la tuile
-        let grid = [];
-        for (let r = 0; r < ROWS; r++) {
-            grid[r] = [];
-            for (let c = 0; c < COLS; c++) {
-                grid[r][c] = r * COLS + c;
-            }
-        }
-
-        // Éléments DOM des tuiles
-        let tileElements = [];
+        const TOTAL = 20;
+        const STATE_ORDER = ['white', 'silver', 'gold', 'emerald', 'cosmic', 'supernovae'];
         
-        // Clones fantômes pour le wrap-around
-        let ghostElements = [];
-
-        // Créer les tuiles
-        const container = document.getElementById('gridContainer');
-        for (let i = 0; i < 20; i++) {
-            const tile = document.createElement('div');
-            tile.className = 'square';
-            tile.innerHTML = tilesData[i];
-            tile.dataset.index = i;
-            container.appendChild(tile);
-            tileElements.push(tile);
-        }
-
-        // Positionner les tuiles selon la grille
-        function updateAllPositions() {
-            for (let r = 0; r < ROWS; r++) {
-                for (let c = 0; c < COLS; c++) {
-                    const tileIndex = grid[r][c];
-                    const tile = tileElements[tileIndex];
-                    const x = c * CELL_TOTAL;
-                    const y = r * CELL_TOTAL;
-                    tile.style.transition = 'none';
-                    tile.style.left = x + 'px';
-                    tile.style.top = y + 'px';
-                }
+        // Dimensions calculées dynamiquement
+        let CELL_SIZE = 80;
+        let CELL_GAP = 10;
+        let CELL_TOTAL = 90;
+        let GRID_WIDTH = COLS * CELL_TOTAL;
+        let GRID_HEIGHT = ROWS * CELL_TOTAL;
+        
+        function updateDimensions() {
+            const wrapper = document.querySelector('.grid-wrapper');
+            const style = getComputedStyle(wrapper);
+            const cellValue = style.getPropertyValue('--cell').trim();
+            const gapValue = style.getPropertyValue('--gap').trim();
+            
+            // Parser les valeurs (peuvent être en px ou calculées)
+            if (cellValue) {
+                // Créer un élément temporaire pour mesurer la vraie taille
+                const testEl = document.createElement('div');
+                testEl.style.width = 'var(--cell)';
+                testEl.style.position = 'absolute';
+                testEl.style.visibility = 'hidden';
+                wrapper.appendChild(testEl);
+                CELL_SIZE = testEl.offsetWidth || 80;
+                wrapper.removeChild(testEl);
             }
+            
+            CELL_GAP = parseFloat(gapValue) || 8;
+            CELL_TOTAL = CELL_SIZE + CELL_GAP;
+            GRID_WIDTH = COLS * CELL_TOTAL;
+            GRID_HEIGHT = ROWS * CELL_TOTAL;
+            
+            console.log('Dimensions:', CELL_SIZE, CELL_GAP, CELL_TOTAL);
         }
-
-        // Position initiale
-        updateAllPositions();
-
-        // Variables de drag
+        
+        const container = document.getElementById('gridContainer');
+        const undoBtn = document.getElementById('undoBtn');
+        
+        let dominos = [];
+        let dominoElements = [];
+        let ghostElements = [];
+        let history = [];
+        const MAX_HISTORY = 20;
+        let lastMovedIndices = [];
+        
+        // État du drag
         let isDragging = false;
-        let dragAxis = null; // 'horizontal' ou 'vertical'
+        let dragAxis = null;
         let dragStartX = 0;
         let dragStartY = 0;
         let dragStartTime = 0;
@@ -456,137 +357,307 @@
         let dragCol = -1;
         let dragOffset = 0;
         let initialPositions = [];
-        let clickedTile = null;
-
-        // Trouver la position (row, col) d'une tuile
-        function findTilePosition(tileIndex) {
-            for (let r = 0; r < ROWS; r++) {
-                for (let c = 0; c < COLS; c++) {
-                    if (grid[r][c] === tileIndex) {
-                        return { row: r, col: c };
+        let clickedDominoIdx = null;
+        let clickLocalX = 0; // Position X du clic relative au domino
+        let isAnimating = false;
+        
+        // Icônes
+        const ICONS = {
+            chevron: { f1: 'M20 32L45 12L70 32', f2: 'M20 12L45 32L70 12', t: 'path' },
+            circle: { f1: '45,22,12', f2: '45,22,12', t: 'circle' },
+            twoCircles: { f1: '30,22,8|60,22,8', f2: '30,22,8|60,22,8', t: 'circles' },
+            line: { f1: '15,22,75,22', f2: '15,22,75,22', t: 'line' },
+            threeLines: { f1: '25,10,25,34|45,10,45,34|65,10,65,34', f2: '25,10,25,34|45,10,45,34|65,10,65,34', t: 'lines' },
+            twoPoints: { f1: '30,22,4|60,22,4', f2: '30,22,4|60,22,4', t: 'points' },
+            square: { f1: '25,10,40,24,3', f2: '25,10,40,24,3', t: 'rect' },
+            wave: { f1: 'M10 22Q28 6 45 22Q62 38 80 22', f2: 'M10 22Q28 6 45 22Q62 38 80 22', t: 'path' }
+        };
+        
+        function seededRandom(seed) {
+            let state = seed;
+            return function() {
+                state = (state * 1103515245 + 12345) & 0x7fffffff;
+                return state / 0x7fffffff;
+            };
+        }
+        
+        function initDominos() {
+            dominos = [];
+            
+            // 4 symboles × 10 = 40 symboles pour 20 dominos
+            const symbols = [
+                'threeLines', 'threeLines', 'threeLines', 'threeLines', 'threeLines', 'threeLines', 'threeLines', 'threeLines', 'threeLines', 'threeLines',
+                'square', 'square', 'square', 'square', 'square', 'square', 'square', 'square', 'square', 'square',
+                'circle', 'circle', 'circle', 'circle', 'circle', 'circle', 'circle', 'circle', 'circle', 'circle',
+                'chevron', 'chevron', 'chevron', 'chevron', 'chevron', 'chevron', 'chevron', 'chevron', 'chevron', 'chevron'
+            ];
+            
+            const rng = seededRandom(20480);
+            for (let i = symbols.length - 1; i > 0; i--) {
+                const j = Math.floor(rng() * (i + 1));
+                [symbols[i], symbols[j]] = [symbols[j], symbols[i]];
+            }
+            
+            for (let i = 0; i < TOTAL; i++) {
+                const x = i % COLS;
+                const y = Math.floor(i / COLS);
+                dominos.push({
+                    face1: symbols[i * 2],
+                    face2: symbols[i * 2 + 1],
+                    face1State: 'white',
+                    face2State: 'white',
+                    rotation: ((x + y) % 2 === 0) ? 0 : 90,
+                    state: 'white',
+                    type: 'double'
+                });
+            }
+        }
+        
+        function renderIcon(icon, isFace2, faceState) {
+            if (icon === 'empty') return '';
+            const d = ICONS[icon];
+            if (!d) return '';
+            const data = isFace2 ? d.f2 : d.f1;
+            const faceClass = isFace2 ? 'face2' : 'face1';
+            const stateClass = `${faceClass}-${faceState}`;
+            
+            if (d.t === 'path') return `<path class="icon ${stateClass}" d="${data}"/>`;
+            if (d.t === 'circle') {
+                const [cx, cy, r] = data.split(',');
+                return `<circle class="icon ${stateClass}" cx="${cx}" cy="${cy}" r="${r}"/>`;
+            }
+            if (d.t === 'line') {
+                const [x1, y1, x2, y2] = data.split(',');
+                return `<line class="icon ${stateClass}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+            }
+            if (d.t === 'rect') {
+                const [x, y, w, h, rx] = data.split(',');
+                return `<rect class="icon ${stateClass}" x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}"/>`;
+            }
+            if (d.t === 'lines') {
+                return data.split('|').map(p => {
+                    const [x1, y1, x2, y2] = p.split(',');
+                    return `<line class="icon ${stateClass}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+                }).join('');
+            }
+            return data.split('|').map(p => {
+                const v = p.split(',');
+                return (d.t === 'circles' || d.t === 'points')
+                    ? `<circle class="${d.t === 'points' ? 'point' : 'icon'} ${stateClass}" cx="${v[0]}" cy="${v[1]}" r="${v[2]}"/>`
+                    : `<line class="icon ${stateClass}" x1="${v[0]}" y1="${v[1]}" x2="${v[2]}" y2="${v[3]}"/>`;
+            }).join('');
+        }
+        
+        function renderDominoSVG(d) {
+            if (d.type === 'unique') {
+                return `<svg viewBox="0 0 90 90">
+                    <g class="face1-${d.face1State}" transform="translate(0,22.5)">${renderIcon(d.face1, false, d.face1State)}</g>
+                </svg>`;
+            }
+            
+            const medianeColors = {
+                white: 'rgba(180, 180, 190, 0.35)',
+                silver: 'rgba(6, 182, 212, 0.6)',
+                gold: 'rgba(255, 215, 0, 0.7)',
+                emerald: 'rgba(52, 211, 153, 0.9)',
+                cosmic: 'rgba(196, 181, 253, 0.8)',
+                supernovae: 'rgba(255, 235, 59, 0.8)'
+            };
+            
+            const idx1 = STATE_ORDER.indexOf(d.face1State);
+            const idx2 = STATE_ORDER.indexOf(d.face2State);
+            const strongestState = idx1 >= idx2 ? d.face1State : d.face2State;
+            const medianeColor = medianeColors[strongestState];
+            
+            return `<svg viewBox="0 0 90 90">
+                <line class="separator" x1="0" y1="45" x2="90" y2="45" stroke="${medianeColor}" stroke-width="1"/>
+                <g class="face1-${d.face1State}">${renderIcon(d.face1, false, d.face1State)}</g>
+                <g class="face2-${d.face2State}" transform="translate(0,45)">${renderIcon(d.face2, true, d.face2State)}</g>
+            </svg>`;
+        }
+        
+        // ============================================
+        // RENDU DES DOMINOS (positionnement absolu)
+        // ============================================
+        
+        function createDominoElement(domino, index) {
+            const el = document.createElement('div');
+            el.dataset.index = index;
+            
+            if (!domino) {
+                el.className = 'square empty';
+            } else if (domino.type === 'whiteBorder') {
+                el.className = 'square white-border';
+            } else {
+                el.className = 'square ' + (domino.state || 'white');
+                el.innerHTML = renderDominoSVG(domino);
+            }
+            
+            return el;
+        }
+        
+        function updateAllPositions() {
+            for (let i = 0; i < TOTAL; i++) {
+                const col = i % COLS;
+                const row = Math.floor(i / COLS);
+                const el = dominoElements[i];
+                if (el) {
+                    el.style.transition = 'none';
+                    el.style.left = (col * CELL_TOTAL) + 'px';
+                    el.style.top = (row * CELL_TOTAL) + 'px';
+                    // Appliquer la rotation du domino
+                    if (dominos[i] && dominos[i].rotation !== undefined) {
+                        el.style.transform = `rotate(${dominos[i].rotation}deg)`;
                     }
                 }
             }
-            return null;
         }
-
-        // Créer les clones fantômes pour une ligne ou colonne
+        
+        function render() {
+            container.innerHTML = '';
+            dominoElements = [];
+            
+            for (let i = 0; i < TOTAL; i++) {
+                const el = createDominoElement(dominos[i], i);
+                container.appendChild(el);
+                dominoElements.push(el);
+            }
+            
+            updateAllPositions();
+        }
+        
+        // ============================================
+        // SYSTÈME DE GHOSTS POUR WRAP-AROUND
+        // ============================================
+        
         function createGhosts(axis, rowOrCol) {
             clearGhosts();
             
             if (axis === 'horizontal') {
-                // Cloner toute la ligne, décalée à gauche ET à droite
                 for (let c = 0; c < COLS; c++) {
-                    const tileIndex = grid[rowOrCol][c];
-                    const originalTile = tileElements[tileIndex];
+                    const idx = rowOrCol * COLS + c;
+                    const domino = dominos[idx];
+                    if (!domino) continue;
                     
-                    // Clone gauche (position négative)
-                    const ghostLeft = originalTile.cloneNode(true);
-                    ghostLeft.className = 'square ghost';
+                    // Ghost gauche
+                    const ghostLeft = createDominoElement(domino, idx);
+                    ghostLeft.classList.add('ghost');
                     ghostLeft.style.left = (c * CELL_TOTAL - GRID_WIDTH) + 'px';
                     ghostLeft.style.top = (rowOrCol * CELL_TOTAL) + 'px';
+                    if (domino.rotation) ghostLeft.style.transform = `rotate(${domino.rotation}deg)`;
                     container.appendChild(ghostLeft);
-                    ghostElements.push({ el: ghostLeft, baseX: c * CELL_TOTAL - GRID_WIDTH, tileIndex: tileIndex });
+                    ghostElements.push({ el: ghostLeft, baseX: c * CELL_TOTAL - GRID_WIDTH, idx });
                     
-                    // Clone droite (position + GRID_WIDTH)
-                    const ghostRight = originalTile.cloneNode(true);
-                    ghostRight.className = 'square ghost';
+                    // Ghost droite
+                    const ghostRight = createDominoElement(domino, idx);
+                    ghostRight.classList.add('ghost');
                     ghostRight.style.left = (c * CELL_TOTAL + GRID_WIDTH) + 'px';
                     ghostRight.style.top = (rowOrCol * CELL_TOTAL) + 'px';
+                    if (domino.rotation) ghostRight.style.transform = `rotate(${domino.rotation}deg)`;
                     container.appendChild(ghostRight);
-                    ghostElements.push({ el: ghostRight, baseX: c * CELL_TOTAL + GRID_WIDTH, tileIndex: tileIndex });
+                    ghostElements.push({ el: ghostRight, baseX: c * CELL_TOTAL + GRID_WIDTH, idx });
                 }
             } else {
-                // Cloner toute la colonne, décalée en haut ET en bas
                 for (let r = 0; r < ROWS; r++) {
-                    const tileIndex = grid[r][rowOrCol];
-                    const originalTile = tileElements[tileIndex];
+                    const idx = r * COLS + rowOrCol;
+                    const domino = dominos[idx];
+                    if (!domino) continue;
                     
-                    // Clone haut (position négative)
-                    const ghostTop = originalTile.cloneNode(true);
-                    ghostTop.className = 'square ghost';
+                    // Ghost haut
+                    const ghostTop = createDominoElement(domino, idx);
+                    ghostTop.classList.add('ghost');
                     ghostTop.style.left = (rowOrCol * CELL_TOTAL) + 'px';
                     ghostTop.style.top = (r * CELL_TOTAL - GRID_HEIGHT) + 'px';
+                    if (domino.rotation) ghostTop.style.transform = `rotate(${domino.rotation}deg)`;
                     container.appendChild(ghostTop);
-                    ghostElements.push({ el: ghostTop, baseY: r * CELL_TOTAL - GRID_HEIGHT, tileIndex: tileIndex });
+                    ghostElements.push({ el: ghostTop, baseY: r * CELL_TOTAL - GRID_HEIGHT, idx });
                     
-                    // Clone bas (position + GRID_HEIGHT)
-                    const ghostBottom = originalTile.cloneNode(true);
-                    ghostBottom.className = 'square ghost';
+                    // Ghost bas
+                    const ghostBottom = createDominoElement(domino, idx);
+                    ghostBottom.classList.add('ghost');
                     ghostBottom.style.left = (rowOrCol * CELL_TOTAL) + 'px';
                     ghostBottom.style.top = (r * CELL_TOTAL + GRID_HEIGHT) + 'px';
+                    if (domino.rotation) ghostBottom.style.transform = `rotate(${domino.rotation}deg)`;
                     container.appendChild(ghostBottom);
-                    ghostElements.push({ el: ghostBottom, baseY: r * CELL_TOTAL + GRID_HEIGHT, tileIndex: tileIndex });
+                    ghostElements.push({ el: ghostBottom, baseY: r * CELL_TOTAL + GRID_HEIGHT, idx });
                 }
             }
         }
-
-        // Supprimer tous les clones fantômes
+        
         function clearGhosts() {
-            for (const ghost of ghostElements) {
-                ghost.el.remove();
-            }
+            ghostElements.forEach(g => g.el.remove());
             ghostElements = [];
         }
-
-        // Début du drag
+        
+        // ============================================
+        // GESTION DU DRAG
+        // ============================================
+        
         function startDrag(e) {
-            const tile = e.target.closest('.square');
-            if (!tile || tile.classList.contains('ghost')) return;
-
+            if (isAnimating) return;
+            
+            const el = e.target.closest('.square');
+            if (!el || el.classList.contains('ghost') || el.classList.contains('empty')) return;
+            
             e.preventDefault();
             
-            const tileIndex = parseInt(tile.dataset.index);
-            const pos = findTilePosition(tileIndex);
-            if (!pos) return;
-
+            const idx = parseInt(el.dataset.index);
+            const col = idx % COLS;
+            const row = Math.floor(idx / COLS);
+            
             isDragging = true;
             dragAxis = null;
-            dragRow = pos.row;
-            dragCol = pos.col;
+            dragRow = row;
+            dragCol = col;
             dragOffset = 0;
-            clickedTile = tile;
-
+            clickedDominoIdx = idx;
+            
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
             dragStartX = clientX;
             dragStartY = clientY;
             dragStartTime = Date.now();
-
+            
+            // Calculer la position du clic relative au domino
+            const rect = el.getBoundingClientRect();
+            clickLocalX = clientX - rect.left;
+            
             initialPositions = [];
         }
-
-        // Pendant le drag
+        
         function moveDrag(e) {
-            if (!isDragging) return;
+            if (!isDragging || isAnimating) return;
             e.preventDefault();
-
+            
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
             
             const deltaX = clientX - dragStartX;
             const deltaY = clientY - dragStartY;
-
+            
             // Déterminer l'axe au premier mouvement significatif
             if (dragAxis === null) {
-                const threshold = 5;
+                const threshold = 8;
                 if (Math.abs(deltaX) > threshold || Math.abs(deltaY) > threshold) {
                     dragAxis = Math.abs(deltaX) > Math.abs(deltaY) ? 'horizontal' : 'vertical';
                     
+                    // Sauvegarder l'état avant le mouvement
+                    saveState();
+                    
                     if (dragAxis === 'horizontal') {
                         for (let c = 0; c < COLS; c++) {
-                            const tileIndex = grid[dragRow][c];
+                            const idx = dragRow * COLS + c;
                             initialPositions.push({
-                                tileIndex: tileIndex,
+                                idx,
                                 baseX: c * CELL_TOTAL
                             });
                         }
                         createGhosts('horizontal', dragRow);
                     } else {
                         for (let r = 0; r < ROWS; r++) {
-                            const tileIndex = grid[r][dragCol];
+                            const idx = r * COLS + dragCol;
                             initialPositions.push({
-                                tileIndex: tileIndex,
+                                idx,
                                 baseY: r * CELL_TOTAL
                             });
                         }
@@ -594,18 +665,20 @@
                     }
                 }
             }
-
+            
             if (dragAxis === null) return;
-
-            // Déplacer les tuiles ET les fantômes
+            
+            // Déplacer les dominos et les ghosts
             if (dragAxis === 'horizontal') {
                 dragOffset = deltaX;
                 
                 for (const item of initialPositions) {
-                    const tile = tileElements[item.tileIndex];
-                    const newX = item.baseX + dragOffset;
-                    tile.style.transition = 'none';
-                    tile.style.left = newX + 'px';
+                    const el = dominoElements[item.idx];
+                    if (el) {
+                        const newX = item.baseX + dragOffset;
+                        el.style.transition = 'none';
+                        el.style.left = newX + 'px';
+                    }
                 }
                 
                 for (const ghost of ghostElements) {
@@ -617,10 +690,12 @@
                 dragOffset = deltaY;
                 
                 for (const item of initialPositions) {
-                    const tile = tileElements[item.tileIndex];
-                    const newY = item.baseY + dragOffset;
-                    tile.style.transition = 'none';
-                    tile.style.top = newY + 'px';
+                    const el = dominoElements[item.idx];
+                    if (el) {
+                        const newY = item.baseY + dragOffset;
+                        el.style.transition = 'none';
+                        el.style.top = newY + 'px';
+                    }
                 }
                 
                 for (const ghost of ghostElements) {
@@ -630,236 +705,472 @@
                 }
             }
         }
-
-        // Rotation d'une tuile
-        function rotateTile(tile) {
-            let rotation = parseInt(tile.dataset.rotation) || 0;
-            rotation += 90;
-            tile.dataset.rotation = rotation;
-            
-            tile.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-            tile.style.transform = `rotate(${rotation - 45}deg) scale(0.85)`;
-            
-            setTimeout(() => {
-                tile.style.transform = `rotate(${rotation}deg) scale(1)`;
-            }, 200);
-        }
-
-        // Fin du drag - snap à la position la plus proche
+        
         function endDrag(e) {
             if (!isDragging) return;
             isDragging = false;
-
+            
             const elapsed = Date.now() - dragStartTime;
             const distance = Math.abs(dragOffset);
-
-            // Si c'est un clic → rotation
-            if (distance < 5 && elapsed < 200 && clickedTile) {
-                rotateTile(clickedTile);
+            
+            // Si c'est un clic → rotation selon la position
+            if (distance < 8 && elapsed < 250 && clickedDominoIdx !== null) {
+                // Déterminer le sens de rotation selon la moitié cliquée
+                const clickedRight = clickLocalX > (CELL_SIZE / 2);
+                rotateDomino(clickedDominoIdx, clickedRight);
                 clearGhosts();
-                clickedTile = null;
+                clickedDominoIdx = null;
                 dragAxis = null;
                 initialPositions = [];
                 return;
             }
-
-            clickedTile = null;
-
+            
+            clickedDominoIdx = null;
+            
             if (dragAxis === null) {
                 clearGhosts();
                 return;
             }
-
-            // Calculer le nombre de crans de décalage
+            
+            // Calculer le nombre de crans
             let steps = Math.round(dragOffset / CELL_TOTAL);
             
             if (dragAxis === 'horizontal') {
-                for (let i = 0; i < initialPositions.length; i++) {
-                    const item = initialPositions[i];
-                    const tile = tileElements[item.tileIndex];
+                // Phase 1: Téléporter près de la cible (sans animation) pour éviter les sauts
+                for (const item of initialPositions) {
+                    const el = dominoElements[item.idx];
+                    if (!el) continue;
                     
                     let currentX = item.baseX + dragOffset;
-                    
                     const originalCol = Math.round(item.baseX / CELL_TOTAL);
                     const newCol = ((originalCol + steps) % COLS + COLS) % COLS;
                     const targetX = newCol * CELL_TOTAL;
                     
+                    // Normaliser currentX pour qu'il soit proche de targetX
                     while (currentX - targetX > GRID_WIDTH / 2) currentX -= GRID_WIDTH;
                     while (targetX - currentX > GRID_WIDTH / 2) currentX += GRID_WIDTH;
                     
-                    tile.style.transition = 'none';
-                    tile.style.left = currentX + 'px';
+                    el.style.transition = 'none';
+                    el.style.left = currentX + 'px';
                 }
                 
+                // Forcer reflow
                 container.offsetHeight;
                 
-                for (let i = 0; i < initialPositions.length; i++) {
-                    const item = initialPositions[i];
-                    const tile = tileElements[item.tileIndex];
+                // Phase 2: Animer vers la position finale
+                for (const item of initialPositions) {
+                    const el = dominoElements[item.idx];
+                    if (!el) continue;
                     
                     const originalCol = Math.round(item.baseX / CELL_TOTAL);
                     const newCol = ((originalCol + steps) % COLS + COLS) % COLS;
                     const targetX = newCol * CELL_TOTAL;
                     
-                    tile.style.transition = 'left 0.15s ease-out';
-                    tile.style.left = targetX + 'px';
+                    el.style.transition = 'left 0.15s ease-out';
+                    el.style.left = targetX + 'px';
                 }
                 
                 // Mettre à jour la grille logique
-                const newRow = [];
+                const row = dragRow;
+                const newRowDominos = [];
                 for (let c = 0; c < COLS; c++) {
                     const sourceCol = ((c - steps) % COLS + COLS) % COLS;
-                    newRow[c] = grid[dragRow][sourceCol];
+                    newRowDominos[c] = dominos[row * COLS + sourceCol];
                 }
-                grid[dragRow] = newRow;
+                for (let c = 0; c < COLS; c++) {
+                    dominos[row * COLS + c] = newRowDominos[c];
+                }
+                
+                // Tracker les indices qui ont bougé
+                lastMovedIndices = [];
+                for (let c = 0; c < COLS; c++) {
+                    lastMovedIndices.push(row * COLS + c);
+                }
                 
             } else {
-                for (let i = 0; i < initialPositions.length; i++) {
-                    const item = initialPositions[i];
-                    const tile = tileElements[item.tileIndex];
+                // Phase 1: Téléporter près de la cible (sans animation) pour éviter les sauts
+                for (const item of initialPositions) {
+                    const el = dominoElements[item.idx];
+                    if (!el) continue;
                     
                     let currentY = item.baseY + dragOffset;
+                    const originalRow = Math.round(item.baseY / CELL_TOTAL);
+                    const newRow = ((originalRow + steps) % ROWS + ROWS) % ROWS;
+                    const targetY = newRow * CELL_TOTAL;
+                    
+                    // Normaliser currentY pour qu'il soit proche de targetY
+                    while (currentY - targetY > GRID_HEIGHT / 2) currentY -= GRID_HEIGHT;
+                    while (targetY - currentY > GRID_HEIGHT / 2) currentY += GRID_HEIGHT;
+                    
+                    el.style.transition = 'none';
+                    el.style.top = currentY + 'px';
+                }
+                
+                // Forcer reflow
+                container.offsetHeight;
+                
+                // Phase 2: Animer vers la position finale
+                for (const item of initialPositions) {
+                    const el = dominoElements[item.idx];
+                    if (!el) continue;
                     
                     const originalRow = Math.round(item.baseY / CELL_TOTAL);
                     const newRow = ((originalRow + steps) % ROWS + ROWS) % ROWS;
                     const targetY = newRow * CELL_TOTAL;
                     
-                    while (currentY - targetY > GRID_HEIGHT / 2) currentY -= GRID_HEIGHT;
-                    while (targetY - currentY > GRID_HEIGHT / 2) currentY += GRID_HEIGHT;
-                    
-                    tile.style.transition = 'none';
-                    tile.style.top = currentY + 'px';
-                }
-                
-                container.offsetHeight;
-                
-                for (let i = 0; i < initialPositions.length; i++) {
-                    const item = initialPositions[i];
-                    const tile = tileElements[item.tileIndex];
-                    
-                    const originalRow = Math.round(item.baseY / CELL_TOTAL);
-                    const newRowIdx = ((originalRow + steps) % ROWS + ROWS) % ROWS;
-                    const targetY = newRowIdx * CELL_TOTAL;
-                    
-                    tile.style.transition = 'top 0.15s ease-out';
-                    tile.style.top = targetY + 'px';
+                    el.style.transition = 'top 0.15s ease-out';
+                    el.style.top = targetY + 'px';
                 }
                 
                 // Mettre à jour la grille logique
-                const newCol = [];
+                const col = dragCol;
+                const newColDominos = [];
                 for (let r = 0; r < ROWS; r++) {
                     const sourceRow = ((r - steps) % ROWS + ROWS) % ROWS;
-                    newCol[r] = grid[sourceRow][dragCol];
+                    newColDominos[r] = dominos[sourceRow * COLS + col];
                 }
                 for (let r = 0; r < ROWS; r++) {
-                    grid[r][dragCol] = newCol[r];
+                    dominos[r * COLS + col] = newColDominos[r];
+                }
+                
+                // Tracker les indices qui ont bougé
+                lastMovedIndices = [];
+                for (let r = 0; r < ROWS; r++) {
+                    lastMovedIndices.push(r * COLS + col);
                 }
             }
-
+            
             clearGhosts();
             
+            // Après l'animation, re-render proprement et vérifier les fusions
             setTimeout(() => {
-                updateAllPositions();
+                render();
+                checkFusions();
             }, 160);
-
+            
             dragAxis = null;
             initialPositions = [];
         }
-
-        // Event listeners
-        container.addEventListener('mousedown', startDrag);
-        container.addEventListener('touchstart', startDrag, { passive: false });
-
-        document.addEventListener('mousemove', moveDrag);
-        document.addEventListener('touchmove', moveDrag, { passive: false });
-
-        document.addEventListener('mouseup', endDrag);
-        document.addEventListener('touchend', endDrag);
-
-        // ========== MENU DEBUG ==========
-        const debugToggle = document.getElementById('debugToggle');
-        const debugPanel = document.getElementById('debugPanel');
         
-        debugToggle.addEventListener('click', () => {
-            debugPanel.classList.toggle('open');
-        });
-
-        // Analyser les tuiles actuelles
-        function analyzeCurrentTiles() {
-            updateGridPreview();
-            updateTileList();
-        }
-
-        // Mettre à jour l'aperçu de la grille
-        function updateGridPreview() {
-            const preview = document.getElementById('gridPreview');
-            preview.innerHTML = '';
+        // ============================================
+        // ROTATION INDIVIDUELLE (clic simple)
+        // clockwise = true → horaire (+90°), false → antihoraire (-90°)
+        // ============================================
+        
+        function rotateDomino(idx, clockwise = true) {
+            const domino = dominos[idx];
+            if (!domino || domino.type === 'whiteBorder') return;
             
-            for (let i = 0; i < 20; i++) {
-                const mini = document.createElement('div');
-                mini.className = 'mini-tile';
+            saveState();
+            
+            // Rotation horaire (+90) ou antihoraire (-90)
+            domino.rotation = (domino.rotation || 0) + (clockwise ? 90 : -90);
+            lastMovedIndices = [idx];
+            
+            const el = dominoElements[idx];
+            if (el) {
+                el.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+                el.style.transform = `rotate(${domino.rotation}deg)`;
                 
-                const svg = tilesData[i];
-                if (svg.includes('x1="0" y1="40"')) {
-                    mini.classList.add('separator-h');
-                    mini.textContent = 'H';
-                } else {
-                    mini.classList.add('separator-v');
-                    mini.textContent = 'V';
-                }
-                
-                preview.appendChild(mini);
+                setTimeout(() => {
+                    checkFusions();
+                }, 300);
             }
         }
-
-        // Mettre à jour la liste des tuiles
-        function updateTileList() {
-            const list = document.getElementById('tileList');
-            list.innerHTML = '';
+        
+        // ============================================
+        // SYSTÈME DE FUSION
+        // ============================================
+        
+        function getPos(i) { return { x: i % COLS, y: Math.floor(i / COLS) }; }
+        function getIndex(x, y) { return (x < 0 || x >= COLS || y < 0 || y >= ROWS) ? -1 : y * COLS + x; }
+        
+        function getExposedFace(domino, dir) {
+            if (!domino || domino.type !== 'double') return null;
+            const r = ((domino.rotation % 360) + 360) % 360;
+            const map = {
+                0:   { top: 'face1', bottom: 'face2', left: null, right: null },
+                90:  { top: null, bottom: null, left: 'face2', right: 'face1' },
+                180: { top: 'face2', bottom: 'face1', left: null, right: null },
+                270: { top: null, bottom: null, left: 'face1', right: 'face2' }
+            };
+            const face = map[r]?.[dir];
+            return face ? domino[face] : null;
+        }
+        
+        function getExposedFaceKey(domino, dir) {
+            if (!domino || domino.type !== 'double') return null;
+            const r = ((domino.rotation % 360) + 360) % 360;
+            const map = {
+                0:   { top: 'face1', bottom: 'face2', left: null, right: null },
+                90:  { top: null, bottom: null, left: 'face2', right: 'face1' },
+                180: { top: 'face2', bottom: 'face1', left: null, right: null },
+                270: { top: null, bottom: null, left: 'face1', right: 'face2' }
+            };
+            return map[r]?.[dir] || null;
+        }
+        
+        function checkFusions() {
+            if (isAnimating) return;
             
-            tilesData.forEach((svg, index) => {
-                const item = document.createElement('div');
-                item.className = 'debug-list-item';
+            // Vérifier les fusions de dominos Unique adjacents
+            for (let i = 0; i < TOTAL; i++) {
+                if (!dominos[i] || dominos[i].type !== 'unique') continue;
+                const { x, y } = getPos(i);
                 
-                const sepType = svg.includes('x1="0" y1="40"') ? 'H' : 'V';
+                // Vérifier les 4 directions
+                const directions = [
+                    { dx: 1, dy: 0, dir: 'horizontal' },
+                    { dx: -1, dy: 0, dir: 'horizontal' },
+                    { dx: 0, dy: 1, dir: 'vertical' },
+                    { dx: 0, dy: -1, dir: 'vertical' }
+                ];
                 
-                item.innerHTML = `
-                    <span class="index">#${index + 1}</span>
-                    <div class="preview">${svg}</div>
-                    <span>Tuile ${index + 1} (${sepType})</span>
-                `;
+                for (const { dx, dy, dir } of directions) {
+                    const ni = getIndex(x + dx, y + dy);
+                    if (ni !== -1 && dominos[ni] && dominos[ni].type === 'unique') {
+                        const isMoved = lastMovedIndices.includes(i);
+                        const isNMoved = lastMovedIndices.includes(ni);
+                        if (isMoved && !isNMoved) {
+                            performUniqueFusion(ni, i, dir);
+                        } else {
+                            performUniqueFusion(i, ni, dir);
+                        }
+                        return;
+                    }
+                }
+            }
+            
+            // Vérifier les fusions de dominos Double avec faces identiques
+            for (let i = 0; i < TOTAL; i++) {
+                if (!dominos[i] || dominos[i].type !== 'double') continue;
+                const { x, y } = getPos(i);
                 
-                list.appendChild(item);
-            });
+                // Vérifier à droite
+                const iR = getIndex(x + 1, y);
+                if (iR !== -1 && dominos[iR] && dominos[iR].type === 'double') {
+                    const faceLeft = getExposedFace(dominos[i], 'right');
+                    const faceRight = getExposedFace(dominos[iR], 'left');
+                    if (faceLeft && faceRight && faceLeft === faceRight) {
+                        const isMoved = lastMovedIndices.includes(i);
+                        const isRMoved = lastMovedIndices.includes(iR);
+                        if (isMoved && !isRMoved) {
+                            performCompressionFusion(iR, i, 'horizontal');
+                        } else {
+                            performCompressionFusion(i, iR, 'horizontal');
+                        }
+                        return;
+                    }
+                }
+                
+                // Vérifier en bas
+                const iB = getIndex(x, y + 1);
+                if (iB !== -1 && dominos[iB] && dominos[iB].type === 'double') {
+                    const faceTop = getExposedFace(dominos[i], 'bottom');
+                    const faceBottom = getExposedFace(dominos[iB], 'top');
+                    if (faceTop && faceBottom && faceTop === faceBottom) {
+                        const isMoved = lastMovedIndices.includes(i);
+                        const isBMoved = lastMovedIndices.includes(iB);
+                        if (isMoved && !isBMoved) {
+                            performCompressionFusion(iB, i, 'vertical');
+                        } else {
+                            performCompressionFusion(i, iB, 'vertical');
+                        }
+                        return;
+                    }
+                }
+            }
         }
-
-        // Reset toutes les rotations à 0
-        function resetRotations() {
-            tileElements.forEach(tile => {
-                tile.dataset.rotation = '0';
-                tile.style.transform = 'rotate(0deg)';
-            });
+        
+        function performUniqueFusion(receiverIdx, projectileIdx, direction) {
+            if (isAnimating) return;
+            isAnimating = true;
+            
+            const receiver = dominos[receiverIdx];
+            const projectile = dominos[projectileIdx];
+            
+            const receiverEl = dominoElements[receiverIdx];
+            const projectileEl = dominoElements[projectileIdx];
+            
+            if (receiverEl) receiverEl.classList.add('fusion-animation');
+            if (projectileEl) projectileEl.classList.add('fusion-animation');
+            
+            setTimeout(() => {
+                const face1State = receiver.face1State;
+                const face2State = projectile.face1State;
+                
+                const newDomino = {
+                    face1: receiver.face1,
+                    face2: projectile.face1,
+                    face1State: face1State,
+                    face2State: face2State,
+                    rotation: direction === 'horizontal' ? 90 : 0,
+                    state: STATE_ORDER[Math.max(STATE_ORDER.indexOf(face1State), STATE_ORDER.indexOf(face2State))],
+                    type: 'double'
+                };
+                
+                dominos[receiverIdx] = newDomino;
+                dominos[projectileIdx] = { type: 'whiteBorder', rotation: 0 };
+                
+                render();
+                isAnimating = false;
+                lastMovedIndices = [];
+                
+                setTimeout(checkFusions, 50);
+            }, 400);
         }
-
-        // Rotations aléatoires
-        function randomizeRotations() {
-            tileElements.forEach(tile => {
-                const rot = [0, 90, 180, 270][Math.floor(Math.random() * 4)];
-                tile.dataset.rotation = rot;
-                tile.style.transition = 'transform 0.4s ease';
-                tile.style.transform = `rotate(${rot}deg)`;
-            });
+        
+        function performCompressionFusion(receiverIdx, projectileIdx, direction) {
+            if (isAnimating) return;
+            isAnimating = true;
+            
+            const receiver = dominos[receiverIdx];
+            const projectile = dominos[projectileIdx];
+            
+            const receiverEl = dominoElements[receiverIdx];
+            const projectileEl = dominoElements[projectileIdx];
+            
+            if (!receiverEl || !projectileEl || !receiver || !projectile) {
+                isAnimating = false;
+                return;
+            }
+            
+            const isHorizontal = (direction === 'horizontal');
+            const receiverPos = getPos(receiverIdx);
+            const projectilePos = getPos(projectileIdx);
+            
+            let receiverTouchingKey, projectileTouchingKey, projectileFarKey;
+            
+            if (isHorizontal) {
+                if (projectilePos.x > receiverPos.x) {
+                    receiverTouchingKey = getExposedFaceKey(receiver, 'right');
+                    projectileTouchingKey = getExposedFaceKey(projectile, 'left');
+                    projectileFarKey = getExposedFaceKey(projectile, 'right');
+                } else {
+                    receiverTouchingKey = getExposedFaceKey(receiver, 'left');
+                    projectileTouchingKey = getExposedFaceKey(projectile, 'right');
+                    projectileFarKey = getExposedFaceKey(projectile, 'left');
+                }
+            } else {
+                if (projectilePos.y > receiverPos.y) {
+                    receiverTouchingKey = getExposedFaceKey(receiver, 'bottom');
+                    projectileTouchingKey = getExposedFaceKey(projectile, 'top');
+                    projectileFarKey = getExposedFaceKey(projectile, 'bottom');
+                } else {
+                    receiverTouchingKey = getExposedFaceKey(receiver, 'top');
+                    projectileTouchingKey = getExposedFaceKey(projectile, 'bottom');
+                    projectileFarKey = getExposedFaceKey(projectile, 'top');
+                }
+            }
+            
+            // Animation simple
+            projectileEl.classList.add('fusion-animation');
+            
+            setTimeout(() => {
+                const newDomino = {
+                    face1: receiver.face1,
+                    face2: receiver.face2,
+                    face1State: receiver.face1State,
+                    face2State: receiver.face2State,
+                    rotation: receiver.rotation,
+                    state: receiver.state,
+                    type: 'double'
+                };
+                
+                // Logique additive
+                if (receiverTouchingKey && projectileTouchingKey) {
+                    const receiverStateIdx = STATE_ORDER.indexOf(receiver[receiverTouchingKey + 'State']);
+                    const projectileStateIdx = STATE_ORDER.indexOf(projectile[projectileTouchingKey + 'State']);
+                    const sumIdx = Math.min(receiverStateIdx + projectileStateIdx + 1, STATE_ORDER.length - 1);
+                    newDomino[receiverTouchingKey + 'State'] = STATE_ORDER[sumIdx];
+                }
+                
+                const idx1 = STATE_ORDER.indexOf(newDomino.face1State);
+                const idx2 = STATE_ORDER.indexOf(newDomino.face2State);
+                newDomino.state = STATE_ORDER[Math.max(idx1, idx2)];
+                
+                // Recycler en domino unique
+                const recycledDomino = {
+                    face1: projectile[projectileFarKey],
+                    face1State: projectile[projectileFarKey + 'State'],
+                    rotation: 0,
+                    state: projectile[projectileFarKey + 'State'],
+                    type: 'unique'
+                };
+                
+                dominos[receiverIdx] = newDomino;
+                dominos[projectileIdx] = recycledDomino;
+                
+                render();
+                lastMovedIndices = [];
+                
+                setTimeout(() => {
+                    isAnimating = false;
+                    checkFusions();
+                }, 100);
+            }, 400);
         }
-
-        // Sauvegarder les notes dans localStorage
-        const notesTextarea = document.getElementById('designNotes');
-        notesTextarea.value = localStorage.getItem('fusionSquare4ColsNotes') || '';
-        notesTextarea.addEventListener('input', () => {
-            localStorage.setItem('fusionSquare4ColsNotes', notesTextarea.value);
+        
+        // ============================================
+        // UNDO
+        // ============================================
+        
+        function saveState() {
+            const snapshot = dominos.map(d => {
+                if (!d) return null;
+                return { ...d };
+            });
+            history.push(snapshot);
+            if (history.length > MAX_HISTORY) history.shift();
+            updateUndoButton();
+        }
+        
+        function undo() {
+            if (history.length === 0 || isAnimating) return;
+            dominos = history.pop().map(d => d ? { ...d } : null);
+            render();
+            updateUndoButton();
+        }
+        
+        function updateUndoButton() {
+            undoBtn.disabled = history.length === 0;
+        }
+        
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+        
+        container.addEventListener('mousedown', startDrag);
+        container.addEventListener('touchstart', startDrag, { passive: false });
+        document.addEventListener('mousemove', moveDrag);
+        document.addEventListener('touchmove', moveDrag, { passive: false });
+        document.addEventListener('mouseup', endDrag);
+        document.addEventListener('touchend', endDrag);
+        undoBtn.addEventListener('click', undo);
+        
+        // ============================================
+        // INITIALISATION
+        // ============================================
+        
+        function init() {
+            updateDimensions();
+            initDominos();
+            render();
+            updateUndoButton();
+        }
+        
+        // Attendre que le DOM soit complètement prêt
+        if (document.readyState === 'complete') {
+            init();
+        } else {
+            window.addEventListener('load', init);
+        }
+        
+        // Recalculer les dimensions si la fenêtre change
+        window.addEventListener('resize', () => {
+            updateDimensions();
+            updateAllPositions();
         });
-
-        // Analyser au chargement
-        setTimeout(analyzeCurrentTiles, 100);
     </script>
 </body>
 </html>
