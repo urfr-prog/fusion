@@ -46,6 +46,18 @@
             transform: scale(1);
         }
         
+        .undo-button.active {
+            border-color: rgba(255, 215, 0, 0.7);
+            color: #ffd700;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3), 
+                        inset 0 0 20px rgba(255, 215, 0, 0.05);
+        }
+        
+        .buttons-container {
+            display: flex;
+            gap: 10px;
+        }
+        
         /* ========== GRILLE AVEC MASKING ========== */
         .grid-wrapper {
             position: relative;
@@ -182,11 +194,13 @@
         .face1-cosmic line.icon, .face1-cosmic path.icon, 
         .face1-cosmic circle.icon, .face1-cosmic rect.icon {
             stroke: #c4b5fd;
-            filter: drop-shadow(0 0 8px rgba(131, 56, 236, 0.9));
+            filter: drop-shadow(0 0 6px rgba(131, 56, 236, 0.7)) drop-shadow(0 0 10px rgba(255, 0, 110, 0.4));
+            animation: cosmicIconShift 3s ease-in-out infinite;
         }
         .face1-cosmic circle.point {
             fill: #c4b5fd;
-            filter: drop-shadow(0 0 8px rgba(131, 56, 236, 0.9));
+            filter: drop-shadow(0 0 6px rgba(131, 56, 236, 0.7));
+            animation: cosmicPointPulse 1.5s ease-in-out infinite;
         }
         
         /* Face2 states */
@@ -231,11 +245,13 @@
         .face2-cosmic line.icon, .face2-cosmic path.icon, 
         .face2-cosmic circle.icon, .face2-cosmic rect.icon {
             stroke: #c4b5fd;
-            filter: drop-shadow(0 0 8px rgba(131, 56, 236, 0.9));
+            filter: drop-shadow(0 0 6px rgba(131, 56, 236, 0.7)) drop-shadow(0 0 10px rgba(255, 0, 110, 0.4));
+            animation: cosmicIconShift 3s ease-in-out infinite;
         }
         .face2-cosmic circle.point {
             fill: #c4b5fd;
-            filter: drop-shadow(0 0 8px rgba(131, 56, 236, 0.9));
+            filter: drop-shadow(0 0 6px rgba(131, 56, 236, 0.7));
+            animation: cosmicPointPulse 1.5s ease-in-out infinite;
         }
         
         /* Face supernovae */
@@ -262,13 +278,269 @@
             animation: supernovaPointPulse 1.2s ease-in-out infinite;
         }
         
-        /* === HALOS PAR ÉTAT === */
-        .square.white svg .separator { stroke: rgba(180, 180, 190, 0.3); }
-        .square.silver svg .separator { stroke: rgba(34, 211, 238, 0.4); }
-        .square.gold svg .separator { stroke: rgba(255, 215, 0, 0.4); }
-        .square.emerald svg .separator { stroke: rgba(52, 211, 153, 0.6); }
-        .square.cosmic svg .separator { stroke: rgba(196, 181, 253, 0.6); }
-        .square.supernovae svg .separator { stroke: rgba(255, 235, 59, 0.6); }
+        /* ============================================ */
+        /* HALOS POUR DOMINOS UNIQUES (.square.unique) */
+        /* ============================================ */
+        
+        .square.unique.white { 
+            border-color: rgba(180, 180, 190, 0.35); 
+        }
+        
+        .square.unique.silver { 
+            border-color: rgba(6, 182, 212, 0.6); 
+            box-shadow: 0 0 12px rgba(6, 182, 212, 0.2), 
+                        inset 0 0 15px rgba(6, 182, 212, 0.05); 
+        }
+        
+        .square.unique.gold { 
+            border-color: rgba(255, 215, 0, 0.7); 
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3), 
+                        inset 0 0 20px rgba(255, 215, 0, 0.05); 
+        }
+        
+        .square.unique.emerald { 
+            border-color: rgba(52, 211, 153, 0.9); 
+            box-shadow: 0 0 25px rgba(5, 150, 105, 0.5), 
+                        0 0 40px rgba(52, 211, 153, 0.3), 
+                        inset 0 0 25px rgba(52, 211, 153, 0.1); 
+            animation: emeraldGlow 2.5s ease-in-out infinite; 
+        }
+        
+        @property --cosmic-angle { 
+            syntax: '<angle>'; 
+            initial-value: 0deg; 
+            inherits: false; 
+        }
+        .square.unique.cosmic { 
+            border: 2px solid transparent; 
+            background: linear-gradient(#12131a, #12131a) padding-box, 
+                        conic-gradient(from var(--cosmic-angle, 0deg), 
+                            #ff006e, #8338ec, #06b6d4, #34d399, #ffd700, #ff006e) border-box; 
+            box-shadow: 0 0 25px rgba(131, 56, 236, 0.4), 
+                        0 0 40px rgba(255, 0, 110, 0.2), 
+                        0 0 50px rgba(6, 182, 212, 0.2), 
+                        inset 0 0 30px rgba(131, 56, 236, 0.1); 
+            animation: cosmicRotate 4s linear infinite, 
+                       cosmicPulse 2s ease-in-out infinite; 
+        }
+        
+        @property --supernova-angle { 
+            syntax: '<angle>'; 
+            initial-value: 0deg; 
+            inherits: false; 
+        }
+        .square.unique.supernovae { 
+            border: 3px solid transparent; 
+            background: linear-gradient(#12131a, #12131a) padding-box, 
+                        conic-gradient(from var(--supernova-angle, 0deg), 
+                            #ff4500, #ff8c00, #ffd700, #ffff00, #ff8c00, #ff4500) border-box; 
+            box-shadow: 0 0 25px rgba(255, 140, 0, 0.4), 
+                        0 0 40px rgba(255, 69, 0, 0.2), 
+                        0 0 50px rgba(255, 215, 0, 0.2), 
+                        inset 0 0 30px rgba(255, 140, 0, 0.1); 
+            animation: supernovaRotate 3s linear infinite, 
+                       supernovaPulse 1.5s ease-in-out infinite; 
+        }
+        
+        /* ============================================ */
+        /* HALOS POUR DOMINOS DOUBLES (zones clippées) */
+        /* ============================================ */
+        
+        .square.double {
+            border-color: rgba(180, 180, 190, 0.35);
+            overflow: visible; /* Permet aux halos de déborder */
+        }
+        
+        .halo-zone {
+            position: absolute;
+            left: -1px;
+            right: -1px;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .halo-zone.top {
+            top: -1px;
+            height: 50%;
+            border-radius: 14px 14px 0 0;
+            clip-path: inset(0 0 0 0);
+        }
+        
+        .halo-zone.bottom {
+            bottom: -1px;
+            height: 50%;
+            border-radius: 0 0 14px 14px;
+            clip-path: inset(0 0 0 0);
+        }
+        
+        /* États des zones de halo */
+        .halo-zone.white {
+            border: 1px solid rgba(180, 180, 190, 0.35);
+        }
+        .halo-zone.top.white { border-bottom: none; }
+        .halo-zone.bottom.white { border-top: none; }
+        
+        .halo-zone.silver {
+            border: 1px solid rgba(6, 182, 212, 0.6);
+            box-shadow: 0 0 12px rgba(6, 182, 212, 0.3), 
+                        inset 0 0 15px rgba(6, 182, 212, 0.08);
+        }
+        .halo-zone.top.silver { border-bottom: none; }
+        .halo-zone.bottom.silver { border-top: none; }
+        
+        .halo-zone.gold {
+            border: 1px solid rgba(255, 215, 0, 0.7);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4), 
+                        inset 0 0 20px rgba(255, 215, 0, 0.08);
+        }
+        .halo-zone.top.gold { border-bottom: none; }
+        .halo-zone.bottom.gold { border-top: none; }
+        
+        .halo-zone.emerald {
+            border: 1px solid rgba(52, 211, 153, 0.9);
+            box-shadow: 0 0 25px rgba(5, 150, 105, 0.6), 
+                        0 0 40px rgba(52, 211, 153, 0.4),
+                        inset 0 0 25px rgba(52, 211, 153, 0.12);
+            animation: emeraldGlowZone 2.5s ease-in-out infinite;
+        }
+        .halo-zone.top.emerald { border-bottom: none; }
+        .halo-zone.bottom.emerald { border-top: none; }
+        
+        .halo-zone.cosmic {
+            border: 2px solid transparent;
+            background: linear-gradient(#12131a, #12131a) padding-box, 
+                        conic-gradient(from var(--cosmic-angle, 0deg), 
+                            #ff006e, #8338ec, #06b6d4, #34d399, #ffd700, #ff006e) border-box;
+            box-shadow: 0 0 25px rgba(131, 56, 236, 0.5), 
+                        0 0 40px rgba(255, 0, 110, 0.3),
+                        inset 0 0 30px rgba(131, 56, 236, 0.12);
+            animation: cosmicRotate 4s linear infinite, cosmicPulseZone 2s ease-in-out infinite;
+        }
+        .halo-zone.top.cosmic { border-bottom: none; border-radius: 14px 14px 0 0; }
+        .halo-zone.bottom.cosmic { border-top: none; border-radius: 0 0 14px 14px; }
+        
+        .halo-zone.supernovae {
+            border: 3px solid transparent;
+            background: linear-gradient(#12131a, #12131a) padding-box, 
+                        conic-gradient(from var(--supernova-angle, 0deg), 
+                            #ff4500, #ff8c00, #ffd700, #ffff00, #ff8c00, #ff4500) border-box;
+            box-shadow: 0 0 25px rgba(255, 140, 0, 0.5), 
+                        0 0 40px rgba(255, 69, 0, 0.3),
+                        inset 0 0 30px rgba(255, 140, 0, 0.12);
+            animation: supernovaRotate 3s linear infinite, supernovaPulseZone 1.5s ease-in-out infinite;
+        }
+        .halo-zone.top.supernovae { border-bottom: none; border-radius: 14px 14px 0 0; }
+        .halo-zone.bottom.supernovae { border-top: none; border-radius: 0 0 14px 14px; }
+        
+        /* ============================================ */
+        /* ANIMATIONS HALOS                            */
+        /* ============================================ */
+        
+        /* Pour dominos uniques */
+        @keyframes emeraldGlow {
+            0%, 100% { 
+                box-shadow: 0 0 25px rgba(5, 150, 105, 0.5), 
+                            0 0 40px rgba(52, 211, 153, 0.3), 
+                            inset 0 0 25px rgba(52, 211, 153, 0.1); 
+            }
+            50% { 
+                box-shadow: 0 0 35px rgba(5, 150, 105, 0.7), 
+                            0 0 55px rgba(52, 211, 153, 0.4), 
+                            inset 0 0 35px rgba(52, 211, 153, 0.15); 
+            }
+        }
+        
+        @keyframes cosmicRotate { 
+            to { --cosmic-angle: 360deg; } 
+        }
+        
+        @keyframes cosmicPulse {
+            0%, 100% { 
+                box-shadow: 0 0 25px rgba(131, 56, 236, 0.4), 
+                            0 0 40px rgba(255, 0, 110, 0.2), 
+                            0 0 50px rgba(6, 182, 212, 0.2), 
+                            inset 0 0 30px rgba(131, 56, 236, 0.1); 
+            }
+            50% { 
+                box-shadow: 0 0 35px rgba(131, 56, 236, 0.6), 
+                            0 0 55px rgba(255, 0, 110, 0.35), 
+                            0 0 70px rgba(6, 182, 212, 0.3), 
+                            inset 0 0 40px rgba(131, 56, 236, 0.15); 
+            }
+        }
+        
+        @keyframes supernovaRotate { 
+            to { --supernova-angle: 360deg; } 
+        }
+        
+        @keyframes supernovaPulse {
+            0%, 100% { 
+                box-shadow: 0 0 25px rgba(255, 140, 0, 0.4), 
+                            0 0 40px rgba(255, 69, 0, 0.2), 
+                            0 0 50px rgba(255, 215, 0, 0.2), 
+                            inset 0 0 30px rgba(255, 140, 0, 0.1); 
+            }
+            50% { 
+                box-shadow: 0 0 35px rgba(255, 140, 0, 0.6), 
+                            0 0 55px rgba(255, 69, 0, 0.35), 
+                            0 0 70px rgba(255, 215, 0, 0.3), 
+                            inset 0 0 40px rgba(255, 140, 0, 0.15); 
+            }
+        }
+        
+        /* Pour zones de dominos doubles */
+        @keyframes emeraldGlowZone {
+            0%, 100% { 
+                box-shadow: 0 0 25px rgba(5, 150, 105, 0.6), 
+                            0 0 40px rgba(52, 211, 153, 0.4),
+                            inset 0 0 25px rgba(52, 211, 153, 0.12); 
+            }
+            50% { 
+                box-shadow: 0 0 35px rgba(5, 150, 105, 0.8), 
+                            0 0 55px rgba(52, 211, 153, 0.5),
+                            inset 0 0 35px rgba(52, 211, 153, 0.18); 
+            }
+        }
+        
+        @keyframes cosmicPulseZone {
+            0%, 100% { 
+                box-shadow: 0 0 25px rgba(131, 56, 236, 0.5), 
+                            0 0 40px rgba(255, 0, 110, 0.3),
+                            inset 0 0 30px rgba(131, 56, 236, 0.12); 
+            }
+            50% { 
+                box-shadow: 0 0 35px rgba(131, 56, 236, 0.7), 
+                            0 0 55px rgba(255, 0, 110, 0.45),
+                            inset 0 0 40px rgba(131, 56, 236, 0.18); 
+            }
+        }
+        
+        @keyframes supernovaPulseZone {
+            0%, 100% { 
+                box-shadow: 0 0 25px rgba(255, 140, 0, 0.5), 
+                            0 0 40px rgba(255, 69, 0, 0.3),
+                            inset 0 0 30px rgba(255, 140, 0, 0.12); 
+            }
+            50% { 
+                box-shadow: 0 0 35px rgba(255, 140, 0, 0.7), 
+                            0 0 55px rgba(255, 69, 0, 0.45),
+                            inset 0 0 40px rgba(255, 140, 0, 0.18); 
+            }
+        }
+        
+        /* === SEPARATORS PAR ÉTAT === */
+        .square svg .separator { stroke: rgba(180, 180, 190, 0.3); }
+        
+        /* Animations cosmic pour icônes */
+        @keyframes cosmicIconShift { 
+            0%, 100% { stroke: #c4b5fd; } 
+            33% { stroke: #22d3ee; } 
+            66% { stroke: #f472b6; } 
+        }
+        @keyframes cosmicPointPulse { 
+            0%, 100% { fill: #c4b5fd; } 
+            50% { fill: #f472b6; } 
+        }
         
         @keyframes supernovaIconShift { 
             0%, 100% { stroke: #ffeb3b; } 
@@ -287,7 +559,10 @@
     <div class="grid-wrapper">
         <div class="grid-container" id="gridContainer"></div>
     </div>
-    <button class="undo-button" id="undoBtn">Undo</button>
+    <div class="buttons-container">
+        <button class="undo-button" id="undoBtn">Undo</button>
+        <button class="undo-button" id="gravityBtn">Gravity</button>
+    </div>
 
     <script>
         // ============================================
@@ -339,6 +614,9 @@
         
         const container = document.getElementById('gridContainer');
         const undoBtn = document.getElementById('undoBtn');
+        const gravityBtn = document.getElementById('gravityBtn');
+        
+        const GRAVITY_DELAY = 80; // Délai entre chaque étape de gravité (ms)
         
         let dominos = [];
         let dominoElements = [];
@@ -346,6 +624,7 @@
         let history = [];
         const MAX_HISTORY = 20;
         let lastMovedIndices = [];
+        let gravityMode = false; // Flag pour savoir si on est en cycle gravité
         
         // État du drag
         let isDragging = false;
@@ -488,9 +767,29 @@
                 el.className = 'square empty';
             } else if (domino.type === 'whiteBorder') {
                 el.className = 'square white-border';
-            } else {
-                el.className = 'square ' + (domino.state || 'white');
+            } else if (domino.type === 'unique') {
+                // Domino unique : halo sur tout le square
+                el.className = 'square unique ' + (domino.face1State || 'white');
                 el.innerHTML = renderDominoSVG(domino);
+            } else {
+                // Domino double : halos séparés par zone
+                el.className = 'square double';
+                
+                // Zone halo pour face1 (haut)
+                const haloTop = document.createElement('div');
+                haloTop.className = 'halo-zone top ' + (domino.face1State || 'white');
+                el.appendChild(haloTop);
+                
+                // Zone halo pour face2 (bas)
+                const haloBottom = document.createElement('div');
+                haloBottom.className = 'halo-zone bottom ' + (domino.face2State || 'white');
+                el.appendChild(haloBottom);
+                
+                // SVG par-dessus
+                const svgWrapper = document.createElement('div');
+                svgWrapper.style.cssText = 'position: relative; width: 100%; height: 100%; z-index: 1;';
+                svgWrapper.innerHTML = renderDominoSVG(domino);
+                el.appendChild(svgWrapper);
             }
             
             return el;
@@ -845,7 +1144,11 @@
             // Après l'animation, re-render proprement et vérifier les fusions
             setTimeout(() => {
                 render();
-                checkFusions();
+                if (gravityMode) {
+                    applyGravity();
+                } else {
+                    checkFusions();
+                }
             }, 160);
             
             dragAxis = null;
@@ -873,7 +1176,11 @@
                 el.style.transform = `rotate(${domino.rotation}deg)`;
                 
                 setTimeout(() => {
-                    checkFusions();
+                    if (gravityMode) {
+                        applyGravity();
+                    } else {
+                        checkFusions();
+                    }
                 }, 300);
             }
         }
@@ -1016,7 +1323,12 @@
                 isAnimating = false;
                 lastMovedIndices = [];
                 
-                setTimeout(checkFusions, 50);
+                // Si en mode gravité, relancer la gravité
+                if (gravityMode) {
+                    setTimeout(() => applyGravity(), 50);
+                } else {
+                    setTimeout(checkFusions, 50);
+                }
             }, 400);
         }
         
@@ -1106,9 +1418,156 @@
                 
                 setTimeout(() => {
                     isAnimating = false;
-                    checkFusions();
+                    // Si en mode gravité, relancer la gravité
+                    if (gravityMode) {
+                        applyGravity();
+                    } else {
+                        checkFusions();
+                    }
                 }, 100);
             }, 400);
+        }
+        
+        // ============================================
+        // GRAVITÉ (style Tetris)
+        // ============================================
+        
+        function applyGravity(onComplete) {
+            if (isAnimating) return;
+            isAnimating = true;
+            
+            let moved = true;
+            
+            const animateGravity = () => {
+                moved = false;
+                
+                // Parcourir de bas en haut (sauf dernière ligne)
+                for (let y = ROWS - 2; y >= 0; y--) {
+                    for (let x = 0; x < COLS; x++) {
+                        const i = getIndex(x, y);
+                        const iBelow = getIndex(x, y + 1);
+                        
+                        // Si case actuelle a un domino et case en-dessous est vide
+                        if (dominos[i] && dominos[i].type !== 'whiteBorder' && 
+                            (!dominos[iBelow] || dominos[iBelow].type === 'whiteBorder')) {
+                            
+                            // Déplacer vers le bas
+                            dominos[iBelow] = dominos[i];
+                            dominos[i] = null;
+                            moved = true;
+                        }
+                    }
+                }
+                
+                render();
+                
+                if (moved) {
+                    setTimeout(animateGravity, GRAVITY_DELAY);
+                } else {
+                    // Gravité terminée
+                    setTimeout(() => {
+                        isAnimating = false;
+                        if (onComplete) {
+                            onComplete();
+                        } else {
+                            // Vérifier les fusions après gravité
+                            checkFusionsAfterGravity();
+                        }
+                    }, 150);
+                }
+            };
+            
+            animateGravity();
+        }
+        
+        function checkFusionsAfterGravity() {
+            // Reset lastMovedIndices pour que les fusions marchent
+            lastMovedIndices = [];
+            
+            // Marquer tous les dominos comme "moved" pour permettre les fusions
+            for (let i = 0; i < TOTAL; i++) {
+                if (dominos[i] && dominos[i].type !== 'whiteBorder') {
+                    lastMovedIndices.push(i);
+                }
+            }
+            
+            // Vérifier s'il y a des fusions possibles
+            const hasFusion = detectFusion();
+            
+            if (hasFusion) {
+                // Il y a une fusion, checkFusions va la traiter
+                // et après la fusion, on relancera la gravité
+                checkFusions();
+            }
+            // Si pas de fusion, le cycle s'arrête naturellement
+            // mais gravityMode reste actif pour le prochain mouvement
+        }
+        
+        function detectFusion() {
+            // Détecter si une fusion est possible (sans l'exécuter)
+            
+            // Vérifier les fusions de dominos Unique adjacents
+            for (let i = 0; i < TOTAL; i++) {
+                if (!dominos[i] || dominos[i].type !== 'unique') continue;
+                const { x, y } = getPos(i);
+                
+                const directions = [
+                    { dx: 1, dy: 0 },
+                    { dx: 0, dy: 1 }
+                ];
+                
+                for (const { dx, dy } of directions) {
+                    const ni = getIndex(x + dx, y + dy);
+                    if (ni !== -1 && dominos[ni] && dominos[ni].type === 'unique') {
+                        return true;
+                    }
+                }
+            }
+            
+            // Vérifier les fusions de dominos Double
+            for (let i = 0; i < TOTAL; i++) {
+                if (!dominos[i] || dominos[i].type !== 'double') continue;
+                const { x, y } = getPos(i);
+                
+                // Vérifier à droite
+                const iR = getIndex(x + 1, y);
+                if (iR !== -1 && dominos[iR] && dominos[iR].type === 'double') {
+                    const faceLeft = getExposedFace(dominos[i], 'right');
+                    const faceRight = getExposedFace(dominos[iR], 'left');
+                    if (faceLeft && faceRight && faceLeft === faceRight) {
+                        return true;
+                    }
+                }
+                
+                // Vérifier en bas
+                const iB = getIndex(x, y + 1);
+                if (iB !== -1 && dominos[iB] && dominos[iB].type === 'double') {
+                    const faceTop = getExposedFace(dominos[i], 'bottom');
+                    const faceBottom = getExposedFace(dominos[iB], 'top');
+                    if (faceTop && faceBottom && faceTop === faceBottom) {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
+        }
+        
+        function triggerGravity() {
+            // Toggle ON/OFF
+            gravityMode = !gravityMode;
+            
+            // Mettre à jour le style du bouton
+            if (gravityMode) {
+                gravityBtn.classList.add('active');
+                // Lancer immédiatement la gravité
+                if (!isAnimating) {
+                    saveState();
+                    applyGravity();
+                }
+            } else {
+                gravityBtn.classList.remove('active');
+            }
         }
         
         // ============================================
@@ -1147,6 +1606,7 @@
         document.addEventListener('mouseup', endDrag);
         document.addEventListener('touchend', endDrag);
         undoBtn.addEventListener('click', undo);
+        gravityBtn.addEventListener('click', triggerGravity);
         
         // ============================================
         // INITIALISATION
