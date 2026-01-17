@@ -2,755 +2,864 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ADAM - Kaizen 1 v10</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fusion Square - Matrice 5x4 avec Drag</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { height: 100%; overflow: hidden; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             background-color: #12131a;
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
+            padding: 20px;
+            overflow: hidden;
         }
-        
-        .grid {
+
+        /* ========== MENU DEBUG ========== */
+        .debug-toggle {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            width: 40px;
+            height: 40px;
+            background: rgba(30, 32, 42, 0.9);
+            border: 1px solid rgba(180, 180, 190, 0.3);
+            border-radius: 8px;
+            color: rgba(180, 180, 190, 0.7);
+            font-size: 18px;
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.2s;
+        }
+
+        .debug-toggle:hover {
+            border-color: rgba(180, 180, 190, 0.6);
+            color: rgba(220, 220, 230, 0.9);
+        }
+
+        .debug-panel {
+            position: fixed;
+            top: 0;
+            right: -420px;
+            width: 400px;
+            height: 100vh;
+            background: rgba(18, 19, 26, 0.98);
+            border-left: 1px solid rgba(180, 180, 190, 0.2);
+            padding: 20px;
+            overflow-y: auto;
+            transition: right 0.3s ease;
+            z-index: 999;
+        }
+
+        .debug-panel.open {
+            right: 0;
+        }
+
+        .debug-panel h2 {
+            color: rgba(180, 180, 190, 0.8);
+            font-size: 1rem;
+            font-weight: 400;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(180, 180, 190, 0.2);
+        }
+
+        .debug-section {
+            margin-bottom: 25px;
+        }
+
+        .debug-section h3 {
+            color: rgba(180, 180, 190, 0.6);
+            font-size: 0.75rem;
+            font-weight: 400;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .debug-stats {
             display: grid;
-            grid-template-columns: repeat(4, var(--cell));
-            grid-template-rows: repeat(4, var(--cell));
-            gap: var(--gap);
-            --cell: min(80px, 20vw);
-            --gap: 8px;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
         }
-        
-        .cell {
-            width: var(--cell);
-            height: var(--cell);
-            position: relative;
+
+        .debug-stat {
+            background: rgba(40, 42, 54, 0.5);
+            border: 1px solid rgba(180, 180, 190, 0.15);
+            border-radius: 8px;
+            padding: 12px;
         }
-        
-        .square {
+
+        .debug-stat .label {
+            color: rgba(180, 180, 190, 0.5);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .debug-stat .value {
+            color: rgba(220, 220, 230, 0.9);
+            font-size: 1.4rem;
+            font-weight: 300;
+            margin-top: 4px;
+        }
+
+        .debug-textarea {
+            width: 100%;
+            height: 150px;
+            background: rgba(40, 42, 54, 0.5);
+            border: 1px solid rgba(180, 180, 190, 0.2);
+            border-radius: 8px;
+            color: rgba(220, 220, 230, 0.8);
+            font-family: inherit;
+            font-size: 0.85rem;
+            padding: 12px;
+            resize: vertical;
+        }
+
+        .debug-textarea:focus {
+            outline: none;
+            border-color: rgba(180, 180, 190, 0.4);
+        }
+
+        .debug-textarea::placeholder {
+            color: rgba(180, 180, 190, 0.3);
+        }
+
+        .debug-list {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(40, 42, 54, 0.3);
+            border: 1px solid rgba(180, 180, 190, 0.15);
+            border-radius: 8px;
+            padding: 8px;
+        }
+
+        .debug-list-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 8px;
+            border-radius: 4px;
+            color: rgba(180, 180, 190, 0.7);
+            font-size: 0.8rem;
+        }
+
+        .debug-list-item:hover {
+            background: rgba(180, 180, 190, 0.1);
+        }
+
+        .debug-list-item .index {
+            color: rgba(180, 180, 190, 0.4);
+            font-size: 0.7rem;
+            width: 24px;
+        }
+
+        .debug-list-item .preview {
+            width: 32px;
+            height: 32px;
+            border: 1px solid rgba(180, 180, 190, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .debug-list-item .preview svg {
             width: 100%;
             height: 100%;
-            background-color: transparent;
-            border: 1px solid rgba(180, 180, 190, 0.35);
-            border-radius: 12px;
+        }
+
+        .debug-btn {
+            background: rgba(40, 42, 54, 0.8);
+            border: 1px solid rgba(180, 180, 190, 0.3);
+            border-radius: 6px;
+            color: rgba(180, 180, 190, 0.7);
+            padding: 8px 16px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        .debug-btn:hover {
+            border-color: rgba(180, 180, 190, 0.6);
+            color: rgba(220, 220, 230, 0.9);
+        }
+
+        .debug-info {
+            color: rgba(180, 180, 190, 0.5);
+            font-size: 0.75rem;
+            line-height: 1.6;
+            margin-top: 10px;
+        }
+
+        .debug-grid-preview {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 3px;
+            margin-top: 10px;
+        }
+
+        .debug-grid-preview .mini-tile {
+            aspect-ratio: 1;
+            background: rgba(40, 42, 54, 0.5);
+            border: 1px solid rgba(180, 180, 190, 0.2);
+            border-radius: 3px;
+            font-size: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(180, 180, 190, 0.5);
+        }
+
+        .separator-h { border-top: 2px solid rgba(126, 200, 227, 0.5); }
+        .separator-v { border-left: 2px solid rgba(255, 215, 0, 0.5); }
+
+        /* ========== GRILLE 5x4 ========== */
+        .grid-wrapper {
+            position: relative;
+            width: 350px; /* 4 * 80 + 3 * 10 = 350px */
+            height: 440px; /* 5 * 80 + 4 * 10 = 440px */
+            overflow: hidden; /* LE MASQUE MAGIQUE */
+        }
+
+        .grid-container {
             position: absolute;
             top: 0;
             left: 0;
-            overflow: visible;
-            cursor: pointer;
-        }
-        
-        .square.empty {
-            border-style: dashed;
-            border-color: rgba(180, 180, 190, 0.15);
-            cursor: default;
-        }
-        
-        .square svg {
             width: 100%;
             height: 100%;
         }
-        
+
+        .square {
+            width: 80px;
+            height: 80px;
+            background-color: #12131a;
+            border: 1px solid rgba(180, 180, 190, 0.35);
+            border-radius: 14px;
+            position: absolute;
+            overflow: hidden;
+            cursor: grab;
+            user-select: none;
+            touch-action: none;
+        }
+
+        .square:hover {
+            border-color: rgba(180, 180, 190, 0.55);
+        }
+
+        .square.dragging {
+            cursor: grabbing;
+        }
+
+        .square.ghost {
+            pointer-events: none; /* Les clones ne captent pas les événements */
+        }
+
+        .square svg {
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
         svg .separator {
-            stroke: rgba(180, 180, 190, 0.3);
+            stroke: rgba(180, 180, 190, 0.35);
             stroke-width: 1;
         }
-        
-        svg line.icon,
-        svg path.icon,
-        svg circle.icon,
-        svg rect.icon {
-            stroke: rgba(180, 180, 190, 0.35);
+
+        svg line.icon, svg path.icon, svg circle.icon, svg rect.icon, svg polyline.icon {
+            stroke: rgba(220, 220, 230, 0.8);
             stroke-width: 2;
             stroke-linecap: round;
             stroke-linejoin: round;
             fill: none;
         }
-        
+
         svg circle.point {
-            fill: rgba(180, 180, 190, 0.35);
+            fill: rgba(220, 220, 230, 0.8);
+            stroke: none;
         }
-        
-        /* === ÉTATS DES DOMINOS === */
-        
-        /* WHITE (défaut) */
-        .square.white { border-color: rgba(180, 180, 190, 0.35); }
-        .square.white svg line.icon, .square.white svg path.icon, 
-        .square.white svg circle.icon, .square.white svg rect.icon { stroke: rgba(180, 180, 190, 0.35); }
-        .square.white svg circle.point { fill: rgba(180, 180, 190, 0.35); }
-        .square.white svg .separator { stroke: rgba(180, 180, 190, 0.3); }
-        
-        /* SILVER */
-        .square.silver { 
-            border-color: rgba(6, 182, 212, 0.6); 
-            box-shadow: 0 0 12px rgba(6, 182, 212, 0.2), inset 0 0 15px rgba(6, 182, 212, 0.05); 
+
+        .square:hover svg line.icon,
+        .square:hover svg path.icon,
+        .square:hover svg circle.icon,
+        .square:hover svg rect.icon,
+        .square:hover svg polyline.icon {
+            stroke: rgba(255, 255, 255, 0.95);
         }
-        .square.silver svg line.icon, .square.silver svg path.icon, 
-        .square.silver svg circle.icon, .square.silver svg rect.icon { 
-            stroke: #22d3ee; 
-            filter: drop-shadow(0 0 2px rgba(34, 211, 238, 0.4)); 
-        }
-        .square.silver svg circle.point { fill: #22d3ee; filter: drop-shadow(0 0 2px rgba(34, 211, 238, 0.4)); }
-        .square.silver svg .separator { stroke: rgba(34, 211, 238, 0.4); }
-        
-        /* GOLD */
-        .square.gold { 
-            border-color: rgba(255, 215, 0, 0.7); 
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3), inset 0 0 20px rgba(255, 215, 0, 0.05); 
-        }
-        .square.gold svg line.icon, .square.gold svg path.icon, 
-        .square.gold svg circle.icon, .square.gold svg rect.icon { 
-            stroke: #ffd700; 
-            filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.6)); 
-        }
-        .square.gold svg circle.point { fill: #ffd700; filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.6)); }
-        .square.gold svg .separator { stroke: rgba(255, 215, 0, 0.4); }
-        
-        /* EMERALD */
-        .square.emerald { 
-            border-color: rgba(52, 211, 153, 0.9); 
-            box-shadow: 0 0 25px rgba(5, 150, 105, 0.5), 0 0 40px rgba(52, 211, 153, 0.3), inset 0 0 25px rgba(52, 211, 153, 0.1); 
-            animation: emeraldGlow 2.5s ease-in-out infinite; 
-        }
-        .square.emerald svg line.icon, .square.emerald svg path.icon, 
-        .square.emerald svg circle.icon, .square.emerald svg rect.icon { 
-            stroke: #34d399; 
-            filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.9)) drop-shadow(0 0 12px rgba(5, 150, 105, 0.5)); 
-        }
-        .square.emerald svg circle.point { fill: #34d399; filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.9)); }
-        .square.emerald svg .separator { stroke: rgba(52, 211, 153, 0.6); }
-        @keyframes emeraldGlow {
-            0%, 100% { box-shadow: 0 0 25px rgba(5, 150, 105, 0.5), 0 0 40px rgba(52, 211, 153, 0.3), inset 0 0 25px rgba(52, 211, 153, 0.1); }
-            50% { box-shadow: 0 0 35px rgba(5, 150, 105, 0.7), 0 0 55px rgba(52, 211, 153, 0.4), inset 0 0 35px rgba(52, 211, 153, 0.15); }
-        }
-        
-        /* COSMIC */
-        .square.cosmic { 
-            border: 2px solid transparent; 
-            background: linear-gradient(#12131a, #12131a) padding-box, 
-                        conic-gradient(from var(--cosmic-angle, 0deg), #ff006e, #8338ec, #06b6d4, #34d399, #ffd700, #ff006e) border-box; 
-            box-shadow: 0 0 40px rgba(131, 56, 236, 0.6), 0 0 60px rgba(255, 0, 110, 0.3), 0 0 80px rgba(6, 182, 212, 0.3), inset 0 0 40px rgba(131, 56, 236, 0.15); 
-            animation: cosmicRotate 4s linear infinite, cosmicPulse 2s ease-in-out infinite; 
-        }
-        .square.cosmic svg line.icon, .square.cosmic svg path.icon, 
-        .square.cosmic svg circle.icon, .square.cosmic svg rect.icon { 
-            stroke: #c4b5fd; 
-            filter: drop-shadow(0 0 8px rgba(131, 56, 236, 0.9)) drop-shadow(0 0 12px rgba(255, 0, 110, 0.6)); 
-            animation: cosmicIconShift 3s ease-in-out infinite; 
-        }
-        .square.cosmic svg circle.point { fill: #c4b5fd; filter: drop-shadow(0 0 8px rgba(131, 56, 236, 0.9)); animation: cosmicPointPulse 1.5s ease-in-out infinite; }
-        .square.cosmic svg .separator { stroke: rgba(196, 181, 253, 0.7); }
-        @property --cosmic-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
-        @keyframes cosmicRotate { to { --cosmic-angle: 360deg; } }
-        @keyframes cosmicPulse {
-            0%, 100% { box-shadow: 0 0 40px rgba(131, 56, 236, 0.6), 0 0 60px rgba(255, 0, 110, 0.3), 0 0 80px rgba(6, 182, 212, 0.3), inset 0 0 40px rgba(131, 56, 236, 0.15); }
-            50% { box-shadow: 0 0 55px rgba(131, 56, 236, 0.8), 0 0 80px rgba(255, 0, 110, 0.5), 0 0 100px rgba(6, 182, 212, 0.4), inset 0 0 50px rgba(131, 56, 236, 0.2); }
-        }
-        @keyframes cosmicIconShift { 0%, 100% { stroke: #c4b5fd; } 33% { stroke: #22d3ee; } 66% { stroke: #f472b6; } }
-        @keyframes cosmicPointPulse { 0%, 100% { fill: #c4b5fd; } 50% { fill: #f472b6; } }
-        
-        /* Face individuelle SILVER (pour fusion) */
-        .face-silver line.icon, .face-silver path.icon, 
-        .face-silver circle.icon, .face-silver rect.icon {
-            stroke: #22d3ee !important;
-            filter: drop-shadow(0 0 4px rgba(34, 211, 238, 0.6)) !important;
-        }
-        .face-silver circle.point {
-            fill: #22d3ee !important;
-            filter: drop-shadow(0 0 4px rgba(34, 211, 238, 0.6)) !important;
+
+        .square:hover svg circle.point {
+            fill: rgba(255, 255, 255, 0.95);
         }
     </style>
 </head>
 <body>
-    <div class="grid" id="grid"></div>
+    <button class="debug-toggle" id="debugToggle">⚙</button>
+    
+    <div class="debug-panel" id="debugPanel">
+        <h2>Debug Panel</h2>
+        
+        <div class="debug-section">
+            <h3>Statistiques</h3>
+            <div class="debug-stats">
+                <div class="debug-stat">
+                    <div class="label">Tuiles</div>
+                    <div class="value" id="statTiles">20</div>
+                </div>
+                <div class="debug-stat">
+                    <div class="label">Colonnes</div>
+                    <div class="value" id="statCols">4</div>
+                </div>
+                <div class="debug-stat">
+                    <div class="label">Lignes</div>
+                    <div class="value" id="statRows">5</div>
+                </div>
+                <div class="debug-stat">
+                    <div class="label">Grille</div>
+                    <div class="value" id="statGrid">5×4</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="debug-section">
+            <h3>Actions</h3>
+            <button class="debug-btn" onclick="resetRotations()">Reset Rotations</button>
+            <button class="debug-btn" onclick="randomizeRotations()">Rotations Aléatoires</button>
+        </div>
+        
+        <div class="debug-section">
+            <h3>Aperçu Grille (5×4)</h3>
+            <div class="debug-grid-preview" id="gridPreview"></div>
+        </div>
+        
+        <div class="debug-section">
+            <h3>Liste des Tuiles</h3>
+            <div class="debug-list" id="tileList"></div>
+        </div>
+        
+        <div class="debug-section">
+            <h3>Notes de Design</h3>
+            <textarea class="debug-textarea" id="designNotes" placeholder="Vos notes ici..."></textarea>
+        </div>
+        
+        <div class="debug-info">
+            <strong>Contrôles:</strong><br>
+            • Clic: Rotation 90°<br>
+            • Drag H: Déplace la ligne<br>
+            • Drag V: Déplace la colonne<br>
+            • Wrap-around avec clones fantômes
+        </div>
+    </div>
+
+    <div class="grid-wrapper">
+        <div class="grid-container" id="gridContainer"></div>
+    </div>
 
     <script>
+        // ========== CONSTANTES 5x4 ==========
         const COLS = 4;
-        const ROWS = 4;
-        const TOTAL = 16;
-        const ROTATION_SPEED = 400;
-        const STATE_ORDER = ['white', 'silver', 'gold', 'emerald', 'cosmic'];
-        
-        let grid = document.getElementById('grid');
-        let isAnimating = false;
-        let isLocalRotating = false;
-        let dragState = null;
-        let dominos = [];
-        
-        // Icônes niveau 1
-        const ICONS = {
-            chevron: { f1: 'M20 32L45 12L70 32', f2: 'M20 12L45 32L70 12', t: 'path' },
-            circle: { f1: '45,22,12', f2: '45,22,12', t: 'circle' },
-            twoCircles: { f1: '30,22,8|60,22,8', f2: '30,22,8|60,22,8', t: 'circles' },
-            line: { f1: '15,22,75,22', f2: '15,22,75,22', t: 'line' },
-            threeLines: { f1: '25,10,25,34|45,10,45,34|65,10,65,34', f2: '25,10,25,34|45,10,45,34|65,10,65,34', t: 'lines' },
-            twoPoints: { f1: '30,22,4|60,22,4', f2: '30,22,4|60,22,4', t: 'points' },
-            square: { f1: '25,10,40,24,3', f2: '25,10,40,24,3', t: 'rect' },
-            wave: { f1: 'M10 22Q28 6 45 22Q62 38 80 22', f2: 'M10 22Q28 6 45 22Q62 38 80 22', t: 'path' }
-        };
-        
-        const iconKeys = Object.keys(ICONS);
-        
-        function seededRandom(seed) {
-            let state = seed;
-            return function() {
-                state = (state * 1103515245 + 12345) & 0x7fffffff;
-                return state / 0x7fffffff;
-            };
-        }
-        
-        function initDominos() {
-            const rng = seededRandom(12345);
-            dominos = [];
-            
-            for (let i = 0; i < TOTAL; i++) {
-                const x = i % COLS;
-                const y = Math.floor(i / COLS);
-                dominos.push({
-                    face1: iconKeys[Math.floor(rng() * iconKeys.length)],
-                    face2: iconKeys[Math.floor(rng() * iconKeys.length)],
-                    rotation: ((x + y) % 2 === 0) ? 0 : 90,
-                    state: 'white'
-                });
+        const ROWS = 5;
+        const CELL_SIZE = 80;
+        const CELL_GAP = 10;
+        const CELL_TOTAL = CELL_SIZE + CELL_GAP; // 90px
+        const GRID_WIDTH = COLS * CELL_TOTAL; // 360px (mais wrapper = 350px pour masquer)
+        const GRID_HEIGHT = ROWS * CELL_TOTAL; // 450px (mais wrapper = 440px pour masquer)
+
+        // Données des 20 tuiles (SVG content) - Sélection variée des 50 originales
+        const tilesData = [
+            // RANGÉE 1
+            `<svg viewBox="0 0 80 80"><line class="separator" x1="40" y1="0" x2="40" y2="80"/><path class="icon" d="M 12 22 L 22 35 L 32 22"/><path class="icon" d="M 48 58 L 58 45 L 68 58"/></svg>`,
+            `<svg viewBox="0 0 80 80"><line class="separator" x1="0" y1="40" x2="80" y2="40"/><circle class="icon" cx="25" cy="20" r="8"/><circle class="icon" cx="55" cy="20" r="8"/><circle class="icon" cx="40" cy="60" r="8"/></svg>`,
+            `<svg viewBox="0 0 80 80"><line class="separator" x1="40" y1="0" x2="40" y2="80"/><path class="icon" d="M 10 55 L 10 40 L 22 40 L 22 25 L 34 25"/><line class="icon" x1="46" y1="55" x2="70" y2="25"/></svg>`,
+            `<svg viewBox="0 0 80 80"><line class="separator" x1="0" y1="40" x2="80" y2="40"/><path class="icon" d="M 10 22 L 22 22 L 30 12 L 38 32 L 46 17 L 54 22 L 70 22"/><line class="icon" x1="10" y1="58" x2="70" y2="58"/></svg>`,
+            // RANGÉE 2
+            `<svg viewBox="0 0 80 80"><line class="separator" x1="0" y1="40" x2="80" y2="40"/><line class="icon" x1="40" y1="32" x2="40" y2="12"/><path class="icon" d="M 30 22 L 40 12 L 50 22"/><line class="icon" x1="40" y1="68" x2="40" y2="48"/></svg>`,
+            `<svg viewBox="0 0 80 80"><line class="separator" x1="40" y1="0" x2="40" y2="80"/><path class="icon" d="M 22 40 L 12 50 L 22 60 L 32 50 Z"/><rect class="icon" x="50" y="30" width="18" height="18" rx="2"/></svg>`,
+            `<svg viewBox="0 0 80 80"><line class="separator" x1="0" y1="40" x2="80" y2="40"/><circle class="icon" cx="40" cy="20" r="10"/><line class="icon" x1="40" y1="30" x2="40" y2="55"/><line class="icon" x1="30" y1="65" x2="50" y2="65"/></svg>`,
+            `<svg viewBox="0 0 80 80"><line class="separator" x1="40" y1="0" x2="40" y2="80"/><path class="icon" d="M 12 25 L 32 40 L 12 55"/><circle class="point" cx="58" cy="32" r="3"/><circle class="point" cx="58" cy="48" r="3"/></svg>`,
+            // RANGÉE 3
+            `<svg viewBox="0 0 80 80"><line class="separator" x1="0" y1="40" x2="80" y2="40"/><path class="icon" d="M 15 20 Q 40 35 65 20"/><path class="icon" d="M 15 60 Q 40 45 65 60"/></svg>`,
+            `<svg viewBox="0 0 80 80"><line class="separator" x1="40" y1="0" x2="40" y2="80"/><line class="icon" x1="22" y1="22" x2="22" y2="58"/><circle class="point" cx="22" cy="22" r="3"/><circle class="point" cx="22" cy="40" r="3"/><circle class="point" cx="22" cy="58" r="3"/><path class="icon" d="M 50 30 L 66 40 L 50 50"/></svg>`,
+            `<svg viewBox="0 0 80 80"><line class="separator" x1="0" y1="40" x2="80" y2="40"/><circle class="icon" cx="40" cy="20" r="8"/><line class="icon" x1="40" y1="28" x2="25" y2="55"/><line class="icon" x1="40" y1="28" x2="55" y2="55"/><line class="icon" x1="25" y1="55" x2="55" y2="55"/></svg>`,
+            `<svg viewBox="0 0 80 80"><line class="separator" x1="40" y1="0" x2="40" y2="80"/><path class="icon" d="M 10 30 Q 22 50 34 30"/><path class="icon" d="M 46 50 Q 58 30 70 50"/></svg>`,
+            // RANGÉE 4
+            `<svg viewBox="0 0 80 80"><line class="separator" x1="0" y1="40" x2="80" y2="40"/><circle class="icon" cx="22" cy="20" r="8"/><circle class="icon" cx="58" cy="20" r="8"/><path class="icon" d="M 30 55 L 40 65 L 50 55 L 40 45 Z"/></svg>`,
+            `<svg viewBox="0 0 80 80"><line class="separator" x1="40" y1="0" x2="40" y2="80"/><line class="icon" x1="10" y1="25" x2="34" y2="25"/><line class="icon" x1="22" y1="25" x2="22" y2="55"/><circle class="point" cx="58" cy="30" r="4"/><circle class="point" cx="58" cy="50" r="4"/></svg>`,
+            `<svg viewBox="0 0 80 80"><line class="separator" x1="0" y1="40" x2="80" y2="40"/><path class="icon" d="M 22 12 L 22 28 L 38 28"/><path class="icon" d="M 58 28 L 58 12 L 42 12"/><path class="icon" d="M 30 55 Q 40 68 50 55"/></svg>`,
+            `<svg viewBox="0 0 80 80"><line class="separator" x1="40" y1="0" x2="40" y2="80"/><path class="icon" d="M 22 50 Q 10 35 22 22 Q 34 35 22 50"/><line class="icon" x1="50" y1="30" x2="68" y2="30"/><line class="icon" x1="50" y1="50" x2="68" y2="50"/></svg>`,
+            // RANGÉE 5
+            `<svg viewBox="0 0 80 80"><line class="separator" x1="0" y1="40" x2="80" y2="40"/><line class="icon" x1="15" y1="20" x2="35" y2="20"/><line class="icon" x1="35" y1="20" x2="35" y2="32"/><line class="icon" x1="45" y1="20" x2="65" y2="20"/><circle class="point" cx="40" cy="60" r="5"/></svg>`,
+            `<svg viewBox="0 0 80 80"><line class="separator" x1="40" y1="0" x2="40" y2="80"/><line class="icon" x1="22" y1="60" x2="22" y2="35"/><line class="icon" x1="22" y1="35" x2="12" y2="22"/><line class="icon" x1="22" y1="35" x2="32" y2="22"/><path class="icon" d="M 50 35 L 60 25 L 70 35"/><path class="icon" d="M 50 55 L 60 45 L 70 55"/></svg>`,
+            `<svg viewBox="0 0 80 80"><line class="separator" x1="0" y1="40" x2="80" y2="40"/><path class="icon" d="M 12 12 L 12 28 L 28 28"/><path class="icon" d="M 68 12 L 68 28 L 52 28"/><path class="icon" d="M 12 68 L 12 52 L 28 52"/><path class="icon" d="M 68 68 L 68 52 L 52 52"/></svg>`,
+            `<svg viewBox="0 0 80 80"><line class="separator" x1="40" y1="0" x2="40" y2="80"/><path class="icon" d="M 28 28 A 14 14 0 1 0 28 52 A 10 10 0 1 1 28 28"/><circle class="point" cx="58" cy="40" r="6"/></svg>`
+        ];
+
+        // Matrice logique: grid[row][col] = index de la tuile
+        let grid = [];
+        for (let r = 0; r < ROWS; r++) {
+            grid[r] = [];
+            for (let c = 0; c < COLS; c++) {
+                grid[r][c] = r * COLS + c;
             }
         }
+
+        // Éléments DOM des tuiles
+        let tileElements = [];
         
-        function renderIcon(icon, isFace2) {
-            // Gérer le cas 'empty' (face vide)
-            if (icon === 'empty') return '';
-            
-            const d = ICONS[icon];
-            if (!d) return '';
-            const data = isFace2 ? d.f2 : d.f1;
-            
-            if (d.t === 'path') return `<path class="icon" d="${data}"/>`;
-            if (d.t === 'circle') {
-                const [cx, cy, r] = data.split(',');
-                return `<circle class="icon" cx="${cx}" cy="${cy}" r="${r}"/>`;
-            }
-            if (d.t === 'line') {
-                const [x1, y1, x2, y2] = data.split(',');
-                return `<line class="icon" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
-            }
-            if (d.t === 'rect') {
-                const [x, y, w, h, rx] = data.split(',');
-                return `<rect class="icon" x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}"/>`;
-            }
-            if (d.t === 'lines') {
-                return data.split('|').map(p => {
-                    const [x1, y1, x2, y2] = p.split(',');
-                    return `<line class="icon" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
-                }).join('');
-            }
-            return data.split('|').map(p => {
-                const v = p.split(',');
-                return (d.t === 'circles' || d.t === 'points')
-                    ? `<circle class="${d.t === 'points' ? 'point' : 'icon'}" cx="${v[0]}" cy="${v[1]}" r="${v[2]}"/>`
-                    : `<line class="icon" x1="${v[0]}" y1="${v[1]}" x2="${v[2]}" y2="${v[3]}"/>`;
-            }).join('');
+        // Clones fantômes pour le wrap-around
+        let ghostElements = [];
+
+        // Créer les tuiles
+        const container = document.getElementById('gridContainer');
+        for (let i = 0; i < 20; i++) {
+            const tile = document.createElement('div');
+            tile.className = 'square';
+            tile.innerHTML = tilesData[i];
+            tile.dataset.index = i;
+            container.appendChild(tile);
+            tileElements.push(tile);
         }
-        
-        function renderDomino(d) {
-            return `<svg viewBox="0 0 90 90">
-                <line class="separator" x1="0" y1="45" x2="90" y2="45"/>
-                <g>${renderIcon(d.face1, false)}</g>
-                <g transform="translate(0,45)">${renderIcon(d.face2, true)}</g>
-            </svg>`;
-        }
-        
-        function render() {
-            grid.innerHTML = '';
-            
-            for (let i = 0; i < TOTAL; i++) {
-                const cell = document.createElement('div');
-                cell.className = 'cell';
-                
-                const square = document.createElement('div');
-                square.dataset.index = i;
-                
-                if (dominos[i]) {
-                    square.className = `square ${dominos[i].state}`;
-                    square.innerHTML = renderDomino(dominos[i]);
-                    square.style.transform = `rotate(${dominos[i].rotation}deg)`;
-                } else {
-                    square.className = 'square empty';
+
+        // Positionner les tuiles selon la grille
+        function updateAllPositions() {
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const tileIndex = grid[r][c];
+                    const tile = tileElements[tileIndex];
+                    const x = c * CELL_TOTAL;
+                    const y = r * CELL_TOTAL;
+                    tile.style.transition = 'none';
+                    tile.style.left = x + 'px';
+                    tile.style.top = y + 'px';
                 }
-                
-                cell.appendChild(square);
-                grid.appendChild(cell);
             }
         }
-        
-        // Utilitaires
-        function getPos(i) { return { x: i % COLS, y: Math.floor(i / COLS) }; }
-        function getIndex(x, y) { return (x < 0 || x >= COLS || y < 0 || y >= ROWS) ? -1 : y * COLS + x; }
-        
-        // Obtenir la face exposée dans une direction selon la rotation
-        function getExposedFace(domino, dir) {
-            if (!domino) return null;
-            const r = ((domino.rotation % 360) + 360) % 360;
-            // Avec rotation 90° : face1 → droite, face2 → gauche
-            // Avec rotation 0° : face1 → haut, face2 → bas
-            const map = {
-                0:   { top: 'face1', bottom: 'face2', left: null, right: null },
-                90:  { top: null, bottom: null, left: 'face2', right: 'face1' },
-                180: { top: 'face2', bottom: 'face1', left: null, right: null },
-                270: { top: null, bottom: null, left: 'face1', right: 'face2' }
-            };
-            const face = map[r]?.[dir];
-            return face ? domino[face] : null;
-        }
-        
-        // Obtenir quelle propriété (face1 ou face2) est exposée dans une direction
-        function getExposedFaceKey(domino, dir) {
-            if (!domino) return null;
-            const r = ((domino.rotation % 360) + 360) % 360;
-            const map = {
-                0:   { top: 'face1', bottom: 'face2', left: null, right: null },
-                90:  { top: null, bottom: null, left: 'face2', right: 'face1' },
-                180: { top: 'face2', bottom: 'face1', left: null, right: null },
-                270: { top: null, bottom: null, left: 'face1', right: 'face2' }
-            };
-            return map[r]?.[dir] || null;
-        }
-        
-        // Direction opposée
-        function oppositeDir(dir) {
-            return { top: 'bottom', bottom: 'top', left: 'right', right: 'left' }[dir];
-        }
-        
-        // ============================================
-        // DÉTECTION DES FUSIONS
-        // ============================================
-        
-        function checkFusions() {
-            if (isAnimating || isLocalRotating) return;
-            
-            // Parcourir tous les dominos pour trouver des faces identiques adjacentes
-            for (let i = 0; i < TOTAL; i++) {
-                if (!dominos[i]) continue;
-                
-                // Empêcher la fusion si le domino est totalement vide
-                const isDominoEmpty = (dominos[i].face1 === 'empty' && dominos[i].face2 === 'empty');
-                if (isDominoEmpty) continue;
-                
-                const { x, y } = getPos(i);
-                
-                // Vérifier à droite
-                const iR = getIndex(x + 1, y);
-                if (iR !== -1 && dominos[iR]) {
-                    const isRightDominoEmpty = (dominos[iR].face1 === 'empty' && dominos[iR].face2 === 'empty');
-                    
-                    if (!isRightDominoEmpty) {
-                        const faceLeft = getExposedFace(dominos[i], 'right');
-                        const faceRight = getExposedFace(dominos[iR], 'left');
-                        if (faceLeft && faceRight && faceLeft === faceRight) {
-                            performCompressionFusion(i, iR, 'horizontal');
-                            return;
-                        }
-                    }
-                }
-                
-                // Vérifier en bas
-                const iB = getIndex(x, y + 1);
-                if (iB !== -1 && dominos[iB]) {
-                    const isBottomDominoEmpty = (dominos[iB].face1 === 'empty' && dominos[iB].face2 === 'empty');
-                    
-                    if (!isBottomDominoEmpty) {
-                        const faceTop = getExposedFace(dominos[i], 'bottom');
-                        const faceBottom = getExposedFace(dominos[iB], 'top');
-                        if (faceTop && faceBottom && faceTop === faceBottom) {
-                            performCompressionFusion(i, iB, 'vertical');
-                            return;
-                        }
+
+        // Position initiale
+        updateAllPositions();
+
+        // Variables de drag
+        let isDragging = false;
+        let dragAxis = null; // 'horizontal' ou 'vertical'
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let dragStartTime = 0;
+        let dragRow = -1;
+        let dragCol = -1;
+        let dragOffset = 0;
+        let initialPositions = [];
+        let clickedTile = null;
+
+        // Trouver la position (row, col) d'une tuile
+        function findTilePosition(tileIndex) {
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    if (grid[r][c] === tileIndex) {
+                        return { row: r, col: c };
                     }
                 }
             }
+            return null;
         }
-        
-        // ============================================
-        // ANIMATION DE FUSION PAR COMPRESSION
-        // ============================================
-        
-        function performCompressionFusion(receiverIdx, projectileIdx, direction) {
-            if (isAnimating) return;
-            isAnimating = true;
+
+        // Créer les clones fantômes pour une ligne ou colonne
+        function createGhosts(axis, rowOrCol) {
+            clearGhosts();
             
-            const receiver = dominos[receiverIdx];
-            const projectile = dominos[projectileIdx];
+            if (axis === 'horizontal') {
+                // Cloner toute la ligne, décalée à gauche ET à droite
+                for (let c = 0; c < COLS; c++) {
+                    const tileIndex = grid[rowOrCol][c];
+                    const originalTile = tileElements[tileIndex];
+                    
+                    // Clone gauche (position négative)
+                    const ghostLeft = originalTile.cloneNode(true);
+                    ghostLeft.className = 'square ghost';
+                    ghostLeft.style.left = (c * CELL_TOTAL - GRID_WIDTH) + 'px';
+                    ghostLeft.style.top = (rowOrCol * CELL_TOTAL) + 'px';
+                    container.appendChild(ghostLeft);
+                    ghostElements.push({ el: ghostLeft, baseX: c * CELL_TOTAL - GRID_WIDTH, tileIndex: tileIndex });
+                    
+                    // Clone droite (position + GRID_WIDTH)
+                    const ghostRight = originalTile.cloneNode(true);
+                    ghostRight.className = 'square ghost';
+                    ghostRight.style.left = (c * CELL_TOTAL + GRID_WIDTH) + 'px';
+                    ghostRight.style.top = (rowOrCol * CELL_TOTAL) + 'px';
+                    container.appendChild(ghostRight);
+                    ghostElements.push({ el: ghostRight, baseX: c * CELL_TOTAL + GRID_WIDTH, tileIndex: tileIndex });
+                }
+            } else {
+                // Cloner toute la colonne, décalée en haut ET en bas
+                for (let r = 0; r < ROWS; r++) {
+                    const tileIndex = grid[r][rowOrCol];
+                    const originalTile = tileElements[tileIndex];
+                    
+                    // Clone haut (position négative)
+                    const ghostTop = originalTile.cloneNode(true);
+                    ghostTop.className = 'square ghost';
+                    ghostTop.style.left = (rowOrCol * CELL_TOTAL) + 'px';
+                    ghostTop.style.top = (r * CELL_TOTAL - GRID_HEIGHT) + 'px';
+                    container.appendChild(ghostTop);
+                    ghostElements.push({ el: ghostTop, baseY: r * CELL_TOTAL - GRID_HEIGHT, tileIndex: tileIndex });
+                    
+                    // Clone bas (position + GRID_HEIGHT)
+                    const ghostBottom = originalTile.cloneNode(true);
+                    ghostBottom.className = 'square ghost';
+                    ghostBottom.style.left = (rowOrCol * CELL_TOTAL) + 'px';
+                    ghostBottom.style.top = (r * CELL_TOTAL + GRID_HEIGHT) + 'px';
+                    container.appendChild(ghostBottom);
+                    ghostElements.push({ el: ghostBottom, baseY: r * CELL_TOTAL + GRID_HEIGHT, tileIndex: tileIndex });
+                }
+            }
+        }
+
+        // Supprimer tous les clones fantômes
+        function clearGhosts() {
+            for (const ghost of ghostElements) {
+                ghost.el.remove();
+            }
+            ghostElements = [];
+        }
+
+        // Début du drag
+        function startDrag(e) {
+            const tile = e.target.closest('.square');
+            if (!tile || tile.classList.contains('ghost')) return;
+
+            e.preventDefault();
             
-            const receiverEl = grid.children[receiverIdx].querySelector('.square');
-            const projectileEl = grid.children[projectileIdx].querySelector('.square');
+            const tileIndex = parseInt(tile.dataset.index);
+            const pos = findTilePosition(tileIndex);
+            if (!pos) return;
+
+            isDragging = true;
+            dragAxis = null;
+            dragRow = pos.row;
+            dragCol = pos.col;
+            dragOffset = 0;
+            clickedTile = tile;
+
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            dragStartX = clientX;
+            dragStartY = clientY;
+            dragStartTime = Date.now();
+
+            initialPositions = [];
+        }
+
+        // Pendant le drag
+        function moveDrag(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
             
-            if (!receiverEl || !projectileEl || !receiver || !projectile) {
-                isAnimating = false;
+            const deltaX = clientX - dragStartX;
+            const deltaY = clientY - dragStartY;
+
+            // Déterminer l'axe au premier mouvement significatif
+            if (dragAxis === null) {
+                const threshold = 5;
+                if (Math.abs(deltaX) > threshold || Math.abs(deltaY) > threshold) {
+                    dragAxis = Math.abs(deltaX) > Math.abs(deltaY) ? 'horizontal' : 'vertical';
+                    
+                    if (dragAxis === 'horizontal') {
+                        for (let c = 0; c < COLS; c++) {
+                            const tileIndex = grid[dragRow][c];
+                            initialPositions.push({
+                                tileIndex: tileIndex,
+                                baseX: c * CELL_TOTAL
+                            });
+                        }
+                        createGhosts('horizontal', dragRow);
+                    } else {
+                        for (let r = 0; r < ROWS; r++) {
+                            const tileIndex = grid[r][dragCol];
+                            initialPositions.push({
+                                tileIndex: tileIndex,
+                                baseY: r * CELL_TOTAL
+                            });
+                        }
+                        createGhosts('vertical', dragCol);
+                    }
+                }
+            }
+
+            if (dragAxis === null) return;
+
+            // Déplacer les tuiles ET les fantômes
+            if (dragAxis === 'horizontal') {
+                dragOffset = deltaX;
+                
+                for (const item of initialPositions) {
+                    const tile = tileElements[item.tileIndex];
+                    const newX = item.baseX + dragOffset;
+                    tile.style.transition = 'none';
+                    tile.style.left = newX + 'px';
+                }
+                
+                for (const ghost of ghostElements) {
+                    const newX = ghost.baseX + dragOffset;
+                    ghost.el.style.transition = 'none';
+                    ghost.el.style.left = newX + 'px';
+                }
+            } else {
+                dragOffset = deltaY;
+                
+                for (const item of initialPositions) {
+                    const tile = tileElements[item.tileIndex];
+                    const newY = item.baseY + dragOffset;
+                    tile.style.transition = 'none';
+                    tile.style.top = newY + 'px';
+                }
+                
+                for (const ghost of ghostElements) {
+                    const newY = ghost.baseY + dragOffset;
+                    ghost.el.style.transition = 'none';
+                    ghost.el.style.top = newY + 'px';
+                }
+            }
+        }
+
+        // Rotation d'une tuile
+        function rotateTile(tile) {
+            let rotation = parseInt(tile.dataset.rotation) || 0;
+            rotation += 90;
+            tile.dataset.rotation = rotation;
+            
+            tile.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+            tile.style.transform = `rotate(${rotation - 45}deg) scale(0.85)`;
+            
+            setTimeout(() => {
+                tile.style.transform = `rotate(${rotation}deg) scale(1)`;
+            }, 200);
+        }
+
+        // Fin du drag - snap à la position la plus proche
+        function endDrag(e) {
+            if (!isDragging) return;
+            isDragging = false;
+
+            const elapsed = Date.now() - dragStartTime;
+            const distance = Math.abs(dragOffset);
+
+            // Si c'est un clic → rotation
+            if (distance < 5 && elapsed < 200 && clickedTile) {
+                rotateTile(clickedTile);
+                clearGhosts();
+                clickedTile = null;
+                dragAxis = null;
+                initialPositions = [];
                 return;
             }
+
+            clickedTile = null;
+
+            if (dragAxis === null) {
+                clearGhosts();
+                return;
+            }
+
+            // Calculer le nombre de crans de décalage
+            let steps = Math.round(dragOffset / CELL_TOTAL);
             
-            const cellSize = grid.children[0].offsetWidth;
-            const gap = parseFloat(getComputedStyle(grid).gap) || 8;
-            
-            // Distance jusqu'à la médiane du receveur
-            const distanceToMedian = gap + (cellSize / 2);
-            
-            projectileEl.style.zIndex = '100';
-            
-            const phase1Duration = 350;
-            const phase2Duration = 180;
-            
-            let startTime = null;
-            
-            // Déterminer l'axe de compression selon direction et rotation du projectile
-            const rotation = ((projectile.rotation % 360) + 360) % 360;
-            const isHorizontal = (direction === 'horizontal');
-            
-            // Pour compression visuelle dans le sens du mouvement :
-            // - Horizontal + rotation 90° ou 270° → scaleY
-            // - Horizontal + rotation 0° ou 180° → scaleX
-            // - Vertical + rotation 0° ou 180° → scaleY
-            // - Vertical + rotation 90° ou 270° → scaleX
-            const rotatedHorizontally = (rotation === 90 || rotation === 270);
-            const useScaleY = (isHorizontal && rotatedHorizontally) || (!isHorizontal && !rotatedHorizontally);
-            
-            // Direction du translate
-            const translateProp = isHorizontal ? 'translateX' : 'translateY';
-            const translateValue = isHorizontal ? -distanceToMedian : -distanceToMedian;
-            
-            function animatePhase1(timestamp) {
-                if (!startTime) startTime = timestamp;
-                const elapsed = timestamp - startTime;
-                const progress = Math.min(elapsed / phase1Duration, 1);
+            if (dragAxis === 'horizontal') {
+                for (let i = 0; i < initialPositions.length; i++) {
+                    const item = initialPositions[i];
+                    const tile = tileElements[item.tileIndex];
+                    
+                    let currentX = item.baseX + dragOffset;
+                    
+                    const originalCol = Math.round(item.baseX / CELL_TOTAL);
+                    const newCol = ((originalCol + steps) % COLS + COLS) % COLS;
+                    const targetX = newCol * CELL_TOTAL;
+                    
+                    while (currentX - targetX > GRID_WIDTH / 2) currentX -= GRID_WIDTH;
+                    while (targetX - currentX > GRID_WIDTH / 2) currentX += GRID_WIDTH;
+                    
+                    tile.style.transition = 'none';
+                    tile.style.left = currentX + 'px';
+                }
                 
-                const ease = progress * progress;
-                const translate = translateValue * ease;
-                const scale = 1 - (0.5 * ease);
+                container.offsetHeight;
                 
-                const scaleTransform = useScaleY ? `scaleY(${scale})` : `scaleX(${scale})`;
-                projectileEl.style.transform = `${translateProp}(${translate}px) rotate(${projectile.rotation}deg) ${scaleTransform}`;
+                for (let i = 0; i < initialPositions.length; i++) {
+                    const item = initialPositions[i];
+                    const tile = tileElements[item.tileIndex];
+                    
+                    const originalCol = Math.round(item.baseX / CELL_TOTAL);
+                    const newCol = ((originalCol + steps) % COLS + COLS) % COLS;
+                    const targetX = newCol * CELL_TOTAL;
+                    
+                    tile.style.transition = 'left 0.15s ease-out';
+                    tile.style.left = targetX + 'px';
+                }
                 
-                if (progress < 1) {
-                    requestAnimationFrame(animatePhase1);
-                } else {
-                    startTime = null;
-                    requestAnimationFrame(animatePhase2);
+                // Mettre à jour la grille logique
+                const newRow = [];
+                for (let c = 0; c < COLS; c++) {
+                    const sourceCol = ((c - steps) % COLS + COLS) % COLS;
+                    newRow[c] = grid[dragRow][sourceCol];
+                }
+                grid[dragRow] = newRow;
+                
+            } else {
+                for (let i = 0; i < initialPositions.length; i++) {
+                    const item = initialPositions[i];
+                    const tile = tileElements[item.tileIndex];
+                    
+                    let currentY = item.baseY + dragOffset;
+                    
+                    const originalRow = Math.round(item.baseY / CELL_TOTAL);
+                    const newRow = ((originalRow + steps) % ROWS + ROWS) % ROWS;
+                    const targetY = newRow * CELL_TOTAL;
+                    
+                    while (currentY - targetY > GRID_HEIGHT / 2) currentY -= GRID_HEIGHT;
+                    while (targetY - currentY > GRID_HEIGHT / 2) currentY += GRID_HEIGHT;
+                    
+                    tile.style.transition = 'none';
+                    tile.style.top = currentY + 'px';
+                }
+                
+                container.offsetHeight;
+                
+                for (let i = 0; i < initialPositions.length; i++) {
+                    const item = initialPositions[i];
+                    const tile = tileElements[item.tileIndex];
+                    
+                    const originalRow = Math.round(item.baseY / CELL_TOTAL);
+                    const newRowIdx = ((originalRow + steps) % ROWS + ROWS) % ROWS;
+                    const targetY = newRowIdx * CELL_TOTAL;
+                    
+                    tile.style.transition = 'top 0.15s ease-out';
+                    tile.style.top = targetY + 'px';
+                }
+                
+                // Mettre à jour la grille logique
+                const newCol = [];
+                for (let r = 0; r < ROWS; r++) {
+                    const sourceRow = ((r - steps) % ROWS + ROWS) % ROWS;
+                    newCol[r] = grid[sourceRow][dragCol];
+                }
+                for (let r = 0; r < ROWS; r++) {
+                    grid[r][dragCol] = newCol[r];
                 }
             }
+
+            clearGhosts();
             
-            function animatePhase2(timestamp) {
-                if (!startTime) startTime = timestamp;
-                const elapsed = timestamp - startTime;
-                const progress = Math.min(elapsed / phase2Duration, 1);
-                
-                const scale = 0.5 * (1 - progress);
-                const opacity = 1 - progress;
-                
-                const scaleTransform = useScaleY ? `scaleY(${Math.max(0.01, scale)})` : `scaleX(${Math.max(0.01, scale)})`;
-                projectileEl.style.transform = `${translateProp}(${translateValue}px) rotate(${projectile.rotation}deg) ${scaleTransform}`;
-                projectileEl.style.opacity = opacity;
-                
-                if (progress < 1) {
-                    requestAnimationFrame(animatePhase2);
-                } else {
-                    applyFusionResult();
-                }
-            }
-            
-            function applyFusionResult() {
-                // Déterminer les faces qui se touchent et s'annulent
-                let receiverExternalFaceKey, projectileExternalFaceKey;
-                let receiverInternalFaceKey, projectileInternalFaceKey;
-                
-                if (isHorizontal) {
-                    // Receiver est à gauche, projectile à droite
-                    // Face droite du receiver touche face gauche du projectile → s'annulent
-                    // Reste : face gauche du receiver + face droite du projectile
-                    receiverExternalFaceKey = getExposedFaceKey(receiver, 'left');
-                    projectileExternalFaceKey = getExposedFaceKey(projectile, 'right');
-                    receiverInternalFaceKey = getExposedFaceKey(receiver, 'right');
-                    projectileInternalFaceKey = getExposedFaceKey(projectile, 'left');
-                } else {
-                    // Receiver est en haut, projectile en bas
-                    // Face bas du receiver touche face haut du projectile → s'annulent
-                    // Reste : face haut du receiver + face bas du projectile
-                    receiverExternalFaceKey = getExposedFaceKey(receiver, 'top');
-                    projectileExternalFaceKey = getExposedFaceKey(projectile, 'bottom');
-                    receiverInternalFaceKey = getExposedFaceKey(receiver, 'bottom');
-                    projectileInternalFaceKey = getExposedFaceKey(projectile, 'top');
-                }
-                
-                // Construire le nouveau domino évolué
-                // La face du receveur qui reste passe à l'état supérieur (silver si white, etc.)
-                const newState = STATE_ORDER[Math.min(
-                    STATE_ORDER.indexOf(receiver.state) + 1,
-                    STATE_ORDER.length - 1
-                )];
-                
-                // Garder la même rotation que le receiver
-                const newDomino = {
-                    face1: receiver.face1,
-                    face2: receiver.face2,
-                    rotation: receiver.rotation,
-                    state: newState
-                };
-                
-                // Remplacer les faces : la face externe du receiver reste, 
-                // la face interne est remplacée par la face externe du projectile
-                if (isHorizontal) {
-                    // Face gauche du receiver (externe) reste
-                    // Face droite du receiver est remplacée par face droite du projectile
-                    const receiverLeftKey = getExposedFaceKey(receiver, 'left');
-                    const receiverRightKey = getExposedFaceKey(receiver, 'right');
-                    const projectileRightKey = getExposedFaceKey(projectile, 'right');
-                    
-                    if (receiverRightKey && projectileRightKey) {
-                        newDomino[receiverRightKey] = projectile[projectileRightKey];
-                    }
-                } else {
-                    // Face haut du receiver (externe) reste
-                    // Face bas du receiver est remplacée par face bas du projectile
-                    const receiverTopKey = getExposedFaceKey(receiver, 'top');
-                    const receiverBottomKey = getExposedFaceKey(receiver, 'bottom');
-                    const projectileBottomKey = getExposedFaceKey(projectile, 'bottom');
-                    
-                    if (receiverBottomKey && projectileBottomKey) {
-                        newDomino[receiverBottomKey] = projectile[projectileBottomKey];
-                    }
-                }
-                
-                // NOUVEAU : Créer le domino blanc recraché avec UNE SEULE face annulée
-                // Les 2 faces qui ont disparu sont identiques (condition de fusion)
-                // On recrache seulement UNE de ces faces, l'autre devient 'empty'
-                // avec rotation +90° par rapport au domino résultant
-                const recrachedDomino = {
-                    face1: receiver[receiverInternalFaceKey], // Une des faces annulées
-                    face2: 'empty', // L'autre face devient vide
-                    rotation: (newDomino.rotation + 90) % 360,
-                    state: 'white'
-                };
-                
-                dominos[receiverIdx] = newDomino;
-                dominos[projectileIdx] = recrachedDomino;
-                
-                render();
-                
-                // Effet de halo sur le domino évolué
-                const newEl = grid.children[receiverIdx].querySelector('.square');
-                if (newEl) {
-                    const haloDir = isHorizontal ? '6px 0' : '0 6px';
-                    newEl.style.boxShadow = `${haloDir} 20px rgba(34, 211, 238, 0.5), 0 0 10px rgba(34, 211, 238, 0.2)`;
-                    
-                    setTimeout(() => {
-                        newEl.style.transition = 'box-shadow 0.4s ease-out';
-                        newEl.style.boxShadow = '';
-                    }, 150);
-                }
-                
-                setTimeout(() => {
-                    isAnimating = false;
-                    // Vérifier s'il y a d'autres fusions
-                    checkFusions();
-                }, 300);
-            }
-            
-            requestAnimationFrame(animatePhase1);
+            setTimeout(() => {
+                updateAllPositions();
+            }, 160);
+
+            dragAxis = null;
+            initialPositions = [];
         }
+
+        // Event listeners
+        container.addEventListener('mousedown', startDrag);
+        container.addEventListener('touchstart', startDrag, { passive: false });
+
+        document.addEventListener('mousemove', moveDrag);
+        document.addEventListener('touchmove', moveDrag, { passive: false });
+
+        document.addEventListener('mouseup', endDrag);
+        document.addEventListener('touchend', endDrag);
+
+        // ========== MENU DEBUG ==========
+        const debugToggle = document.getElementById('debugToggle');
+        const debugPanel = document.getElementById('debugPanel');
         
-        // ============================================
-        // SYSTÈME DE ROTATION 2x2
-        // ============================================
-        
-        function executeRotation(indices, clockwise, cb) {
-            if (isLocalRotating || isAnimating) return;
-            isLocalRotating = true;
+        debugToggle.addEventListener('click', () => {
+            debugPanel.classList.toggle('open');
+        });
+
+        // Analyser les tuiles actuelles
+        function analyzeCurrentTiles() {
+            updateGridPreview();
+            updateTileList();
+        }
+
+        // Mettre à jour l'aperçu de la grille
+        function updateGridPreview() {
+            const preview = document.getElementById('gridPreview');
+            preview.innerHTML = '';
             
-            const cells = indices.map(idx => ({
-                el: grid.children[idx]?.querySelector('.square'),
-                domino: dominos[idx],
-                sx: idx % COLS,
-                sy: Math.floor(idx / COLS)
-            }));
+            for (let i = 0; i < 20; i++) {
+                const mini = document.createElement('div');
+                mini.className = 'mini-tile';
+                
+                const svg = tilesData[i];
+                if (svg.includes('x1="0" y1="40"')) {
+                    mini.classList.add('separator-h');
+                    mini.textContent = 'H';
+                } else {
+                    mini.classList.add('separator-v');
+                    mini.textContent = 'V';
+                }
+                
+                preview.appendChild(mini);
+            }
+        }
+
+        // Mettre à jour la liste des tuiles
+        function updateTileList() {
+            const list = document.getElementById('tileList');
+            list.innerHTML = '';
             
-            const map = clockwise ? [2, 0, 3, 1] : [1, 3, 0, 2];
-            cells.forEach((c, i) => {
-                c.tx = indices[map[i]] % COLS;
-                c.ty = Math.floor(indices[map[i]] / COLS);
+            tilesData.forEach((svg, index) => {
+                const item = document.createElement('div');
+                item.className = 'debug-list-item';
+                
+                const sepType = svg.includes('x1="0" y1="40"') ? 'H' : 'V';
+                
+                item.innerHTML = `
+                    <span class="index">#${index + 1}</span>
+                    <div class="preview">${svg}</div>
+                    <span>Tuile ${index + 1} (${sepType})</span>
+                `;
+                
+                list.appendChild(item);
             });
-            
-            const dur = ROTATION_SPEED * 0.5;
-            const start = performance.now();
-            const cellSize = grid.children[0].offsetWidth;
-            const gap = parseFloat(getComputedStyle(grid).gap) || 8;
-            
-            function animate(t) {
-                const p = Math.min((t - start) / dur, 1);
-                const e = 1 - Math.pow(1 - p, 3);
-                
-                cells.forEach(c => {
-                    if (c.el && c.domino) {
-                        const dx = (c.tx - c.sx) * (cellSize + gap) * e;
-                        const dy = (c.ty - c.sy) * (cellSize + gap) * e;
-                        c.el.style.transform = `translate(${dx}px, ${dy}px) rotate(${c.domino.rotation}deg)`;
-                    }
-                });
-                
-                if (p < 1) {
-                    requestAnimationFrame(animate);
-                } else {
-                    finishRotation(indices, clockwise, cb);
-                }
-            }
-            
-            requestAnimationFrame(animate);
         }
-        
-        function finishRotation(indices, clockwise, cb) {
-            const saved = indices.map(i => dominos[i]);
-            const map = clockwise ? [2, 0, 3, 1] : [1, 3, 0, 2];
-            
-            for (let i = 0; i < 4; i++) {
-                dominos[indices[map[i]]] = saved[i];
-            }
-            
-            render();
-            isLocalRotating = false;
-            
-            // Vérifier les fusions après rotation
-            setTimeout(checkFusions, 50);
-            
-            if (cb) cb();
+
+        // Reset toutes les rotations à 0
+        function resetRotations() {
+            tileElements.forEach(tile => {
+                tile.dataset.rotation = '0';
+                tile.style.transform = 'rotate(0deg)';
+            });
         }
-        
-        // Rotation individuelle d'un domino
-        function rotateIndividual(idx, clockwise) {
-            const domino = dominos[idx];
-            if (!domino || isLocalRotating || isAnimating) return;
-            
-            isLocalRotating = true;
-            domino.rotation += clockwise ? 90 : -90;
-            
-            const el = grid.children[idx].querySelector('.square');
-            if (el) {
-                el.style.transition = 'transform 0.15s cubic-bezier(0.4, 0, 0.2, 1)';
-                el.style.transform = `rotate(${domino.rotation}deg)`;
-                setTimeout(() => {
-                    isLocalRotating = false;
-                    checkFusions();
-                }, 150);
-            } else {
-                isLocalRotating = false;
-            }
+
+        // Rotations aléatoires
+        function randomizeRotations() {
+            tileElements.forEach(tile => {
+                const rot = [0, 90, 180, 270][Math.floor(Math.random() * 4)];
+                tile.dataset.rotation = rot;
+                tile.style.transition = 'transform 0.4s ease';
+                tile.style.transform = `rotate(${rot}deg)`;
+            });
         }
-        
-        function attemptHorizontalRotation(x, y, dx) {
-            // On ne réagit que sur la rangée du BAS d'un groupe 2x2
-            // Donc y doit être > 0 (pas sur la première rangée)
-            if (y === 0) return;
-            
-            let blockCol, blockRow, clockwise;
-            
-            if (dx > 0) {
-                // Swipe vers la DROITE → rotation ANTIHORAIRE du groupe 2x2 à droite
-                // Le carré swipé fait partie du bas-gauche du groupe
-                blockCol = x;
-                blockRow = y - 1;
-                clockwise = false; // antihoraire
-            } else {
-                // Swipe vers la GAUCHE → rotation HORAIRE du groupe 2x2 à gauche
-                // Le carré swipé fait partie du bas-droit du groupe
-                blockCol = x - 1;
-                blockRow = y - 1;
-                clockwise = true; // horaire
-            }
-            
-            // Vérifier que le groupe est dans la grille
-            if (blockCol < 0 || blockCol > COLS - 2) return;
-            if (blockRow < 0 || blockRow > ROWS - 2) return;
-            
-            const indices = [
-                getIndex(blockCol, blockRow),
-                getIndex(blockCol + 1, blockRow),
-                getIndex(blockCol, blockRow + 1),
-                getIndex(blockCol + 1, blockRow + 1)
-            ];
-            
-            // Vérifier qu'il y a au moins un domino dans le groupe
-            if (indices.some(i => dominos[i])) {
-                executeRotation(indices, clockwise);
-            }
-        }
-        
-        // ============================================
-        // GESTION TACTILE
-        // ============================================
-        
-        function handleStart(e) {
-            if (isLocalRotating || isAnimating) return;
-            
-            const touch = e.touches?.[0] || e;
-            const target = e.target.closest('.square');
-            if (!target || target.classList.contains('empty')) return;
-            
-            const idx = parseInt(target.dataset.index);
-            const pos = getPos(idx);
-            
-            dragState = {
-                idx,
-                x: pos.x,
-                y: pos.y,
-                sx: touch.clientX,
-                sy: touch.clientY,
-                moved: false
-            };
-            
-            e.preventDefault();
-        }
-        
-        function handleMove(e) {
-            if (!dragState || dragState.moved || isAnimating) return;
-            
-            const touch = e.touches?.[0] || e;
-            const dx = touch.clientX - dragState.sx;
-            const dy = touch.clientY - dragState.sy;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            
-            if (distance < 30) return;
-            
-            const absDx = Math.abs(dx);
-            const absDy = Math.abs(dy);
-            
-            const isHorizontal = absDy < 10 && absDx > 40;
-            const isDiagonal = !isHorizontal && absDx > 15 && absDy > 15;
-            
-            if (isHorizontal) {
-                dragState.moved = true;
-                attemptHorizontalRotation(dragState.x, dragState.y, dx);
-            } else if (isDiagonal) {
-                const direction = (dy < 0) ? (dx > 0 ? 'ur' : 'ul') : (dx > 0 ? 'dr' : 'dl');
-                const clockwise = (direction === 'ur' || direction === 'dr');
-                dragState.moved = true;
-                rotateIndividual(dragState.idx, clockwise);
-            }
-            
-            e.preventDefault();
-        }
-        
-        function handleEnd(e) {
-            dragState = null;
-        }
-        
-        // Events
-        grid.addEventListener('touchstart', handleStart, { passive: false });
-        grid.addEventListener('touchmove', handleMove, { passive: false });
-        grid.addEventListener('touchend', handleEnd, { passive: false });
-        grid.addEventListener('mousedown', handleStart, { passive: false });
-        grid.addEventListener('mousemove', handleMove, { passive: false });
-        grid.addEventListener('mouseup', handleEnd, { passive: false });
-        
-        // Initialisation
-        initDominos();
-        render();
+
+        // Sauvegarder les notes dans localStorage
+        const notesTextarea = document.getElementById('designNotes');
+        notesTextarea.value = localStorage.getItem('fusionSquare4ColsNotes') || '';
+        notesTextarea.addEventListener('input', () => {
+            localStorage.setItem('fusionSquare4ColsNotes', notesTextarea.value);
+        });
+
+        // Analyser au chargement
+        setTimeout(analyzeCurrentTiles, 100);
     </script>
 </body>
 </html>
