@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ADAM - v26 Directional Fusion</title>
+    <title>ADAM - v27 Simple Identical Fusion</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; overflow: hidden; }
@@ -692,11 +692,14 @@
         let longPressTargetIdx = null;
         
         // Icônes - TOUS avec miroir f1 (pointe haut) / f2 (pointe bas)
+        // Tous les sigles ont 4 orientations visuellement distinctes
         const ICONS = {
             chevron: { f1: 'M20 32L45 12L70 32', f2: 'M20 12L45 32L70 12', t: 'path' },
             triangle: { f1: 'M45 8L65 36L25 36Z', f2: 'M45 36L65 8L25 8Z', t: 'path' },
-            threeLines: { f1: '25,10,25,34|45,10,45,34|65,10,65,34', f2: '25,34,25,10|45,34,45,10|65,34,65,10', t: 'lines' },
-            square: { f1: '25,10,40,24,3', f2: '25,10,40,24,3', t: 'rect' }
+            // Three lines: ligne centrale raccourcie en HAUT seulement (touche le bas, courte en haut)
+            threeLines: { f1: '25,10,25,34|45,16,45,34|65,10,65,34', f2: '25,34,25,10|45,28,45,10|65,34,65,10', t: 'lines' },
+            // Demi-cercle (arc) - 4 orientations distinctes
+            halfCircle: { f1: 'M28 28 Q45 8 62 28', f2: 'M28 16 Q45 36 62 16', t: 'path' }
         };
         
         function seededRandom(seed) {
@@ -713,7 +716,7 @@
             // 4 symboles × 10 = 40 symboles pour 20 dominos
             const symbols = [
                 'threeLines', 'threeLines', 'threeLines', 'threeLines', 'threeLines', 'threeLines', 'threeLines', 'threeLines', 'threeLines', 'threeLines',
-                'square', 'square', 'square', 'square', 'square', 'square', 'square', 'square', 'square', 'square',
+                'halfCircle', 'halfCircle', 'halfCircle', 'halfCircle', 'halfCircle', 'halfCircle', 'halfCircle', 'halfCircle', 'halfCircle', 'halfCircle',
                 'triangle', 'triangle', 'triangle', 'triangle', 'triangle', 'triangle', 'triangle', 'triangle', 'triangle', 'triangle',
                 'chevron', 'chevron', 'chevron', 'chevron', 'chevron', 'chevron', 'chevron', 'chevron', 'chevron', 'chevron'
             ];
@@ -1313,7 +1316,46 @@
         function checkFusions() {
             if (isAnimating) return;
             
-            // Vérifier les fusions de dominos Unique adjacents
+            // Normaliser rotation pour comparaison (0, 90, 180, 270)
+            function normalizeRotation(r) {
+                return ((r % 360) + 360) % 360;
+            }
+            
+            // PRIORITÉ 1: Vérifier les fusions de dominos simples IDENTIQUES même sens
+            for (let i = 0; i < TOTAL; i++) {
+                if (!dominos[i] || dominos[i].type !== 'unique') continue;
+                const { x, y } = getPos(i);
+                
+                // Vérifier les 4 directions
+                const directions = [
+                    { dx: 1, dy: 0 },
+                    { dx: -1, dy: 0 },
+                    { dx: 0, dy: 1 },
+                    { dx: 0, dy: -1 }
+                ];
+                
+                for (const { dx, dy } of directions) {
+                    const ni = getIndex(x + dx, y + dy);
+                    if (ni !== -1 && dominos[ni] && dominos[ni].type === 'unique') {
+                        
+                        // Vérifier si même sigle ET même rotation (même sens visuel)
+                        if (dominos[i].face1 === dominos[ni].face1 && 
+                            normalizeRotation(dominos[i].rotation) === normalizeRotation(dominos[ni].rotation)) {
+                            
+                            const isMoved = lastMovedIndices.includes(i);
+                            const isNMoved = lastMovedIndices.includes(ni);
+                            if (isMoved && !isNMoved) {
+                                performIdenticalUniqueFusion(ni, i);
+                            } else {
+                                performIdenticalUniqueFusion(i, ni);
+                            }
+                            return;
+                        }
+                    }
+                }
+            }
+            
+            // PRIORITÉ 2: Vérifier les fusions de dominos Unique adjacents (différents OU même sigle mais sens différent) → création double
             for (let i = 0; i < TOTAL; i++) {
                 if (!dominos[i] || dominos[i].type !== 'unique') continue;
                 const { x, y } = getPos(i);
@@ -1329,6 +1371,12 @@
                 for (const { dx, dy, dir } of directions) {
                     const ni = getIndex(x + dx, y + dy);
                     if (ni !== -1 && dominos[ni] && dominos[ni].type === 'unique') {
+                        // Exclure les simples identiques même sens (déjà traités en priorité 1)
+                        if (dominos[i].face1 === dominos[ni].face1 && 
+                            normalizeRotation(dominos[i].rotation) === normalizeRotation(dominos[ni].rotation)) {
+                            continue; // Déjà géré par la priorité 1
+                        }
+                        
                         const isMoved = lastMovedIndices.includes(i);
                         const isNMoved = lastMovedIndices.includes(ni);
                         if (isMoved && !isNMoved) {
@@ -1464,6 +1512,51 @@
                     rotation: direction === 'horizontal' ? 90 : 0,
                     state: STATE_ORDER[Math.max(STATE_ORDER.indexOf(face1State), STATE_ORDER.indexOf(face2State))],
                     type: 'double'
+                };
+                
+                dominos[receiverIdx] = newDomino;
+                dominos[projectileIdx] = { type: 'whiteBorder', rotation: 0 };
+                
+                render();
+                isAnimating = false;
+                lastMovedIndices = [];
+                
+                // Si en mode gravité, relancer la gravité
+                if (gravityMode) {
+                    setTimeout(() => applyGravity(), 50);
+                } else {
+                    setTimeout(checkFusions, 50);
+                }
+            }, 400);
+        }
+        
+        // NOUVELLE RÈGLE: Fusion de dominos simples IDENTIQUES face à face
+        // Résultat: 1 domino simple qui gagne un état
+        function performIdenticalUniqueFusion(receiverIdx, projectileIdx) {
+            if (isAnimating) return;
+            isAnimating = true;
+            
+            const receiver = dominos[receiverIdx];
+            const projectile = dominos[projectileIdx];
+            
+            const receiverEl = dominoElements[receiverIdx];
+            const projectileEl = dominoElements[projectileIdx];
+            
+            if (receiverEl) receiverEl.classList.add('fusion-animation');
+            if (projectileEl) projectileEl.classList.add('fusion-animation');
+            
+            setTimeout(() => {
+                // Calculer le nouvel état (somme des deux états + 1)
+                const receiverStateIdx = STATE_ORDER.indexOf(receiver.face1State);
+                const projectileStateIdx = STATE_ORDER.indexOf(projectile.face1State);
+                const newStateIdx = Math.min(receiverStateIdx + projectileStateIdx + 1, STATE_ORDER.length - 1);
+                
+                const newDomino = {
+                    face1: receiver.face1,
+                    face1State: STATE_ORDER[newStateIdx],
+                    rotation: receiver.rotation, // Garde la rotation du receiver
+                    state: STATE_ORDER[newStateIdx],
+                    type: 'unique'
                 };
                 
                 dominos[receiverIdx] = newDomino;
