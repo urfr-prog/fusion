@@ -1313,18 +1313,59 @@
             return map[r]?.[dir] || null;
         }
         
+        // Direction où "regarde" un domino simple selon sa rotation
+        // 0° → haut, 90° → droite, 180° → bas, 270° → gauche
+        function getUniqueLookingDirection(domino) {
+            if (!domino || domino.type !== 'unique') return null;
+            const r = ((domino.rotation % 360) + 360) % 360;
+            const map = {
+                0: 'top',
+                90: 'right',
+                180: 'bottom',
+                270: 'left'
+            };
+            return map[r];
+        }
+        
+        // Vérifie si deux dominos simples se font face
+        function areUniquesFacingEachOther(domino1, pos1, domino2, pos2) {
+            const dir1 = getUniqueLookingDirection(domino1);
+            const dir2 = getUniqueLookingDirection(domino2);
+            
+            if (!dir1 || !dir2) return false;
+            
+            // Calculer la position relative de domino2 par rapport à domino1
+            const dx = pos2.x - pos1.x;
+            const dy = pos2.y - pos1.y;
+            
+            // domino2 est à droite de domino1
+            if (dx === 1 && dy === 0) {
+                return dir1 === 'right' && dir2 === 'left';
+            }
+            // domino2 est à gauche de domino1
+            if (dx === -1 && dy === 0) {
+                return dir1 === 'left' && dir2 === 'right';
+            }
+            // domino2 est en bas de domino1
+            if (dx === 0 && dy === 1) {
+                return dir1 === 'bottom' && dir2 === 'top';
+            }
+            // domino2 est en haut de domino1
+            if (dx === 0 && dy === -1) {
+                return dir1 === 'top' && dir2 === 'bottom';
+            }
+            
+            return false;
+        }
+        
         function checkFusions() {
             if (isAnimating) return;
             
-            // Normaliser rotation pour comparaison (0, 90, 180, 270)
-            function normalizeRotation(r) {
-                return ((r % 360) + 360) % 360;
-            }
-            
-            // PRIORITÉ 1: Vérifier les fusions de dominos simples IDENTIQUES même sens
+            // PRIORITÉ 1: Vérifier les fusions de dominos simples IDENTIQUES face à face
+            // Résultat: 1 simple qui gagne un état
             for (let i = 0; i < TOTAL; i++) {
                 if (!dominos[i] || dominos[i].type !== 'unique') continue;
-                const { x, y } = getPos(i);
+                const pos1 = getPos(i);
                 
                 // Vérifier les 4 directions
                 const directions = [
@@ -1335,12 +1376,13 @@
                 ];
                 
                 for (const { dx, dy } of directions) {
-                    const ni = getIndex(x + dx, y + dy);
+                    const ni = getIndex(pos1.x + dx, pos1.y + dy);
                     if (ni !== -1 && dominos[ni] && dominos[ni].type === 'unique') {
+                        const pos2 = getPos(ni);
                         
-                        // Vérifier si même sigle ET même rotation (même sens visuel)
+                        // Même sigle ET face à face → fusion en simple évolué
                         if (dominos[i].face1 === dominos[ni].face1 && 
-                            normalizeRotation(dominos[i].rotation) === normalizeRotation(dominos[ni].rotation)) {
+                            areUniquesFacingEachOther(dominos[i], pos1, dominos[ni], pos2)) {
                             
                             const isMoved = lastMovedIndices.includes(i);
                             const isNMoved = lastMovedIndices.includes(ni);
@@ -1355,10 +1397,11 @@
                 }
             }
             
-            // PRIORITÉ 2: Vérifier les fusions de dominos Unique adjacents (différents OU même sigle mais sens différent) → création double
+            // PRIORITÉ 2: Vérifier les fusions de dominos simples DIFFÉRENTS face à face
+            // Résultat: 1 double
             for (let i = 0; i < TOTAL; i++) {
                 if (!dominos[i] || dominos[i].type !== 'unique') continue;
-                const { x, y } = getPos(i);
+                const pos1 = getPos(i);
                 
                 // Vérifier les 4 directions
                 const directions = [
@@ -1369,14 +1412,21 @@
                 ];
                 
                 for (const { dx, dy, dir } of directions) {
-                    const ni = getIndex(x + dx, y + dy);
+                    const ni = getIndex(pos1.x + dx, pos1.y + dy);
                     if (ni !== -1 && dominos[ni] && dominos[ni].type === 'unique') {
-                        // Exclure les simples identiques même sens (déjà traités en priorité 1)
-                        if (dominos[i].face1 === dominos[ni].face1 && 
-                            normalizeRotation(dominos[i].rotation) === normalizeRotation(dominos[ni].rotation)) {
-                            continue; // Déjà géré par la priorité 1
+                        const pos2 = getPos(ni);
+                        
+                        // Face à face requis pour TOUTE fusion de simples
+                        if (!areUniquesFacingEachOther(dominos[i], pos1, dominos[ni], pos2)) {
+                            continue; // Pas face à face, pas de fusion
                         }
                         
+                        // Exclure les simples identiques (déjà traités en priorité 1)
+                        if (dominos[i].face1 === dominos[ni].face1) {
+                            continue;
+                        }
+                        
+                        // Simples différents face à face → création double
                         const isMoved = lastMovedIndices.includes(i);
                         const isNMoved = lastMovedIndices.includes(ni);
                         if (isMoved && !isNMoved) {
