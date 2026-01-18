@@ -1342,6 +1342,63 @@
             }
             
             // Vérifier les fusions de dominos Double avec faces identiques
+            // D'ABORD vérifier les DOUBLES FUSIONS (explosion)
+            for (let i = 0; i < TOTAL; i++) {
+                if (!dominos[i] || dominos[i].type !== 'double') continue;
+                if (!lastMovedIndices.includes(i)) continue; // Seul le domino qui a bougé peut exploser
+                
+                const domino = dominos[i];
+                const { x, y } = getPos(i);
+                const r = ((domino.rotation % 360) + 360) % 360;
+                
+                // Vérifier si c'est une orientation horizontale (médiane verticale, faces gauche/droite exposées)
+                if (r === 90 || r === 270) {
+                    const iL = getIndex(x - 1, y);
+                    const iR = getIndex(x + 1, y);
+                    
+                    if (iL !== -1 && iR !== -1 && 
+                        dominos[iL] && dominos[iL].type === 'double' &&
+                        dominos[iR] && dominos[iR].type === 'double') {
+                        
+                        const faceLeft = getExposedFace(domino, 'left');
+                        const faceRight = getExposedFace(domino, 'right');
+                        const neighborLeftFace = getExposedFace(dominos[iL], 'right');
+                        const neighborRightFace = getExposedFace(dominos[iR], 'left');
+                        
+                        if (faceLeft && neighborLeftFace && faceLeft === neighborLeftFace &&
+                            faceRight && neighborRightFace && faceRight === neighborRightFace) {
+                            // DOUBLE FUSION HORIZONTALE !
+                            performDoubleFusion(i, iL, iR, 'horizontal');
+                            return;
+                        }
+                    }
+                }
+                
+                // Vérifier si c'est une orientation verticale (médiane horizontale, faces haut/bas exposées)
+                if (r === 0 || r === 180) {
+                    const iT = getIndex(x, y - 1);
+                    const iB = getIndex(x, y + 1);
+                    
+                    if (iT !== -1 && iB !== -1 && 
+                        dominos[iT] && dominos[iT].type === 'double' &&
+                        dominos[iB] && dominos[iB].type === 'double') {
+                        
+                        const faceTop = getExposedFace(domino, 'top');
+                        const faceBottom = getExposedFace(domino, 'bottom');
+                        const neighborTopFace = getExposedFace(dominos[iT], 'bottom');
+                        const neighborBottomFace = getExposedFace(dominos[iB], 'top');
+                        
+                        if (faceTop && neighborTopFace && faceTop === neighborTopFace &&
+                            faceBottom && neighborBottomFace && faceBottom === neighborBottomFace) {
+                            // DOUBLE FUSION VERTICALE !
+                            performDoubleFusion(i, iT, iB, 'vertical');
+                            return;
+                        }
+                    }
+                }
+            }
+            
+            // Ensuite vérifier les fusions simples
             for (let i = 0; i < TOTAL; i++) {
                 if (!dominos[i] || dominos[i].type !== 'double') continue;
                 const { x, y } = getPos(i);
@@ -1550,6 +1607,107 @@
                     }
                 }, 100);
             }, 400);
+        }
+        
+        // ============================================
+        // DOUBLE FUSION (Explosion)
+        // ============================================
+        
+        function performDoubleFusion(centerIdx, neighbor1Idx, neighbor2Idx, direction) {
+            if (isAnimating) return;
+            isAnimating = true;
+            
+            const center = dominos[centerIdx];
+            const neighbor1 = dominos[neighbor1Idx];
+            const neighbor2 = dominos[neighbor2Idx];
+            
+            const centerEl = dominoElements[centerIdx];
+            const neighbor1El = dominoElements[neighbor1Idx];
+            const neighbor2El = dominoElements[neighbor2Idx];
+            
+            if (!centerEl || !neighbor1El || !neighbor2El || !center || !neighbor1 || !neighbor2) {
+                isAnimating = false;
+                return;
+            }
+            
+            const isHorizontal = (direction === 'horizontal');
+            const baseRotation = center.rotation || 0;
+            
+            // Déterminer quelles faces touchent quels voisins
+            let face1Dir, face2Dir, neighbor1TouchDir, neighbor2TouchDir;
+            
+            if (isHorizontal) {
+                // neighbor1 = gauche, neighbor2 = droite
+                face1Dir = getExposedFaceKey(center, 'left');
+                face2Dir = getExposedFaceKey(center, 'right');
+                neighbor1TouchDir = 'right';
+                neighbor2TouchDir = 'left';
+            } else {
+                // neighbor1 = haut, neighbor2 = bas
+                face1Dir = getExposedFaceKey(center, 'top');
+                face2Dir = getExposedFaceKey(center, 'bottom');
+                neighbor1TouchDir = 'bottom';
+                neighbor2TouchDir = 'top';
+            }
+            
+            // Animation d'explosion : les deux moitiés partent vers leurs voisins
+            centerEl.style.transition = 'transform 0.3s ease-out, opacity 0.3s ease-out';
+            
+            if (isHorizontal) {
+                // Explosion horizontale : scale X vers 0, étirement vers les côtés
+                centerEl.style.transform = `rotate(${baseRotation}deg) scaleX(0.3) scaleY(1.2)`;
+            } else {
+                // Explosion verticale : scale Y vers 0, étirement vers haut/bas
+                centerEl.style.transform = `rotate(${baseRotation}deg) scaleY(0.3) scaleX(1.2)`;
+            }
+            centerEl.style.opacity = '0.3';
+            
+            // Animation pulse sur les voisins qui reçoivent
+            neighbor1El.classList.add('fusion-animation');
+            neighbor2El.classList.add('fusion-animation');
+            
+            setTimeout(() => {
+                // Mettre à jour neighbor1 (gauche ou haut)
+                const neighbor1TouchKey = getExposedFaceKey(neighbor1, neighbor1TouchDir);
+                if (neighbor1TouchKey) {
+                    const currentStateIdx = STATE_ORDER.indexOf(neighbor1[neighbor1TouchKey + 'State']);
+                    const addStateIdx = STATE_ORDER.indexOf(center[face1Dir + 'State']);
+                    const newStateIdx = Math.min(currentStateIdx + addStateIdx + 1, STATE_ORDER.length - 1);
+                    neighbor1[neighbor1TouchKey + 'State'] = STATE_ORDER[newStateIdx];
+                    
+                    const idx1 = STATE_ORDER.indexOf(neighbor1.face1State);
+                    const idx2 = STATE_ORDER.indexOf(neighbor1.face2State);
+                    neighbor1.state = STATE_ORDER[Math.max(idx1, idx2)];
+                }
+                
+                // Mettre à jour neighbor2 (droite ou bas)
+                const neighbor2TouchKey = getExposedFaceKey(neighbor2, neighbor2TouchDir);
+                if (neighbor2TouchKey) {
+                    const currentStateIdx = STATE_ORDER.indexOf(neighbor2[neighbor2TouchKey + 'State']);
+                    const addStateIdx = STATE_ORDER.indexOf(center[face2Dir + 'State']);
+                    const newStateIdx = Math.min(currentStateIdx + addStateIdx + 1, STATE_ORDER.length - 1);
+                    neighbor2[neighbor2TouchKey + 'State'] = STATE_ORDER[newStateIdx];
+                    
+                    const idx1 = STATE_ORDER.indexOf(neighbor2.face1State);
+                    const idx2 = STATE_ORDER.indexOf(neighbor2.face2State);
+                    neighbor2.state = STATE_ORDER[Math.max(idx1, idx2)];
+                }
+                
+                // Le centre disparaît
+                dominos[centerIdx] = { type: 'whiteBorder', rotation: 0 };
+                
+                render();
+                lastMovedIndices = [];
+                
+                setTimeout(() => {
+                    isAnimating = false;
+                    if (gravityMode) {
+                        applyGravity();
+                    } else {
+                        checkFusions();
+                    }
+                }, 100);
+            }, 350);
         }
         
         // ============================================
