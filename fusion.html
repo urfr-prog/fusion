@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ADAM - v25 Split</title>
+    <title>ADAM - v26 Directional Fusion</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { height: 100%; overflow: hidden; }
@@ -124,6 +124,8 @@
         .fusion-animation {
             animation: fusionPulse 0.4s ease-in-out;
         }
+        
+        /* Animation de bascule : gérée en JS pour combiner avec la rotation existante */
         
         /* Animation de scission */
         @keyframes splitPulse {
@@ -689,16 +691,12 @@
         let longPressTriggered = false;
         let longPressTargetIdx = null;
         
-        // Icônes
+        // Icônes - TOUS avec miroir f1 (pointe haut) / f2 (pointe bas)
         const ICONS = {
             chevron: { f1: 'M20 32L45 12L70 32', f2: 'M20 12L45 32L70 12', t: 'path' },
-            circle: { f1: '45,22,12', f2: '45,22,12', t: 'circle' },
-            twoCircles: { f1: '30,22,8|60,22,8', f2: '30,22,8|60,22,8', t: 'circles' },
-            line: { f1: '15,22,75,22', f2: '15,22,75,22', t: 'line' },
-            threeLines: { f1: '25,10,25,34|45,10,45,34|65,10,65,34', f2: '25,10,25,34|45,10,45,34|65,10,65,34', t: 'lines' },
-            twoPoints: { f1: '30,22,4|60,22,4', f2: '30,22,4|60,22,4', t: 'points' },
-            square: { f1: '25,10,40,24,3', f2: '25,10,40,24,3', t: 'rect' },
-            wave: { f1: 'M10 22Q28 6 45 22Q62 38 80 22', f2: 'M10 22Q28 6 45 22Q62 38 80 22', t: 'path' }
+            triangle: { f1: 'M45 8L65 36L25 36Z', f2: 'M45 36L65 8L25 8Z', t: 'path' },
+            threeLines: { f1: '25,10,25,34|45,10,45,34|65,10,65,34', f2: '25,34,25,10|45,34,45,10|65,34,65,10', t: 'lines' },
+            square: { f1: '25,10,40,24,3', f2: '25,10,40,24,3', t: 'rect' }
         };
         
         function seededRandom(seed) {
@@ -716,7 +714,7 @@
             const symbols = [
                 'threeLines', 'threeLines', 'threeLines', 'threeLines', 'threeLines', 'threeLines', 'threeLines', 'threeLines', 'threeLines', 'threeLines',
                 'square', 'square', 'square', 'square', 'square', 'square', 'square', 'square', 'square', 'square',
-                'circle', 'circle', 'circle', 'circle', 'circle', 'circle', 'circle', 'circle', 'circle', 'circle',
+                'triangle', 'triangle', 'triangle', 'triangle', 'triangle', 'triangle', 'triangle', 'triangle', 'triangle', 'triangle',
                 'chevron', 'chevron', 'chevron', 'chevron', 'chevron', 'chevron', 'chevron', 'chevron', 'chevron', 'chevron'
             ];
             
@@ -1447,31 +1445,55 @@
             const projectilePos = getPos(projectileIdx);
             
             let receiverTouchingKey, projectileTouchingKey, projectileFarKey;
+            let tiltAxis, tiltAngle; // Pour l'animation de bascule
             
             if (isHorizontal) {
                 if (projectilePos.x > receiverPos.x) {
+                    // Projectile à droite → bascule vers la gauche
                     receiverTouchingKey = getExposedFaceKey(receiver, 'right');
                     projectileTouchingKey = getExposedFaceKey(projectile, 'left');
                     projectileFarKey = getExposedFaceKey(projectile, 'right');
+                    tiltAxis = 'Y';
+                    tiltAngle = -25;
                 } else {
+                    // Projectile à gauche → bascule vers la droite
                     receiverTouchingKey = getExposedFaceKey(receiver, 'left');
                     projectileTouchingKey = getExposedFaceKey(projectile, 'right');
                     projectileFarKey = getExposedFaceKey(projectile, 'left');
+                    tiltAxis = 'Y';
+                    tiltAngle = 25;
                 }
             } else {
                 if (projectilePos.y > receiverPos.y) {
+                    // Projectile en bas → bascule vers le haut
                     receiverTouchingKey = getExposedFaceKey(receiver, 'bottom');
                     projectileTouchingKey = getExposedFaceKey(projectile, 'top');
                     projectileFarKey = getExposedFaceKey(projectile, 'bottom');
+                    tiltAxis = 'X';
+                    tiltAngle = 25;
                 } else {
+                    // Projectile en haut → bascule vers le bas
                     receiverTouchingKey = getExposedFaceKey(receiver, 'top');
                     projectileTouchingKey = getExposedFaceKey(projectile, 'bottom');
                     projectileFarKey = getExposedFaceKey(projectile, 'top');
+                    tiltAxis = 'X';
+                    tiltAngle = -25;
                 }
             }
             
-            // Animation simple
-            projectileEl.classList.add('fusion-animation');
+            // Animation JS de bascule qui CONSERVE la rotation de base du domino
+            const baseRotation = projectile.rotation || 0;
+            projectileEl.style.transition = 'transform 0.2s ease-out, opacity 0.4s ease-out';
+            
+            // Phase 1 : bascule vers le receiver (en gardant la rotation de base)
+            projectileEl.style.transform = `rotate(${baseRotation}deg) perspective(200px) rotate${tiltAxis}(${tiltAngle}deg) scale(0.95)`;
+            projectileEl.style.opacity = '0.8';
+            
+            // Phase 2 : retour et fondu
+            setTimeout(() => {
+                projectileEl.style.transform = `rotate(${baseRotation}deg) scale(0.9)`;
+                projectileEl.style.opacity = '0.6';
+            }, 200);
             
             setTimeout(() => {
                 const newDomino = {
@@ -1497,10 +1519,17 @@
                 newDomino.state = STATE_ORDER[Math.max(idx1, idx2)];
                 
                 // Recycler en domino unique
+                // IMPORTANT: face2 a un dessin miroir (f2 vs f1), donc si on extrait face2
+                // il faut ajouter 180° pour compenser et garder l'orientation visuelle
+                const isFace2 = (projectileFarKey === 'face2');
+                const recycledRotation = isFace2 
+                    ? (projectile.rotation + 180) % 360 
+                    : projectile.rotation;
+                
                 const recycledDomino = {
                     face1: projectile[projectileFarKey],
                     face1State: projectile[projectileFarKey + 'State'],
-                    rotation: 0,
+                    rotation: recycledRotation,
                     state: projectile[projectileFarKey + 'State'],
                     type: 'unique'
                 };
