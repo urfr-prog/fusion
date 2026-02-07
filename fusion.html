@@ -18,9 +18,13 @@
 
         /* ═══ BOTTOM BAR ═══ */
         .bottom-bar {
-            display: flex; align-items: center; justify-content: center; gap: 12px;
-            width: calc(var(--cell) * 3 + var(--gap) * 2);
-            position: fixed; bottom: calc(12px + env(safe-area-inset-bottom, 16px)); left: 50%; transform: translateX(-50%);
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            width: calc(var(--cell) * 3 + var(--gap) * 2 + 40px);
+            position: fixed; bottom: calc(8px + env(safe-area-inset-bottom, 12px)); left: 50%; transform: translateX(-50%);
+        }
+        .bottom-row {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            width: 100%;
         }
         .action-btn {
             flex: 1; padding: 10px 16px; background: transparent;
@@ -209,6 +213,26 @@
 
         /* CELL FLIPPED indicator — même style que pile */
 
+        /* ═══ DUAL STATE — per-half-face coloring ═══ */
+        .face[data-half-state="white"] { border-color: rgba(180,180,190,0.40) !important; }
+        .face[data-half-state="white"] svg .icon { stroke: rgba(180,180,190,0.35) !important; filter: none !important; }
+        .face[data-half-state="white"] svg .point { fill: rgba(180,180,190,0.35) !important; filter: none !important; }
+        .face[data-half-state="silver"] { border-color: rgba(6,182,212,0.6) !important; box-shadow: inset 0 0 15px rgba(6,182,212,0.05); }
+        .face[data-half-state="silver"] svg .icon { stroke: #22d3ee !important; filter: drop-shadow(0 0 2px rgba(34,211,238,0.4)) !important; }
+        .face[data-half-state="silver"] svg .point { fill: #22d3ee !important; filter: drop-shadow(0 0 2px rgba(34,211,238,0.4)) !important; }
+        .face[data-half-state="gold"] { border-color: rgba(255,215,0,0.7) !important; box-shadow: inset 0 0 20px rgba(255,215,0,0.05); }
+        .face[data-half-state="gold"] svg .icon { stroke: #ffd700 !important; filter: drop-shadow(0 0 4px rgba(255,215,0,0.6)) !important; }
+        .face[data-half-state="gold"] svg .point { fill: #ffd700 !important; filter: drop-shadow(0 0 4px rgba(255,215,0,0.6)) !important; }
+        .face[data-half-state="emerald"] { border-color: rgba(52,211,153,0.9) !important; box-shadow: inset 0 0 25px rgba(52,211,153,0.1); }
+        .face[data-half-state="emerald"] svg .icon { stroke: #34d399 !important; filter: drop-shadow(0 0 6px rgba(52,211,153,0.9)) !important; }
+        .face[data-half-state="emerald"] svg .point { fill: #34d399 !important; filter: drop-shadow(0 0 6px rgba(52,211,153,0.9)) !important; }
+        .face[data-half-state="cosmic"] { border-color: rgba(131,56,236,0.6) !important; box-shadow: inset 0 0 30px rgba(131,56,236,0.1); }
+        .face[data-half-state="cosmic"] svg .icon { stroke: #c4b5fd !important; filter: drop-shadow(0 0 6px rgba(131,56,236,0.7)) !important; }
+        .face[data-half-state="cosmic"] svg .point { fill: #c4b5fd !important; filter: drop-shadow(0 0 6px rgba(131,56,236,0.7)) !important; }
+        .face[data-half-state="supernovae"] { border-color: rgba(255,140,0,0.7) !important; box-shadow: inset 0 0 30px rgba(255,140,0,0.1); }
+        .face[data-half-state="supernovae"] svg .icon { stroke: #ffeb3b !important; filter: drop-shadow(0 0 6px rgba(255,215,0,0.7)) !important; }
+        .face[data-half-state="supernovae"] svg .point { fill: #ffeb3b !important; filter: drop-shadow(0 0 6px rgba(255,215,0,0.7)) !important; }
+
         /* FLIP ANIMATIONS — toujours rotateY horaire, sur le .cell parent */
         .cell.flipping { animation: flipAnim 0.6s ease; }
         @keyframes flipAnim {
@@ -294,16 +318,23 @@
     </div>
 
     <div class="bottom-bar">
-        <button class="action-btn" onclick="toggleMenu()">Menu</button>
-        <button class="action-btn" onclick="undo()">Undo</button>
-        <button class="action-btn" onclick="flipAll()">Flip</button>
-        <button class="action-btn" onclick="toggleNumbers()" id="nb-btn">nb</button>
-        <button class="action-btn" onclick="toggleBackLayer()" id="bl-btn">👁</button>
+        <div class="bottom-row">
+            <button class="action-btn" onclick="toggleMenu()">Menu</button>
+            <button class="action-btn" onclick="undo()">Undo</button>
+            <button class="action-btn" onclick="flipAll()">Flip</button>
+            <button class="action-btn" onclick="toggleNumbers()" id="nb-btn">nb</button>
+        </div>
+        <div class="bottom-row">
+            <button class="action-btn" onclick="toggleBackLayer()" id="bl-btn">👁</button>
+            <button class="action-btn" onclick="toggleRespawn()" id="respawn-btn">♻️</button>
+            <button class="action-btn" onclick="toggleDualState()" id="dual-btn">🎭</button>
+            <button class="action-btn" onclick="toggleInheritRespawn()" id="inherit-btn">🧬</button>
+        </div>
     </div>
 
     <div class="notes-panel" id="notes-panel">
         <div class="notes-content">
-            <h2>📝 ADAM v26 — Moteur 18 demi-faces</h2>
+            <h2>📝 ADAM v31 — Dual State + Inherit Respawn</h2>
             <h3>Architecture :</h3>
             <p>Chaque demi-face est une entité indépendante (id, pileIcon, faceIcon, state).</p>
             <p>Chaque cellule est un conteneur (topHalfId, bottomHalfId, rotation, flipped).</p>
@@ -356,6 +387,9 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
     let showPointsAnimation = true;
     let showBackLayer = false;
     let enableTwinFusion = false;
+    let enableRespawn = true;
+    let dualStateMode = false;
+    let inheritRespawn = false;
     let score = 0, bestScore = 0, comboCount = 0, lastFusionTime = 0;
     let currentLevel = 1;
     let fusionCounts = { silver: 0, gold: 0, emerald: 0, cosmic: 0, supernovae: 0 };
@@ -474,11 +508,58 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
         return cell.flipped ? hf.faceIcon : hf.pileIcon;
     }
 
-    // État d'une cellule (les 2 demi-faces ont toujours le même state dans cette version)
+    // Retourne l'état visible d'une demi-face (selon pile/face de la cellule)
+    function getVisibleHalfState(halfId, cellIdx) {
+        const hf = halfFaces[halfId];
+        if (!hf) return 'white';
+        const cell = cells[cellIdx];
+        if (!cell) return hf.pileState;
+        if (dualStateMode) {
+            return cell.flipped ? hf.faceState : hf.pileState;
+        }
+        return hf.pileState; // mode normal, pileState = état unique
+    }
+
+    // État d'une cellule pour le CSS du conteneur (prend le plus élevé des 2 halves visibles)
     function getCellState(cellIdx) {
         const cell = cells[cellIdx];
         if (!cell) return 'white';
-        return halfFaces[cell.topHalfId].state;
+        const s1 = getVisibleHalfState(cell.topHalfId, cellIdx);
+        const s2 = getVisibleHalfState(cell.bottomHalfId, cellIdx);
+        if (s1 === s2) return s1;
+        return STATE_ORDER.indexOf(s1) >= STATE_ORDER.indexOf(s2) ? s1 : s2;
+    }
+
+    // Setter d'état : met à jour le bon côté selon le mode
+    // flipContext: soit un cellIdx (on lit cell.flipped), soit un objet {flipped: bool}
+    function setHalfState(halfId, newState, flipContext) {
+        const hf = halfFaces[halfId];
+        if (!hf) return;
+        if (dualStateMode) {
+            let isFlipped = false;
+            if (typeof flipContext === 'number') {
+                const cell = cells[flipContext];
+                isFlipped = cell ? cell.flipped : false;
+            } else if (flipContext && typeof flipContext === 'object') {
+                isFlipped = flipContext.flipped || false;
+            }
+            if (isFlipped) {
+                hf.faceState = newState;
+            } else {
+                hf.pileState = newState;
+            }
+        } else {
+            hf.pileState = newState;
+            hf.faceState = newState;
+        }
+    }
+
+    // Reset état à white (les deux côtés)
+    function resetHalfState(halfId) {
+        const hf = halfFaces[halfId];
+        if (!hf) return;
+        hf.pileState = 'white';
+        hf.faceState = 'white';
     }
 
     // ============================================
@@ -511,10 +592,21 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
         const backIcon = showFaceIcon ? hf.pileIcon : hf.faceIcon;
         const isF2 = (position === 'bottom');
 
+        // En dual state, l'état visible de cette demi-face spécifique
+        let halfState = null;
+        if (dualStateMode) {
+            if (isMirror) {
+                halfState = cell.flipped ? hf.pileState : hf.faceState;
+            } else {
+                halfState = cell.flipped ? hf.faceState : hf.pileState;
+            }
+        }
+
         const numSvg = showNumbers ? `<text x="84" y="10" font-size="8" fill="rgba(255,255,255,0.55)" text-anchor="end" font-family="monospace">${hf.id}</text>` : '';
         const backSvg = backIcon ? `<svg class="back-layer" viewBox="0 0 90 44">${renderIcon(backIcon, isF2)}</svg>` : '';
+        const stateAttr = halfState ? ` data-half-state="${halfState}"` : '';
 
-        return `<div class="face ${position}">${backSvg}<svg viewBox="0 0 90 44">${renderIcon(icon, isF2)}${numSvg}</svg></div>`;
+        return `<div class="face ${position}"${stateAttr}>${backSvg}<svg viewBox="0 0 90 44">${renderIcon(icon, isF2)}${numSvg}</svg></div>`;
     }
 
     // ============================================
@@ -981,8 +1073,8 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
         if (!hId1 || !hId2) return false;
         const icon1 = getDisplayIcon(hId1, idx1);
         const icon2 = getDisplayIcon(hId2, idx2);
-        const state1 = halfFaces[hId1].state;
-        const state2 = halfFaces[hId2].state;
+        const state1 = getVisibleHalfState(hId1, idx1);
+        const state2 = getVisibleHalfState(hId2, idx2);
         return icon1 && icon2 && icon1 === icon2 && state1 === state2;
     }
 
@@ -990,7 +1082,7 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
     function areTwins(idx1, idx2) {
         const c1 = cells[idx1], c2 = cells[idx2];
         if (!c1 || !c2) return false;
-        if (halfFaces[c1.topHalfId].state !== halfFaces[c2.topHalfId].state) return false;
+        if (getVisibleHalfState(c1.topHalfId, idx1) !== getVisibleHalfState(c2.topHalfId, idx2)) return false;
 
         const i1t = getDisplayIcon(c1.topHalfId, idx1), i1b = getDisplayIcon(c1.bottomHalfId, idx1);
         const i2t = getDisplayIcon(c2.topHalfId, idx2), i2b = getDisplayIcon(c2.bottomHalfId, idx2);
@@ -1035,8 +1127,8 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
         const remainPeur = getOtherHalfId(peurIdx, peurDir);
         const remainPute = getOtherHalfId(puteIdx, puteDir);
 
-        // Calcul état
-        const currentState = halfFaces[contactPute].state;
+        // Calcul état — basé sur l'état visible de la demi-face contact
+        const currentState = getVisibleHalfState(contactPute, puteIdx);
         const nextStateIdx = Math.min(STATE_ORDER.indexOf(currentState) + 1, STATE_ORDER.length - 1);
         const nextState = STATE_ORDER[nextStateIdx];
 
@@ -1049,23 +1141,35 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
 
         el1.classList.add('fusing'); el2.classList.add('fusing');
 
+        // Mémoriser le côté visible au moment de la fusion (pour dual state)
+        const fusionFlipped = cells[puteIdx]?.flipped || false;
+
         setTimeout(() => {
             // Nouveau domino à la position du percuté
-            halfFaces[remainPeur].state = nextState;
-            halfFaces[remainPute].state = nextState;
+            // En dual state : seul le côté visible monte
+            setHalfState(remainPeur, nextState, { flipped: fusionFlipped });
+            setHalfState(remainPute, nextState, { flipped: fusionFlipped });
             const finalRot = dir === 'h' ? 90 : 0;
             cells[puteIdx] = { topHalfId: remainPeur, bottomHalfId: remainPute, rotation: finalRot, flipped: false };
 
             // Percuteur disparaît
             cells[peurIdx] = null;
 
-            // Respawn : les 2 faces contact, état white
-            halfFaces[contactPeur].state = 'white';
-            halfFaces[contactPute].state = 'white';
-            const respawn = { topHalfId: contactPeur, bottomHalfId: contactPute, rotation: dir === 'h' ? 90 : 0, flipped: false };
-
-            render();
-            setTimeout(() => { isAnimating = false; applyGravityThenRespawn([respawn]); }, FUSION_APPEAR);
+            if (enableRespawn) {
+                if (!inheritRespawn) {
+                    resetHalfState(contactPeur);
+                    resetHalfState(contactPute);
+                }
+                // inheritRespawn ON → les demi-faces gardent leur pileState/faceState actuels
+                const respawn = { topHalfId: contactPeur, bottomHalfId: contactPute, rotation: dir === 'h' ? 90 : 0, flipped: false };
+                render();
+                setTimeout(() => { isAnimating = false; applyGravityThenRespawn([respawn]); }, FUSION_APPEAR);
+            } else {
+                delete halfFaces[contactPeur];
+                delete halfFaces[contactPute];
+                render();
+                setTimeout(() => { isAnimating = false; applyGravity(); }, FUSION_APPEAR);
+            }
         }, FUSION_MOVE);
     }
 
@@ -1097,7 +1201,7 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
         const contactPute = getExposedHalfId(puteIdx, puteDir);
         const d2top = centre.topHalfId, d2bot = centre.bottomHalfId;
 
-        const currentState = getCellState(idx2);
+        const currentState = getVisibleHalfState(d2top, idx2);
         const nextStateIdx = Math.min(STATE_ORDER.indexOf(currentState) + 2, STATE_ORDER.length - 1);
         const nextState = STATE_ORDER[nextStateIdx];
 
@@ -1109,28 +1213,39 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
 
         el1.classList.add('fusing'); el2.classList.add('fusing'); el3.classList.add('fusing');
 
+        const fusionFlipped = cells[idx2]?.flipped || false;
+
         setTimeout(() => {
             // Résultat au centre
-            halfFaces[remainPeur].state = nextState;
-            halfFaces[remainPute].state = nextState;
+            setHalfState(remainPeur, nextState, { flipped: fusionFlipped });
+            setHalfState(remainPute, nextState, { flipped: fusionFlipped });
             cells[idx2] = { topHalfId: remainPeur, bottomHalfId: remainPute, rotation: centre.rotation, flipped: false };
 
             cells[idx1] = null;
             cells[idx3] = null;
 
-            // 2 respawns
-            halfFaces[contactPeur].state = 'white';
-            halfFaces[d2top].state = 'white';
-            halfFaces[contactPute].state = 'white';
-            halfFaces[d2bot].state = 'white';
-            const rot = dir === 'h' ? 90 : 0;
-            const respawns = [
-                { topHalfId: contactPeur, bottomHalfId: d2top, rotation: rot, flipped: false },
-                { topHalfId: d2bot, bottomHalfId: contactPute, rotation: rot, flipped: false }
-            ];
-
-            render();
-            setTimeout(() => { isAnimating = false; applyGravityThenRespawn(respawns); }, FUSION_APPEAR);
+            if (enableRespawn) {
+                if (!inheritRespawn) {
+                    resetHalfState(contactPeur);
+                    resetHalfState(d2top);
+                    resetHalfState(contactPute);
+                    resetHalfState(d2bot);
+                }
+                const rot = dir === 'h' ? 90 : 0;
+                const respawns = [
+                    { topHalfId: contactPeur, bottomHalfId: d2top, rotation: rot, flipped: false },
+                    { topHalfId: d2bot, bottomHalfId: contactPute, rotation: rot, flipped: false }
+                ];
+                render();
+                setTimeout(() => { isAnimating = false; applyGravityThenRespawn(respawns); }, FUSION_APPEAR);
+            } else {
+                delete halfFaces[contactPeur];
+                delete halfFaces[d2top];
+                delete halfFaces[contactPute];
+                delete halfFaces[d2bot];
+                render();
+                setTimeout(() => { isAnimating = false; applyGravity(); }, FUSION_APPEAR);
+            }
         }, FUSION_MOVE);
     }
 
@@ -1138,7 +1253,7 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
     function performTwinFusion(idx1, idx2, dir) {
         isAnimating = true;
         const c1 = cells[idx1], c2 = cells[idx2];
-        const currentState = getCellState(idx1);
+        const currentState = getVisibleHalfState(c1.topHalfId, idx1);
         const nextStateIdx = Math.min(STATE_ORDER.indexOf(currentState) + 2, STATE_ORDER.length - 1);
         const nextState = STATE_ORDER[nextStateIdx];
 
@@ -1152,24 +1267,40 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
         if (STATE_ORDER.indexOf(nextState) >= STATE_ORDER.indexOf('cosmic')) fusionCounts.cosmic++;
         if (STATE_ORDER.indexOf(nextState) >= STATE_ORDER.indexOf('supernovae')) fusionCounts.supernovae++;
 
-        // Les twins reviennent avec nouvel état
-        halfFaces[c1.topHalfId].state = nextState;
-        halfFaces[c1.bottomHalfId].state = nextState;
-        halfFaces[c2.topHalfId].state = nextState;
-        halfFaces[c2.bottomHalfId].state = nextState;
+        const fusionFlipped1 = c1.flipped || false;
+        const fusionFlipped2 = c2.flipped || false;
 
-        const respawns = [
-            { topHalfId: c1.topHalfId, bottomHalfId: c1.bottomHalfId, rotation: c1.rotation, flipped: false },
-            { topHalfId: c2.topHalfId, bottomHalfId: c2.bottomHalfId, rotation: c2.rotation, flipped: false }
-        ];
+        if (enableRespawn) {
+            setHalfState(c1.topHalfId, nextState, { flipped: fusionFlipped1 });
+            setHalfState(c1.bottomHalfId, nextState, { flipped: fusionFlipped1 });
+            setHalfState(c2.topHalfId, nextState, { flipped: fusionFlipped2 });
+            setHalfState(c2.bottomHalfId, nextState, { flipped: fusionFlipped2 });
 
-        setTimeout(() => {
-            cells[idx1] = null;
-            cells[idx2] = null;
-            render();
-            isAnimating = false;
-            applyGravityThenRespawn(respawns);
-        }, FUSION_MOVE);
+            const respawns = [
+                { topHalfId: c1.topHalfId, bottomHalfId: c1.bottomHalfId, rotation: c1.rotation, flipped: false },
+                { topHalfId: c2.topHalfId, bottomHalfId: c2.bottomHalfId, rotation: c2.rotation, flipped: false }
+            ];
+
+            setTimeout(() => {
+                cells[idx1] = null;
+                cells[idx2] = null;
+                render();
+                isAnimating = false;
+                applyGravityThenRespawn(respawns);
+            }, FUSION_MOVE);
+        } else {
+            setTimeout(() => {
+                delete halfFaces[c1.topHalfId];
+                delete halfFaces[c1.bottomHalfId];
+                delete halfFaces[c2.topHalfId];
+                delete halfFaces[c2.bottomHalfId];
+                cells[idx1] = null;
+                cells[idx2] = null;
+                render();
+                isAnimating = false;
+                applyGravity();
+            }, FUSION_MOVE);
+        }
     }
 
     // ============================================
@@ -1293,8 +1424,8 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
             const { x, y } = getPos(i);
             const topId = ++halfIdCounter;
             const botId = ++halfIdCounter;
-            halfFaces[topId]  = { id: topId,  pileIcon: iconKeys[Math.floor(rng() * iconKeys.length)], faceIcon: null, state: 'white' };
-            halfFaces[botId]  = { id: botId,  pileIcon: iconKeys[Math.floor(rng() * iconKeys.length)], faceIcon: null, state: 'white' };
+            halfFaces[topId]  = { id: topId,  pileIcon: iconKeys[Math.floor(rng() * iconKeys.length)], faceIcon: null, pileState: 'white', faceState: 'white' };
+            halfFaces[botId]  = { id: botId,  pileIcon: iconKeys[Math.floor(rng() * iconKeys.length)], faceIcon: null, pileState: 'white', faceState: 'white' };
             cells[i] = { topHalfId: topId, bottomHalfId: botId, rotation: ((x + y) % 2 === 0) ? 0 : 90, flipped: false };
         }
 
@@ -1354,6 +1485,26 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
     function toggleTwinFusion() {
         enableTwinFusion = !enableTwinFusion;
         document.getElementById('twin-toggle').classList.toggle('active', enableTwinFusion);
+    }
+    function toggleRespawn() {
+        enableRespawn = !enableRespawn;
+        const btn = document.getElementById('respawn-btn');
+        btn.style.borderColor = enableRespawn ? '' : '#f87171';
+        btn.style.color = enableRespawn ? '' : '#f87171';
+        btn.textContent = enableRespawn ? '♻️' : '🚫';
+    }
+    function toggleDualState() {
+        dualStateMode = !dualStateMode;
+        const btn = document.getElementById('dual-btn');
+        btn.style.borderColor = dualStateMode ? '#f59e0b' : '';
+        btn.style.color = dualStateMode ? '#f59e0b' : '';
+        render();
+    }
+    function toggleInheritRespawn() {
+        inheritRespawn = !inheritRespawn;
+        const btn = document.getElementById('inherit-btn');
+        btn.style.borderColor = inheritRespawn ? '#a78bfa' : '';
+        btn.style.color = inheritRespawn ? '#a78bfa' : '';
     }
 
     // ============================================
