@@ -455,7 +455,7 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
         1: ['chevron', 'circle', 'twoCircles', 'line', 'threeLines', 'twoPoints', 'square', 'wave'],
         2: ['twoL', 'arc', 'twoSquares', 'target', 'dumbbell', 'singleLine', 'singlePoint', 'diamond'],
         3: ['cross', 'triangle', 'zigzag', 'brackets', 'threePoints', 'halfCircle', 'arrow', 'hexagon'],
-        4: ['miniDot', 'twoDots', 'miniCross', 'miniSquare', 'miniTriangle', 'slash', 'miniV', 'fourDots']
+        4: ['chevron', 'circle', 'twoCircles', 'twoPoints', 'square']
     };
 
     function getIconKeysForLevel(level) { return LEVEL_ICON_SETS[level] || LEVEL_ICON_SETS[1]; }
@@ -1419,33 +1419,53 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
         const rng = seededRandom(LEVEL_SEEDS[currentLevel]);
         const iconKeys = getIconKeysForLevel(currentLevel);
 
-        // Phase 1 : Créer halfFaces avec pileIcon (séquence RNG identique v24)
+        // ── Distribution équilibrée ──
+        // 18 demi-faces → répartir les icônes uniformément pour pile ET face
+        // avec contrainte : pileIcon ≠ faceIcon sur chaque demi-face
+        function buildBalancedPool(keys, count, rngFn) {
+            const pool = [];
+            const full = Math.floor(count / keys.length);
+            const remainder = count % keys.length;
+            for (let i = 0; i < keys.length; i++) {
+                const n = full + (i < remainder ? 1 : 0);
+                for (let j = 0; j < n; j++) pool.push(keys[i]);
+            }
+            // Shuffle Fisher-Yates
+            for (let i = pool.length - 1; i > 0; i--) {
+                const j = Math.floor(rngFn() * (i + 1));
+                [pool[i], pool[j]] = [pool[j], pool[i]];
+            }
+            return pool;
+        }
+
+        const pilePool = buildBalancedPool(iconKeys, TOTAL * 2, rng);
+        const facePool = buildBalancedPool(iconKeys, TOTAL * 2, rng);
+
+        // Phase 1 : Créer halfFaces
         for (let i = 0; i < TOTAL; i++) {
             const { x, y } = getPos(i);
             const topId = ++halfIdCounter;
             const botId = ++halfIdCounter;
-            halfFaces[topId]  = { id: topId,  pileIcon: iconKeys[Math.floor(rng() * iconKeys.length)], faceIcon: null, pileState: 'white', faceState: 'white' };
-            halfFaces[botId]  = { id: botId,  pileIcon: iconKeys[Math.floor(rng() * iconKeys.length)], faceIcon: null, pileState: 'white', faceState: 'white' };
-            cells[i] = { topHalfId: topId, bottomHalfId: botId, rotation: ((x + y) % 2 === 0) ? 0 : 90, flipped: false };
-        }
+            const pileIdx = i * 2;
 
-        // Phase 2 : Assigner faceIcons (jamais identique au pileIcon)
-        for (let i = 0; i < TOTAL; i++) {
-            const topHf = halfFaces[cells[i].topHalfId];
-            const botHf = halfFaces[cells[i].bottomHalfId];
-            let pick;
-            pick = iconKeys[Math.floor(rng() * iconKeys.length)];
-            if (pick === topHf.pileIcon) {
-                const others = iconKeys.filter(k => k !== topHf.pileIcon);
-                pick = others[Math.floor(rng() * others.length)];
+            let pileTop = pilePool[pileIdx];
+            let pileBot = pilePool[pileIdx + 1];
+            let faceTop = facePool[pileIdx];
+            let faceBot = facePool[pileIdx + 1];
+
+            // Contrainte : pile ≠ face pour chaque demi-face
+            if (faceTop === pileTop) {
+                const others = iconKeys.filter(k => k !== pileTop);
+                faceTop = others[Math.floor(rng() * others.length)];
             }
-            topHf.faceIcon = pick;
-            pick = iconKeys[Math.floor(rng() * iconKeys.length)];
-            if (pick === botHf.pileIcon) {
-                const others = iconKeys.filter(k => k !== botHf.pileIcon);
-                pick = others[Math.floor(rng() * others.length)];
+            if (faceBot === pileBot) {
+                const others = iconKeys.filter(k => k !== pileBot);
+                faceBot = others[Math.floor(rng() * others.length)];
             }
-            botHf.faceIcon = pick;
+
+            halfFaces[topId] = { id: topId, pileIcon: pileTop, faceIcon: faceTop, pileState: 'white', faceState: 'white' };
+            halfFaces[botId] = { id: botId, pileIcon: pileBot, faceIcon: faceBot, pileState: 'white', faceState: 'white' };
+            cells[i] = { topHalfId: topId, bottomHalfId: botId, rotation: ((x + y) % 2 === 0) ? 0 : 90, flipped: false };
         }
 
         render();
