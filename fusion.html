@@ -49,9 +49,15 @@
         .flip-wrapper {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             transform-style: preserve-3d;
-            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .flip-wrapper.flipped { transform: rotateY(180deg); }
+        .flip-wrapper.flipping {
+            animation: flipFullAnim 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        @keyframes flipFullAnim {
+            0%   { transform: rotateY(0deg); }
+            50%  { transform: rotateY(90deg); }
+            100% { transform: rotateY(0deg); }
+        }
         .grid {
             position: absolute; top: 0; left: 0;
             width: calc(var(--cell) * 3 + var(--gap) * 2);
@@ -297,7 +303,7 @@
 
     <div class="notes-panel" id="notes-panel">
         <div class="notes-content">
-            <h2>📝 ADAM v28 — Moteur 18 demi-faces</h2>
+            <h2>📝 ADAM v26 — Moteur 18 demi-faces</h2>
             <h3>Architecture :</h3>
             <p>Chaque demi-face est une entité indépendante (id, pileIcon, faceIcon, state).</p>
             <p>Chaque cellule est un conteneur (topHalfId, bottomHalfId, rotation, flipped).</p>
@@ -445,13 +451,7 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
         const cell = cells[cellIdx];
         if (!cell) return null;
         const r = ((cell.rotation % 360) + 360) % 360;
-        // Quand grille flippée, inverser les directions (rotateY inverse H, render swap inverse V)
-        let dir = direction;
-        if (isGridFlipped) {
-            const flipMap = { top: 'bottom', bottom: 'top', left: 'right', right: 'left' };
-            dir = flipMap[direction];
-        }
-        const which = ROT_MAP[r]?.[dir];
+        const which = ROT_MAP[r]?.[direction];
         if (!which) return null;
         return which === 'top' ? cell.topHalfId : cell.bottomHalfId;
     }
@@ -506,8 +506,6 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
         if (!hf) return `<div class="face ${position} white empty"></div>`;
 
         const cell = cells[cellIdx];
-        // Quelle icône afficher ?
-        // Miroir montre toujours l'AUTRE côté
         const showFaceIcon = isMirror ? !cell.flipped : cell.flipped;
         const icon = showFaceIcon ? hf.faceIcon : hf.pileIcon;
         const backIcon = showFaceIcon ? hf.pileIcon : hf.faceIcon;
@@ -546,14 +544,9 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
                 domEl.className = `domino ${state}${flippedClass}`;
                 domEl.style.transform = `rotate(${cell.rotation}deg)`;
 
-                // Déterminer affichage face1/face2 avec compensation miroir
-                let topId = cell.topHalfId;
-                let bottomId = cell.bottomHalfId;
-                if (isGridFlipped) {
-                    // Compenser l'inversion spatiale du rotateY(180deg)
-                    topId = cell.bottomHalfId;
-                    bottomId = cell.topHalfId;
-                }
+                // Affichage direct — le flip est géré entièrement en data
+                const topId = cell.topHalfId;
+                const bottomId = cell.bottomHalfId;
 
                 domEl.innerHTML = renderFaceHTML(topId, i, 'top', false) +
                                   renderFaceHTML(bottomId, i, 'bottom', false);
@@ -597,10 +590,9 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
                 const flippedClass = cell.flipped ? '' : ' cell-flipped';
                 domEl.className = `domino ${state}${flippedClass}`;
 
-                // Rotation miroir : inversée quand on regarde côté PILE (isGridFlipped=false)
+                // Rotation miroir : toujours inversée (miroir physique)
                 const baseRot = cell.rotation || 0;
-                const displayRot = isGridFlipped ? baseRot : -baseRot;
-                domEl.style.transform = `rotate(${displayRot}deg)`;
+                domEl.style.transform = `rotate(${-baseRot}deg)`;
 
                 // Miroir : même IDs, renderFaceHTML gère pile/face via isMirror
                 let topId = cell.topHalfId;
@@ -626,9 +618,7 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
         if (!cell) return;
         saveState();
 
-        // Inverser le sens quand on est côté FACE
-        const effective = isGridFlipped ? !clockwise : clockwise;
-        cell.rotation += effective ? 90 : -90;
+        cell.rotation += clockwise ? 90 : -90;
         lastMovedIndices = [cellIdx];
 
         // Animation smooth via CSS
@@ -646,7 +636,7 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
         if (!gridMirror) return;
         const cell = cells[cellIdx];
         if (!cell) return;
-        const mirrorRot = isGridFlipped ? cell.rotation : -cell.rotation;
+        const mirrorRot = -cell.rotation;
         const mirrorCells = gridMirror.children;
         for (let i = 0; i < mirrorCells.length; i++) {
             if (parseInt(mirrorCells[i].dataset.mirrorOf) === cellIdx) {
@@ -692,7 +682,6 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
         el.style.overflow = 'hidden';
 
         let topId = cell.topHalfId, bottomId = cell.bottomHalfId;
-        if (isGridFlipped) { topId = cell.bottomHalfId; bottomId = cell.topHalfId; }
         el.innerHTML = renderFaceHTML(topId, cellIdx, 'top', false) + renderFaceHTML(bottomId, cellIdx, 'bottom', false);
 
         grid.appendChild(el);
@@ -868,8 +857,7 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
         // À 50% (300ms/600ms) : swap le contenu quand le domino est une ligne
         setTimeout(() => {
             cell.flipped = !cell.flipped;
-            let topId = cell.topHalfId, bottomId = cell.bottomHalfId;
-            if (isGridFlipped) { topId = cell.bottomHalfId; bottomId = cell.topHalfId; }
+            const topId = cell.topHalfId, bottomId = cell.bottomHalfId;
             const state = getCellState(cellIdx);
             const flippedClass = cell.flipped ? ' cell-flipped' : '';
             el.className = `domino ${state}${flippedClass}`;
@@ -894,20 +882,40 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
         isAnimating = true;
         saveState();
 
-        // Lancer l'animation CSS du flip-wrapper
-        document.getElementById('flip-wrapper').classList.toggle('flipped');
+        const wrapper = document.getElementById('flip-wrapper');
+        wrapper.classList.add('flipping');
 
-        // À 50% (400ms/800ms) : le wrapper est à 90° (invisible) → swap les données
+        // À 50% (400ms) : invisible → transformer les données
         setTimeout(() => {
             isGridFlipped = !isGridFlipped;
+
+            // 1) Toggle pile/face sur chaque cellule
             for (let i = 0; i < TOTAL; i++) {
                 if (cells[i]) cells[i].flipped = !cells[i].flipped;
             }
+
+            // 2) Miroir horizontal : swap colonnes gauche↔droite
+            for (let row = 0; row < ROWS; row++) {
+                for (let c = 0; c < Math.floor(COLS / 2); c++) {
+                    const leftIdx = row * COLS + c;
+                    const rightIdx = row * COLS + (COLS - 1 - c);
+                    const tmp = cells[leftIdx];
+                    cells[leftIdx] = cells[rightIdx];
+                    cells[rightIdx] = tmp;
+                }
+            }
+
+            // 3) Inverser la rotation de chaque domino (miroir horizontal)
+            for (let i = 0; i < TOTAL; i++) {
+                if (cells[i]) cells[i].rotation = -cells[i].rotation;
+            }
+
             render();
         }, 400);
 
         // Fin animation
         setTimeout(() => {
+            wrapper.classList.remove('flipping');
             isAnimating = false;
         }, 820);
     }
@@ -1275,7 +1283,7 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
         halfFaces = {};
         cells = [];
         isGridFlipped = false;
-        document.getElementById('flip-wrapper').classList.remove('flipped');
+        document.getElementById('flip-wrapper').classList.remove('flipping');
 
         const rng = seededRandom(LEVEL_SEEDS[currentLevel]);
         const iconKeys = getIconKeysForLevel(currentLevel);
@@ -1290,19 +1298,17 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
             cells[i] = { topHalfId: topId, bottomHalfId: botId, rotation: ((x + y) % 2 === 0) ? 0 : 90, flipped: false };
         }
 
-        // Phase 2 : Assigner faceIcons (jamais identique au pileIcon de la même demi-face)
+        // Phase 2 : Assigner faceIcons (jamais identique au pileIcon)
         for (let i = 0; i < TOTAL; i++) {
             const topHf = halfFaces[cells[i].topHalfId];
             const botHf = halfFaces[cells[i].bottomHalfId];
             let pick;
-            // Top half : faceIcon != pileIcon
             pick = iconKeys[Math.floor(rng() * iconKeys.length)];
             if (pick === topHf.pileIcon) {
                 const others = iconKeys.filter(k => k !== topHf.pileIcon);
                 pick = others[Math.floor(rng() * others.length)];
             }
             topHf.faceIcon = pick;
-            // Bottom half : faceIcon != pileIcon
             pick = iconKeys[Math.floor(rng() * iconKeys.length)];
             if (pick === botHf.pileIcon) {
                 const others = iconKeys.filter(k => k !== botHf.pileIcon);
