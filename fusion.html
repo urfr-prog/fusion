@@ -110,6 +110,10 @@
         .face.top { top: 0; border-radius: 12px 12px 0 0; border-bottom: 1px solid rgba(180,180,190,0.12); }
         .face.bottom { bottom: 0; border-radius: 0 0 12px 12px; border-top: none; }
         .face svg { width: 90%; height: 90%; }
+        .face svg.back-layer { position: absolute; width: 90%; height: 90%; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        .face svg.back-layer .icon { stroke: rgba(255,255,255,0.5) !important; filter: none !important; }
+        .face svg.back-layer .point { fill: rgba(255,255,255,0.5) !important; filter: none !important; }
+        .show-back-layer .face svg.back-layer { opacity: 0.18; }
 
         svg line.icon, svg path.icon, svg circle.icon, svg rect.icon {
             stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none;
@@ -288,11 +292,12 @@
         <button class="action-btn" onclick="undo()">Undo</button>
         <button class="action-btn" onclick="flipAll()">Flip</button>
         <button class="action-btn" onclick="toggleNumbers()" id="nb-btn">nb</button>
+        <button class="action-btn" onclick="toggleBackLayer()" id="bl-btn">👁</button>
     </div>
 
     <div class="notes-panel" id="notes-panel">
         <div class="notes-content">
-            <h2>📝 ADAM v26 — Moteur 18 demi-faces</h2>
+            <h2>📝 ADAM v28 — Moteur 18 demi-faces</h2>
             <h3>Architecture :</h3>
             <p>Chaque demi-face est une entité indépendante (id, pileIcon, faceIcon, state).</p>
             <p>Chaque cellule est un conteneur (topHalfId, bottomHalfId, rotation, flipped).</p>
@@ -343,6 +348,7 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
     let isAnimating = false;
     let showNumbers = false;
     let showPointsAnimation = true;
+    let showBackLayer = false;
     let enableTwinFusion = false;
     let score = 0, bestScore = 0, comboCount = 0, lastFusionTime = 0;
     let currentLevel = 1;
@@ -504,11 +510,13 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
         // Miroir montre toujours l'AUTRE côté
         const showFaceIcon = isMirror ? !cell.flipped : cell.flipped;
         const icon = showFaceIcon ? hf.faceIcon : hf.pileIcon;
+        const backIcon = showFaceIcon ? hf.pileIcon : hf.faceIcon;
         const isF2 = (position === 'bottom');
 
         const numSvg = showNumbers ? `<text x="84" y="10" font-size="8" fill="rgba(255,255,255,0.55)" text-anchor="end" font-family="monospace">${hf.id}</text>` : '';
+        const backSvg = backIcon ? `<svg class="back-layer" viewBox="0 0 90 44">${renderIcon(backIcon, isF2)}</svg>` : '';
 
-        return `<div class="face ${position}"><svg viewBox="0 0 90 44">${renderIcon(icon, isF2)}${numSvg}</svg></div>`;
+        return `<div class="face ${position}">${backSvg}<svg viewBox="0 0 90 44">${renderIcon(icon, isF2)}${numSvg}</svg></div>`;
     }
 
     // ============================================
@@ -1282,10 +1290,25 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
             cells[i] = { topHalfId: topId, bottomHalfId: botId, rotation: ((x + y) % 2 === 0) ? 0 : 90, flipped: false };
         }
 
-        // Phase 2 : Assigner faceIcons (séquence RNG continue, identique v24)
+        // Phase 2 : Assigner faceIcons (jamais identique au pileIcon de la même demi-face)
         for (let i = 0; i < TOTAL; i++) {
-            halfFaces[cells[i].topHalfId].faceIcon  = iconKeys[Math.floor(rng() * iconKeys.length)];
-            halfFaces[cells[i].bottomHalfId].faceIcon = iconKeys[Math.floor(rng() * iconKeys.length)];
+            const topHf = halfFaces[cells[i].topHalfId];
+            const botHf = halfFaces[cells[i].bottomHalfId];
+            let pick;
+            // Top half : faceIcon != pileIcon
+            pick = iconKeys[Math.floor(rng() * iconKeys.length)];
+            if (pick === topHf.pileIcon) {
+                const others = iconKeys.filter(k => k !== topHf.pileIcon);
+                pick = others[Math.floor(rng() * others.length)];
+            }
+            topHf.faceIcon = pick;
+            // Bottom half : faceIcon != pileIcon
+            pick = iconKeys[Math.floor(rng() * iconKeys.length)];
+            if (pick === botHf.pileIcon) {
+                const others = iconKeys.filter(k => k !== botHf.pileIcon);
+                pick = others[Math.floor(rng() * others.length)];
+            }
+            botHf.faceIcon = pick;
         }
 
         render();
@@ -1314,6 +1337,13 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
     function togglePointsAnimation() {
         showPointsAnimation = !showPointsAnimation;
         document.getElementById('points-anim-toggle').classList.toggle('active', showPointsAnimation);
+    }
+    function toggleBackLayer() {
+        showBackLayer = !showBackLayer;
+        document.getElementById('game-container').classList.toggle('show-back-layer', showBackLayer);
+        const btn = document.getElementById('bl-btn');
+        btn.style.borderColor = showBackLayer ? '#22d3ee' : '';
+        btn.style.color = showBackLayer ? '#22d3ee' : '';
     }
     function toggleTwinFusion() {
         enableTwinFusion = !enableTwinFusion;
