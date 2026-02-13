@@ -6,7 +6,7 @@
     <title>ADAM - Puzzle Game</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        :root { --cell: min(110px, 32.5vw); --gap: 0px; }
+        :root { --cell: min(110px, 32.5vw); --gap: 0px; --border-opacity: 1; }
         html, body { height: 100%; overflow: hidden; touch-action: none; }
         body {
             background-color: #12131a;
@@ -119,11 +119,12 @@
         }
         .face.top { top: 0; border-radius: 12px 12px 0 0; border-bottom: 1px solid rgba(180,180,190,0.12); }
         .face.bottom { bottom: 0; border-radius: 0 0 12px 12px; border-top: none; }
+        .face.single { top: 0; height: 100%; border-radius: 12px; }
         .face svg { width: 90%; height: 90%; }
         .face svg.back-layer { position: absolute; width: 90%; height: 90%; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
         .face svg.back-layer .icon { stroke: rgba(255,255,255,0.5) !important; filter: none !important; }
         .face svg.back-layer .point { fill: rgba(255,255,255,0.5) !important; filter: none !important; }
-        .show-back-layer .face svg.back-layer { opacity: 0.18; }
+        .show-back-layer .face svg.back-layer { opacity: 0.75; }
 
         svg line.icon, svg path.icon, svg circle.icon, svg rect.icon {
             stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none;
@@ -143,71 +144,55 @@
         .domino.white.cell-flipped svg .point { fill: rgba(180,180,190,0.15); }
 
         /* SILVER */
-        .domino.silver .face { border-color: rgba(6,182,212,0.6); box-shadow: inset 0 0 15px rgba(6,182,212,0.05); }
+        .domino.silver .face { border-color: rgba(6,182,212,0.6); }
         .domino.silver .face.top { border-bottom-color: rgba(34,211,238,0.3); }
-        .domino.silver svg .icon { stroke: #22d3ee; filter: drop-shadow(0 0 2px rgba(34,211,238,0.4)); }
-        .domino.silver svg .point { fill: #22d3ee; filter: drop-shadow(0 0 2px rgba(34,211,238,0.4)); }
+        .domino.silver svg .icon { stroke: #22d3ee; filter: drop-shadow(0 0 3px rgba(34,211,238,0.5)); }
+        .domino.silver svg .point { fill: #22d3ee; filter: drop-shadow(0 0 3px rgba(34,211,238,0.5)); }
         .domino.silver.cell-flipped .face { border-color: rgba(6,182,212,0.35); }
         .domino.silver.cell-flipped svg .icon { stroke: rgba(34,211,238,0.5); filter: none; }
         .domino.silver.cell-flipped svg .point { fill: rgba(34,211,238,0.5); filter: none; }
 
         /* GOLD */
-        .domino.gold .face { border-color: rgba(255,215,0,0.7); box-shadow: inset 0 0 20px rgba(255,215,0,0.05); }
+        .domino.gold .face { border-color: rgba(255,215,0,0.7); }
         .domino.gold .face.top { border-bottom-color: rgba(255,215,0,0.35); }
-        .domino.gold svg .icon { stroke: #ffd700; filter: drop-shadow(0 0 4px rgba(255,215,0,0.6)); }
-        .domino.gold svg .point { fill: #ffd700; filter: drop-shadow(0 0 4px rgba(255,215,0,0.6)); }
+        .domino.gold svg .icon { stroke: #ffd700; filter: drop-shadow(0 0 5px rgba(255,215,0,0.7)); }
+        .domino.gold svg .point { fill: #ffd700; filter: drop-shadow(0 0 5px rgba(255,215,0,0.7)); }
         .domino.gold.cell-flipped .face { border-color: rgba(255,215,0,0.4); }
         .domino.gold.cell-flipped svg .icon { stroke: rgba(255,215,0,0.5); filter: none; }
         .domino.gold.cell-flipped svg .point { fill: rgba(255,215,0,0.5); filter: none; }
 
         /* EMERALD */
-        .domino.emerald .face { border-color: rgba(52,211,153,0.9); box-shadow: inset 0 0 25px rgba(52,211,153,0.1); animation: emeraldGlow 2.5s ease-in-out infinite; }
+        .domino.emerald .face { border-color: rgba(52,211,153,0.9); }
         .domino.emerald .face.top { border-bottom-color: rgba(52,211,153,0.5); }
-        .domino.emerald svg .icon { stroke: #34d399; filter: drop-shadow(0 0 6px rgba(52,211,153,0.9)) drop-shadow(0 0 12px rgba(5,150,105,0.5)); }
-        .domino.emerald svg .point { fill: #34d399; filter: drop-shadow(0 0 6px rgba(52,211,153,0.9)); }
-        .domino.emerald.cell-flipped .face { border-color: rgba(52,211,153,0.5); animation: none; }
-        .domino.emerald.cell-flipped svg .icon { stroke: rgba(52,211,153,0.5); filter: none; }
-        .domino.emerald.cell-flipped svg .point { fill: rgba(52,211,153,0.5); filter: none; }
-        @keyframes emeraldGlow {
-            0%, 100% { box-shadow: inset 0 0 25px rgba(52,211,153,0.1); }
-            50% { box-shadow: inset 0 0 35px rgba(52,211,153,0.2); }
+        .domino.emerald svg .icon { stroke: #34d399; filter: drop-shadow(0 0 6px rgba(52,211,153,0.9)) drop-shadow(0 0 12px rgba(5,150,105,0.5)); animation: emeraldIconPulse 2.5s ease-in-out infinite; }
+        .domino.emerald svg .point { fill: #34d399; filter: drop-shadow(0 0 6px rgba(52,211,153,0.9)); animation: emeraldIconPulse 2.5s ease-in-out infinite; }
+        .domino.emerald.cell-flipped .face { border-color: rgba(52,211,153,0.5); }
+        .domino.emerald.cell-flipped svg .icon { stroke: rgba(52,211,153,0.5); filter: none; animation: none; }
+        .domino.emerald.cell-flipped svg .point { fill: rgba(52,211,153,0.5); filter: none; animation: none; }
+        @keyframes emeraldIconPulse {
+            0%, 100% { filter: drop-shadow(0 0 6px rgba(52,211,153,0.9)) drop-shadow(0 0 12px rgba(5,150,105,0.5)); }
+            50% { filter: drop-shadow(0 0 10px rgba(52,211,153,1)) drop-shadow(0 0 18px rgba(5,150,105,0.7)); }
         }
 
         /* COSMIC */
-        .domino.cosmic .face {
-            border: 2px solid rgba(131,56,236,0.6);
-            box-shadow: inset 0 0 30px rgba(131,56,236,0.1), 0 0 15px rgba(131,56,236,0.3);
-            animation: cosmicPulse 2s ease-in-out infinite;
-        }
+        .domino.cosmic .face { border: 2px solid rgba(131,56,236,0.6); }
         .domino.cosmic .face.top { border-bottom-color: rgba(196,181,253,0.4); }
-        .domino.cosmic svg .icon { stroke: #c4b5fd; filter: drop-shadow(0 0 6px rgba(131,56,236,0.7)) drop-shadow(0 0 10px rgba(255,0,110,0.4)); animation: cosmicIconShift 3s ease-in-out infinite; }
+        .domino.cosmic svg .icon { stroke: #c4b5fd; filter: drop-shadow(0 0 6px rgba(131,56,236,0.7)) drop-shadow(0 0 12px rgba(255,0,110,0.4)); animation: cosmicIconShift 3s ease-in-out infinite; }
         .domino.cosmic svg .point { fill: #c4b5fd; filter: drop-shadow(0 0 6px rgba(131,56,236,0.7)); animation: cosmicPointPulse 1.5s ease-in-out infinite; }
-        .domino.cosmic.cell-flipped .face { border-color: rgba(131,56,236,0.35); animation: none; box-shadow: none; }
+        .domino.cosmic.cell-flipped .face { border-color: rgba(131,56,236,0.35); }
         .domino.cosmic.cell-flipped svg .icon { stroke: rgba(196,181,253,0.5); filter: none; animation: none; }
         .domino.cosmic.cell-flipped svg .point { fill: rgba(196,181,253,0.5); filter: none; animation: none; }
-        @keyframes cosmicPulse {
-            0%, 100% { box-shadow: inset 0 0 30px rgba(131,56,236,0.1), 0 0 15px rgba(131,56,236,0.3); }
-            50% { box-shadow: inset 0 0 40px rgba(131,56,236,0.15), 0 0 25px rgba(131,56,236,0.5); }
-        }
         @keyframes cosmicIconShift { 0%, 100% { stroke: #c4b5fd; } 33% { stroke: #22d3ee; } 66% { stroke: #f472b6; } }
         @keyframes cosmicPointPulse { 0%, 100% { fill: #c4b5fd; } 50% { fill: #f472b6; } }
 
         /* SUPERNOVAE */
-        .domino.supernovae .face {
-            border: 3px solid rgba(255,140,0,0.7);
-            box-shadow: inset 0 0 30px rgba(255,140,0,0.1), 0 0 20px rgba(255,69,0,0.3);
-            animation: supernovaPulse 1.5s ease-in-out infinite;
-        }
+        .domino.supernovae .face { border: 3px solid rgba(255,140,0,0.7); }
         .domino.supernovae .face.top { border-bottom-color: rgba(255,235,59,0.5); }
-        .domino.supernovae svg .icon { stroke: #ffeb3b; filter: drop-shadow(0 0 6px rgba(255,215,0,0.7)) drop-shadow(0 0 10px rgba(255,140,0,0.4)); animation: supernovaIconShift 2.5s ease-in-out infinite; }
-        .domino.supernovae svg .point { fill: #ffeb3b; filter: drop-shadow(0 0 6px rgba(255,215,0,0.7)); animation: supernovaPointPulse 1.2s ease-in-out infinite; }
-        .domino.supernovae.cell-flipped .face { border-color: rgba(255,140,0,0.4); animation: none; box-shadow: none; }
+        .domino.supernovae svg .icon { stroke: #ffeb3b; filter: drop-shadow(0 0 8px rgba(255,215,0,0.8)) drop-shadow(0 0 14px rgba(255,140,0,0.5)); animation: supernovaIconShift 2.5s ease-in-out infinite; }
+        .domino.supernovae svg .point { fill: #ffeb3b; filter: drop-shadow(0 0 8px rgba(255,215,0,0.8)); animation: supernovaPointPulse 1.2s ease-in-out infinite; }
+        .domino.supernovae.cell-flipped .face { border-color: rgba(255,140,0,0.4); }
         .domino.supernovae.cell-flipped svg .icon { stroke: rgba(255,235,59,0.5); filter: none; animation: none; }
         .domino.supernovae.cell-flipped svg .point { fill: rgba(255,235,59,0.5); filter: none; animation: none; }
-        @keyframes supernovaPulse {
-            0%, 100% { box-shadow: inset 0 0 30px rgba(255,140,0,0.1), 0 0 20px rgba(255,69,0,0.3); }
-            50% { box-shadow: inset 0 0 40px rgba(255,140,0,0.15), 0 0 30px rgba(255,69,0,0.5); }
-        }
         @keyframes supernovaIconShift { 0%, 100% { stroke: #ffeb3b; } 25% { stroke: #ff8c00; } 50% { stroke: #ffd700; } 75% { stroke: #ff6347; } }
         @keyframes supernovaPointPulse { 0%, 100% { fill: #ffeb3b; } 33% { fill: #ff8c00; } 66% { fill: #ffd700; } }
 
@@ -217,21 +202,21 @@
         .face[data-half-state="white"] { border-color: rgba(180,180,190,0.40) !important; }
         .face[data-half-state="white"] svg .icon { stroke: rgba(180,180,190,0.35) !important; filter: none !important; }
         .face[data-half-state="white"] svg .point { fill: rgba(180,180,190,0.35) !important; filter: none !important; }
-        .face[data-half-state="silver"] { border-color: rgba(6,182,212,0.6) !important; box-shadow: inset 0 0 15px rgba(6,182,212,0.05); }
-        .face[data-half-state="silver"] svg .icon { stroke: #22d3ee !important; filter: drop-shadow(0 0 2px rgba(34,211,238,0.4)) !important; }
-        .face[data-half-state="silver"] svg .point { fill: #22d3ee !important; filter: drop-shadow(0 0 2px rgba(34,211,238,0.4)) !important; }
-        .face[data-half-state="gold"] { border-color: rgba(255,215,0,0.7) !important; box-shadow: inset 0 0 20px rgba(255,215,0,0.05); }
-        .face[data-half-state="gold"] svg .icon { stroke: #ffd700 !important; filter: drop-shadow(0 0 4px rgba(255,215,0,0.6)) !important; }
-        .face[data-half-state="gold"] svg .point { fill: #ffd700 !important; filter: drop-shadow(0 0 4px rgba(255,215,0,0.6)) !important; }
-        .face[data-half-state="emerald"] { border-color: rgba(52,211,153,0.9) !important; box-shadow: inset 0 0 25px rgba(52,211,153,0.1); }
-        .face[data-half-state="emerald"] svg .icon { stroke: #34d399 !important; filter: drop-shadow(0 0 6px rgba(52,211,153,0.9)) !important; }
-        .face[data-half-state="emerald"] svg .point { fill: #34d399 !important; filter: drop-shadow(0 0 6px rgba(52,211,153,0.9)) !important; }
-        .face[data-half-state="cosmic"] { border-color: rgba(131,56,236,0.6) !important; box-shadow: inset 0 0 30px rgba(131,56,236,0.1); }
-        .face[data-half-state="cosmic"] svg .icon { stroke: #c4b5fd !important; filter: drop-shadow(0 0 6px rgba(131,56,236,0.7)) !important; }
-        .face[data-half-state="cosmic"] svg .point { fill: #c4b5fd !important; filter: drop-shadow(0 0 6px rgba(131,56,236,0.7)) !important; }
-        .face[data-half-state="supernovae"] { border-color: rgba(255,140,0,0.7) !important; box-shadow: inset 0 0 30px rgba(255,140,0,0.1); }
-        .face[data-half-state="supernovae"] svg .icon { stroke: #ffeb3b !important; filter: drop-shadow(0 0 6px rgba(255,215,0,0.7)) !important; }
-        .face[data-half-state="supernovae"] svg .point { fill: #ffeb3b !important; filter: drop-shadow(0 0 6px rgba(255,215,0,0.7)) !important; }
+        .face[data-half-state="silver"] { border-color: rgba(6,182,212,0.6) !important; }
+        .face[data-half-state="silver"] svg .icon { stroke: #22d3ee !important; filter: drop-shadow(0 0 3px rgba(34,211,238,0.5)) !important; }
+        .face[data-half-state="silver"] svg .point { fill: #22d3ee !important; filter: drop-shadow(0 0 3px rgba(34,211,238,0.5)) !important; }
+        .face[data-half-state="gold"] { border-color: rgba(255,215,0,0.7) !important; }
+        .face[data-half-state="gold"] svg .icon { stroke: #ffd700 !important; filter: drop-shadow(0 0 5px rgba(255,215,0,0.7)) !important; }
+        .face[data-half-state="gold"] svg .point { fill: #ffd700 !important; filter: drop-shadow(0 0 5px rgba(255,215,0,0.7)) !important; }
+        .face[data-half-state="emerald"] { border-color: rgba(52,211,153,0.9) !important; }
+        .face[data-half-state="emerald"] svg .icon { stroke: #34d399 !important; filter: drop-shadow(0 0 6px rgba(52,211,153,0.9)) !important; animation: emeraldIconPulse 2.5s ease-in-out infinite; }
+        .face[data-half-state="emerald"] svg .point { fill: #34d399 !important; filter: drop-shadow(0 0 6px rgba(52,211,153,0.9)) !important; animation: emeraldIconPulse 2.5s ease-in-out infinite; }
+        .face[data-half-state="cosmic"] { border-color: rgba(131,56,236,0.6) !important; }
+        .face[data-half-state="cosmic"] svg .icon { stroke: #c4b5fd !important; filter: drop-shadow(0 0 6px rgba(131,56,236,0.7)) !important; animation: cosmicIconShift 3s ease-in-out infinite; }
+        .face[data-half-state="cosmic"] svg .point { fill: #c4b5fd !important; filter: drop-shadow(0 0 6px rgba(131,56,236,0.7)) !important; animation: cosmicPointPulse 1.5s ease-in-out infinite; }
+        .face[data-half-state="supernovae"] { border-color: rgba(255,140,0,0.7) !important; }
+        .face[data-half-state="supernovae"] svg .icon { stroke: #ffeb3b !important; filter: drop-shadow(0 0 8px rgba(255,215,0,0.8)) !important; animation: supernovaIconShift 2.5s ease-in-out infinite; }
+        .face[data-half-state="supernovae"] svg .point { fill: #ffeb3b !important; filter: drop-shadow(0 0 8px rgba(255,215,0,0.8)) !important; animation: supernovaPointPulse 1.2s ease-in-out infinite; }
 
         /* FLIP ANIMATIONS — toujours rotateY horaire, sur le .cell parent */
         .cell.flipping { animation: flipAnim 0.6s ease; }
@@ -303,6 +288,7 @@
                     <button class="level-btn" onclick="setLevel(2)">2</button>
                     <button class="level-btn" onclick="setLevel(3)">3</button>
                     <button class="level-btn" onclick="setLevel(4)">4</button>
+                    <button class="level-btn" onclick="setLevel(5)">5</button>
                     <button onclick="undo()">Undo</button>
                     <button onclick="toggleNotes()">Note</button>
                 </div>
@@ -329,6 +315,11 @@
             <button class="action-btn" onclick="toggleRespawn()" id="respawn-btn">♻️</button>
             <button class="action-btn" onclick="toggleDualState()" id="dual-btn">🎭</button>
             <button class="action-btn" onclick="toggleInheritRespawn()" id="inherit-btn">🧬</button>
+        </div>
+        <div class="bottom-row" style="gap:6px;align-items:center;">
+            <span style="color:rgba(180,180,190,0.5);font-size:0.65rem;white-space:nowrap;">Bords</span>
+            <input type="range" id="border-slider" min="0" max="100" value="100" style="flex:1;height:20px;accent-color:#22d3ee;cursor:pointer;" oninput="setBorderOpacity(this.value)">
+            <span id="border-val" style="color:rgba(180,180,190,0.5);font-size:0.65rem;min-width:28px;text-align:right;">100%</span>
         </div>
     </div>
 
@@ -365,7 +356,7 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
     const POINTS = { simple: 100, chain: 500, twin: 1000 };
     const FUSION_MOVE = 400, FUSION_APPEAR = 500, GRAVITY_DELAY = 150;
     const MAX_HISTORY = 20;
-    const LEVEL_SEEDS = { 1: 12345, 2: 67890, 3: 77777, 4: 99991 };
+    const LEVEL_SEEDS = { 1: 55555, 2: 67890, 3: 77777, 4: 99991, 5: 12345 };
 
     // Rotation → direction → which half ('top' ou 'bottom' dans le référentiel du domino)
     const ROT_MAP = {
@@ -423,7 +414,7 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
         line:        { f1: '15,22,75,22', f2: '15,22,75,22', t: 'line' },
         threeLines:  { f1: '25,10,25,34|45,10,45,34|65,10,65,34', f2: '25,10,25,34|45,10,45,34|65,10,65,34', t: 'lines' },
         twoPoints:   { f1: '30,22,4|60,22,4', f2: '30,22,4|60,22,4', t: 'points' },
-        square:      { f1: '25,10,40,24,3', f2: '25,10,40,24,3', t: 'rect' },
+        square:      { f1: '18,6,54,32,3', f2: '18,6,54,32,3', t: 'rect' },
         wave:        { f1: 'M10 22Q28 6 45 22Q62 38 80 22', f2: 'M10 22Q28 6 45 22Q62 38 80 22', t: 'path' },
         twoL:        { f1: 'M15 10L15 22L27 22', f2: 'M75 10L75 22L63 22', t: 'path' },
         arc:         { f1: 'M20 30Q45 8 70 30', f2: 'M20 14Q45 36 70 14', t: 'path' },
@@ -448,14 +439,16 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
         miniTriangle:{ f1: 'M45 14L54 30L36 30Z', f2: 'M45 30L54 14L36 14Z', t: 'path' },
         slash:       { f1: 'M35 30L55 14', f2: 'M35 14L55 30', t: 'path' },
         miniV:       { f1: 'M35 14L45 28L55 14', f2: 'M35 30L45 16L55 30', t: 'path' },
-        fourDots:    { f1: '38,16,2|52,16,2|38,28,2|52,28,2', f2: '38,16,2|52,16,2|38,28,2|52,28,2', t: 'points' }
+        fourDots:    { f1: '38,16,2|52,16,2|38,28,2|52,28,2', f2: '38,16,2|52,16,2|38,28,2|52,28,2', t: 'points' },
+        oval:        { f1: 'M35 10Q25 10 25 22Q25 34 35 34L55 34Q65 34 65 22Q65 10 55 10Z', f2: 'M35 10Q25 10 25 22Q25 34 35 34L55 34Q65 34 65 22Q65 10 55 10Z', t: 'path' }
     };
 
     const LEVEL_ICON_SETS = {
-        1: ['chevron', 'circle', 'twoCircles', 'line', 'threeLines', 'twoPoints', 'square', 'wave'],
+        1: ['oval', 'twoCircles', 'twoPoints', 'square'],
         2: ['twoL', 'arc', 'twoSquares', 'target', 'dumbbell', 'singleLine', 'singlePoint', 'diamond'],
         3: ['cross', 'triangle', 'zigzag', 'brackets', 'threePoints', 'halfCircle', 'arrow', 'hexagon'],
-        4: ['chevron', 'circle', 'twoCircles', 'twoPoints', 'square']
+        4: ['chevron', 'circle', 'twoCircles', 'twoPoints', 'square'],
+        5: ['chevron', 'circle', 'twoCircles', 'line', 'threeLines', 'twoPoints', 'square', 'wave']
     };
 
     function getIconKeysForLevel(level) { return LEVEL_ICON_SETS[level] || LEVEL_ICON_SETS[1]; }
@@ -520,14 +513,11 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
         return hf.pileState; // mode normal, pileState = état unique
     }
 
-    // État d'une cellule pour le CSS du conteneur (prend le plus élevé des 2 halves visibles)
+    // État d'une cellule pour le CSS (basé sur topHalfId uniquement)
     function getCellState(cellIdx) {
         const cell = cells[cellIdx];
         if (!cell) return 'white';
-        const s1 = getVisibleHalfState(cell.topHalfId, cellIdx);
-        const s2 = getVisibleHalfState(cell.bottomHalfId, cellIdx);
-        if (s1 === s2) return s1;
-        return STATE_ORDER.indexOf(s1) >= STATE_ORDER.indexOf(s2) ? s1 : s2;
+        return getVisibleHalfState(cell.topHalfId, cellIdx);
     }
 
     // Setter d'état : met à jour le bon côté selon le mode
@@ -580,19 +570,19 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
     }
 
     // ============================================
-    // RENDU FACE HTML
+    // RENDU FACE HTML — DOMINO SIMPLE (1 icône, pas de médiane)
     // ============================================
-    function renderFaceHTML(halfId, cellIdx, position, isMirror) {
-        const hf = halfFaces[halfId];
-        if (!hf) return `<div class="face ${position} white empty"></div>`;
-
+    function renderSingleHTML(cellIdx, isMirror) {
         const cell = cells[cellIdx];
+        if (!cell) return '<div class="face single empty"></div>';
+
+        const hf = halfFaces[cell.topHalfId];
+        if (!hf) return '<div class="face single empty"></div>';
+
         const showFaceIcon = isMirror ? !cell.flipped : cell.flipped;
         const icon = showFaceIcon ? hf.faceIcon : hf.pileIcon;
         const backIcon = showFaceIcon ? hf.pileIcon : hf.faceIcon;
-        const isF2 = (position === 'bottom');
 
-        // En dual state, l'état visible de cette demi-face spécifique
         let halfState = null;
         if (dualStateMode) {
             if (isMirror) {
@@ -603,10 +593,10 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
         }
 
         const numSvg = showNumbers ? `<text x="84" y="10" font-size="8" fill="rgba(255,255,255,0.55)" text-anchor="end" font-family="monospace">${hf.id}</text>` : '';
-        const backSvg = backIcon ? `<svg class="back-layer" viewBox="0 0 90 44">${renderIcon(backIcon, isF2)}</svg>` : '';
+        const backSvg = backIcon ? `<svg class="back-layer" viewBox="0 0 90 44">${renderIcon(backIcon, false)}</svg>` : '';
         const stateAttr = halfState ? ` data-half-state="${halfState}"` : '';
 
-        return `<div class="face ${position}"${stateAttr}>${backSvg}<svg viewBox="0 0 90 44">${renderIcon(icon, isF2)}${numSvg}</svg></div>`;
+        return `<div class="face single"${stateAttr}>${backSvg}<svg viewBox="0 0 90 44">${renderIcon(icon, false)}${numSvg}</svg></div>`;
     }
 
     // ============================================
@@ -636,15 +626,10 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
                 domEl.className = `domino ${state}${flippedClass}`;
                 domEl.style.transform = `rotate(${cell.rotation}deg)`;
 
-                // Affichage direct — le flip est géré entièrement en data
-                const topId = cell.topHalfId;
-                const bottomId = cell.bottomHalfId;
-
-                domEl.innerHTML = renderFaceHTML(topId, i, 'top', false) +
-                                  renderFaceHTML(bottomId, i, 'bottom', false);
+                domEl.innerHTML = renderSingleHTML(i, false);
             } else {
                 domEl.className = 'domino empty';
-                domEl.innerHTML = '<div class="face top"></div><div class="face bottom"></div>';
+                domEl.innerHTML = '<div class="face single"></div>';
             }
 
             cellEl.appendChild(domEl);
@@ -682,19 +667,13 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
                 const flippedClass = cell.flipped ? '' : ' cell-flipped';
                 domEl.className = `domino ${state}${flippedClass}`;
 
-                // Rotation miroir : toujours inversée (miroir physique)
                 const baseRot = cell.rotation || 0;
                 domEl.style.transform = `rotate(${-baseRot}deg)`;
 
-                // Miroir : même IDs, renderFaceHTML gère pile/face via isMirror
-                let topId = cell.topHalfId;
-                let bottomId = cell.bottomHalfId;
-
-                domEl.innerHTML = renderFaceHTML(topId, mirrorIdx, 'top', true) +
-                                  renderFaceHTML(bottomId, mirrorIdx, 'bottom', true);
+                domEl.innerHTML = renderSingleHTML(mirrorIdx, true);
             } else {
                 domEl.className = 'domino empty';
-                domEl.innerHTML = '<div class="face top"></div><div class="face bottom"></div>';
+                domEl.innerHTML = '<div class="face single"></div>';
             }
 
             cellEl.appendChild(domEl);
@@ -774,7 +753,7 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
         el.style.overflow = 'hidden';
 
         let topId = cell.topHalfId, bottomId = cell.bottomHalfId;
-        el.innerHTML = renderFaceHTML(topId, cellIdx, 'top', false) + renderFaceHTML(bottomId, cellIdx, 'bottom', false);
+        el.innerHTML = renderSingleHTML(cellIdx, false);
 
         grid.appendChild(el);
         const ghostData = { el, idx: cellIdx };
@@ -949,12 +928,10 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
         // À 50% (300ms/600ms) : swap le contenu quand le domino est une ligne
         setTimeout(() => {
             cell.flipped = !cell.flipped;
-            const topId = cell.topHalfId, bottomId = cell.bottomHalfId;
             const state = getCellState(cellIdx);
             const flippedClass = cell.flipped ? ' cell-flipped' : '';
             el.className = `domino ${state}${flippedClass}`;
-            el.innerHTML = renderFaceHTML(topId, cellIdx, 'top', false) +
-                           renderFaceHTML(bottomId, cellIdx, 'bottom', false);
+            el.innerHTML = renderSingleHTML(cellIdx, false);
         }, 300);
 
         // Fin animation : render complet + check fusions
@@ -1066,16 +1043,22 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
         if (!skipGravity) applyGravity();
     }
 
-    // 2 faces adjacentes matchent ?
+    // 2 dominos adjacents matchent si même orientation (vertical/horizontal)
     function checkPairMatch(idx1, dir1, idx2, dir2) {
+        const c1 = cells[idx1], c2 = cells[idx2];
+        if (!c1 || !c2) return false;
+        const r1 = ((c1.rotation % 360) + 360) % 360;
+        const r2 = ((c2.rotation % 360) + 360) % 360;
+        const isVert1 = (r1 === 0 || r1 === 180);
+        const isVert2 = (r2 === 0 || r2 === 180);
+        if (isVert1 !== isVert2) return false;
+        // Vérifier que les demi-faces en contact ont le même état
         const hId1 = getExposedHalfId(idx1, dir1);
         const hId2 = getExposedHalfId(idx2, dir2);
         if (!hId1 || !hId2) return false;
-        const icon1 = getDisplayIcon(hId1, idx1);
-        const icon2 = getDisplayIcon(hId2, idx2);
         const state1 = getVisibleHalfState(hId1, idx1);
         const state2 = getVisibleHalfState(hId2, idx2);
-        return icon1 && icon2 && icon1 === icon2 && state1 === state2;
+        return state1 === state2;
     }
 
     // Twins
@@ -1525,6 +1508,23 @@ cells[0..8]   = { topHalfId, bottomHalfId, rotation, flipped } | null
         const btn = document.getElementById('inherit-btn');
         btn.style.borderColor = inheritRespawn ? '#a78bfa' : '';
         btn.style.color = inheritRespawn ? '#a78bfa' : '';
+    }
+
+    function setBorderOpacity(val) {
+        const v = val / 100;
+        document.getElementById('border-val').textContent = val + '%';
+        let styleEl = document.getElementById('border-opacity-style');
+        if (!styleEl) {
+            styleEl = document.createElement('style');
+            styleEl.id = 'border-opacity-style';
+            document.head.appendChild(styleEl);
+        }
+        styleEl.textContent = `
+            .domino .face { border-color: rgba(180,180,190,${0.35 * v}) !important; }
+            .domino .face.top { border-bottom-color: rgba(180,180,190,${0.12 * v}) !important; }
+            .domino .face.single { border-color: rgba(180,180,190,${0.35 * v}) !important; }
+            .domino.empty .face { border-color: rgba(180,180,190,${0.2 * v}) !important; }
+        `;
     }
 
     // ============================================
