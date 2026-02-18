@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Domino MegaCube – V4</title>
+    <title>Domino MegaCube – V5</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -41,15 +41,13 @@
             letter-spacing: 3px;
             text-transform: uppercase;
             pointer-events: none;
-            transition: opacity 0.4s;
         }
 
-        /* ── Perspective container ── */
         .mega-scene {
             width: 400px;
-            height: 380px;
+            height: 400px;
             perspective: 900px;
-            perspective-origin: 50% 42%;
+            perspective-origin: 50% 48%;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -58,30 +56,13 @@
         }
         .mega-scene:active { cursor: grabbing; }
 
-        /* Ground reflection plane */
-        .ground {
-            position: absolute;
-            bottom: 60px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 320px;
-            height: 60px;
-            background: radial-gradient(ellipse at 50% 0%, rgba(126,200,227,0.08) 0%, transparent 70%);
-            pointer-events: none;
-        }
-
-        /* ── The mega-cube block ── */
         .mega-block {
             position: relative;
             transform-style: preserve-3d;
             width: 0;
             height: 0;
-            /* Initial tilt for visible top face + Y rotation */
-            transform: rotateX(18deg) rotateY(0deg);
-            transition: transform 0.05s linear;
         }
 
-        /* ── Each small cube slot ── */
         .cube-slot {
             position: absolute;
             width: 148px;
@@ -112,16 +93,12 @@
             overflow: hidden;
             backface-visibility: hidden;
             background: linear-gradient(145deg, #101220 0%, #0b0c18 100%);
-            border: 1px solid rgba(126,200,227,0.45);
-            box-shadow:
-                0 0 20px rgba(126,200,227,0.06),
-                inset 0 0 25px rgba(126,200,227,0.03);
-            transition: box-shadow 0.1s, border-color 0.1s;
+            border: 1px solid rgba(126,200,227,0.4);
+            box-shadow: 0 0 18px rgba(126,200,227,0.05), inset 0 0 20px rgba(126,200,227,0.03);
         }
 
         .face svg { width: 100%; height: 100%; display: block; }
 
-        /* Face transforms with 52px half */
         .face-front  { transform: rotateY(0deg)    translateZ(52px); }
         .face-back   { transform: rotateY(180deg)   translateZ(52px); }
         .face-right  { transform: rotateY(90deg)    translateZ(52px); }
@@ -129,7 +106,6 @@
         .face-top    { transform: rotateX(90deg)    translateZ(52px); }
         .face-bottom { transform: rotateX(-90deg)   translateZ(52px); }
 
-        /* SVG icon styles */
         .face svg .separator { stroke: rgba(126,200,227,0.28); stroke-width: 0.8; }
         .face svg line.icon, .face svg path.icon,
         .face svg circle.icon, .face svg rect.icon {
@@ -143,19 +119,13 @@
             filter: drop-shadow(0 0 5px rgba(126,200,227,0.6));
         }
 
-        /* Depth shading class - applied dynamically */
-        .cube-slot.depth-far .face {
-            background: linear-gradient(145deg, #0a0b15 0%, #070810 100%);
-        }
-
-        /* ── Hint ── */
         .hint-bar {
             position: absolute;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            gap: 20px;
+            gap: 24px;
             pointer-events: none;
         }
         .hint-bar span {
@@ -166,472 +136,460 @@
     </style>
 </head>
 <body>
-    <div class="app">
-        <div class="face-label" id="faceLabel">FRONT</div>
-
-        <div class="mega-scene" id="megaScene">
-            <div class="mega-block" id="megaBlock"></div>
-        </div>
-
-        <div class="ground"></div>
-
-        <div class="hint-bar">
-            <span>DRAG TO ROTATE</span>
-            <span>TAP CUBE TO SPIN</span>
-        </div>
+<div class="app">
+    <div class="face-label" id="faceLabel">FRONT · TOP</div>
+    <div class="mega-scene" id="megaScene">
+        <div class="mega-block" id="megaBlock"></div>
     </div>
+    <div class="hint-bar">
+        <span>DRAG SCENE = ROTATE MEGA</span>
+        <span>SWIPE CUBE = ROTATE FACE</span>
+    </div>
+</div>
 
-    <script>
-    // ==========================================================
-    // DOMINOS – 6 paires de symboles
-    // ==========================================================
-    const DOMINOS = [
-        [`<path class="icon" d="M 20 32 L 45 12 L 70 32"/>`,
-         `<circle class="icon" cx="45" cy="22" r="12"/>`],
-        [`<path class="icon" d="M 10 30 Q 28 8 45 22 Q 62 36 80 14"/>`,
-         `<circle class="point" cx="45" cy="12" r="4"/><circle class="point" cx="30" cy="32" r="4"/><circle class="point" cx="60" cy="32" r="4"/>`],
-        [`<circle class="icon" cx="30" cy="22" r="8"/><circle class="icon" cx="60" cy="22" r="8"/>`,
-         `<line class="icon" x1="25" y1="10" x2="25" y2="34"/><line class="icon" x1="45" y1="10" x2="45" y2="34"/><line class="icon" x1="65" y1="10" x2="65" y2="34"/>`],
-        [`<path class="icon" d="M 45 8 L 70 22 L 45 36 L 20 22 Z"/>`,
-         `<line class="icon" x1="15" y1="22" x2="75" y2="22"/>`],
-        [`<path class="icon" d="M 45 8 L 70 36 L 20 36 Z"/>`,
-         `<path class="icon" d="M 10 30 L 25 10 L 45 30 L 65 10 L 80 30"/>`],
-        [`<circle class="point" cx="30" cy="14" r="4"/><circle class="point" cx="60" cy="14" r="4"/><circle class="point" cx="30" cy="30" r="4"/><circle class="point" cx="60" cy="30" r="4"/>`,
-         `<rect class="icon" x="25" y="8" width="40" height="28" rx="3"/>`],
-    ];
+<script>
+// ============================================================
+// DOMINOS
+// ============================================================
+const DOMINOS = [
+    [`<path class="icon" d="M 20 32 L 45 12 L 70 32"/>`,
+     `<circle class="icon" cx="45" cy="22" r="12"/>`],
+    [`<path class="icon" d="M 10 30 Q 28 8 45 22 Q 62 36 80 14"/>`,
+     `<circle class="point" cx="45" cy="12" r="4"/><circle class="point" cx="30" cy="32" r="4"/><circle class="point" cx="60" cy="32" r="4"/>`],
+    [`<circle class="icon" cx="30" cy="22" r="8"/><circle class="icon" cx="60" cy="22" r="8"/>`,
+     `<line class="icon" x1="25" y1="10" x2="25" y2="34"/><line class="icon" x1="45" y1="10" x2="45" y2="34"/><line class="icon" x1="65" y1="10" x2="65" y2="34"/>`],
+    [`<path class="icon" d="M 45 8 L 70 22 L 45 36 L 20 22 Z"/>`,
+     `<line class="icon" x1="15" y1="22" x2="75" y2="22"/>`],
+    [`<path class="icon" d="M 45 8 L 70 36 L 20 36 Z"/>`,
+     `<path class="icon" d="M 10 30 L 25 10 L 45 30 L 65 10 L 80 30"/>`],
+    [`<circle class="point" cx="30" cy="14" r="4"/><circle class="point" cx="60" cy="14" r="4"/><circle class="point" cx="30" cy="30" r="4"/><circle class="point" cx="60" cy="30" r="4"/>`,
+     `<rect class="icon" x="25" y="8" width="40" height="28" rx="3"/>`],
+];
 
-    const FACE_CLASSES = ['face-front','face-back','face-right','face-left','face-top','face-bottom'];
-    const FACE_NORMALS = [
-        [0,0,1],[0,0,-1],[1,0,0],[-1,0,0],[0,-1,0],[0,1,0],
-    ];
+const FACE_CLASSES  = ['face-front','face-back','face-right','face-left','face-top','face-bottom'];
+const FACE_NORMALS  = [[0,0,1],[0,0,-1],[1,0,0],[-1,0,0],[0,-1,0],[0,1,0]];
 
-    const CUBE_ORDERS = [
-        [0,1,2,3,4,5], [3,5,0,4,1,2], [5,2,4,1,3,0], [2,0,5,1,3,4],
-        [1,4,3,5,0,2], [4,3,1,0,2,5], [3,2,0,5,4,1], [0,5,4,2,1,3],
-    ];
+const CUBE_ORDERS = [
+    [0,1,2,3,4,5],[3,5,0,4,1,2],[5,2,4,1,3,0],[2,0,5,1,3,4],
+    [1,4,3,5,0,2],[4,3,1,0,2,5],[3,2,0,5,4,1],[0,5,4,2,1,3],
+];
 
-    const HALF_X = 78;
-    const HALF_Y = 72;
-    const HALF_Z = 78;
+const HX=78, HY=72, HZ=78;
+const CUBE_POSITIONS = [
+    {x:-HX,y:-HY,z: HZ},{x: HX,y:-HY,z: HZ},
+    {x:-HX,y: HY,z: HZ},{x: HX,y: HY,z: HZ},
+    {x:-HX,y:-HY,z:-HZ},{x: HX,y:-HY,z:-HZ},
+    {x:-HX,y: HY,z:-HZ},{x: HX,y: HY,z:-HZ},
+];
 
-    const CUBE_POSITIONS = [
-        { x: -HALF_X, y: -HALF_Y, z:  HALF_Z },  // 0: front top-left
-        { x:  HALF_X, y: -HALF_Y, z:  HALF_Z },  // 1: front top-right
-        { x: -HALF_X, y:  HALF_Y, z:  HALF_Z },  // 2: front bottom-left
-        { x:  HALF_X, y:  HALF_Y, z:  HALF_Z },  // 3: front bottom-right
-        { x: -HALF_X, y: -HALF_Y, z: -HALF_Z },  // 4: back top-left
-        { x:  HALF_X, y: -HALF_Y, z: -HALF_Z },  // 5: back top-right
-        { x: -HALF_X, y:  HALF_Y, z: -HALF_Z },  // 6: back bottom-left
-        { x:  HALF_X, y:  HALF_Y, z: -HALF_Z },  // 7: back bottom-right
-    ];
+// ============================================================
+// MEGA STATE — deux axes indépendants avec snap 90°
+// ============================================================
+let megaAngY = 0, megaAngX = 0;       // current
+let megaTgtY = 0, megaTgtX = 0;       // snap targets
+let snapFromY = 0, snapFromX = 0;
+let isSnapping = false;
+let snapStartTime = 0;
+const SNAP_DURATION = 420;
 
-    const FACE_LABELS = { 0: 'FRONT', 90: 'LEFT', 180: 'BACK', 270: 'RIGHT' };
+// Drag state
+let isDragging = false;
+let megaDragged = false; // distingue drag mega vs tap sur cube
+let dragStartX = 0, dragStartY = 0;
+let dragBaseY = 0, dragBaseX = 0;
+let velY = 0, velX = 0;
+let lastEvX = 0, lastEvY = 0, lastEvT = 0;
 
-    // ==========================================================
-    // STATE
-    // ==========================================================
-    let megaAngleY = 0;
-    let megaAngleTarget = 0;
-    let isDragging = false;
-    let isSnapping = false;
-    let snapStartTime = 0;
-    let snapFrom = 0;
-    const SNAP_DURATION = 420;
+// Small-cube state
+const cubeStates = [];
+for (let i=0;i<8;i++) cubeStates.push({
+    mat:[[1,0,0],[0,1,0],[0,0,1]],
+    targetMat:[[1,0,0],[0,1,0],[0,0,1]],
+    transitioning:false,
+});
+const slotEls = [];
 
-    // Inertia
-    let velX = 0;
-    let lastDragX = 0;
-    let lastDragTime = 0;
+// ============================================================
+// MATRIX MATH
+// ============================================================
+function mul3(A,B){
+    const R=[[0,0,0],[0,0,0],[0,0,0]];
+    for(let i=0;i<3;i++)for(let j=0;j<3;j++)for(let k=0;k<3;k++)R[i][j]+=A[i][k]*B[k][j];
+    return R;
+}
+function cleanMat(M){
+    return M.map(r=>r.map(v=>{const rr=Math.round(v);return Math.abs(v-rr)<1e-4?rr:v;}));
+}
+function rotX90() {return [[1,0,0],[0,0,-1],[0,1,0]];}
+function rotXn90(){return [[1,0,0],[0,0,1],[0,-1,0]];}
+function rotY90() {return [[0,0,1],[0,1,0],[-1,0,0]];}
+function rotYn90(){return [[0,0,-1],[0,1,0],[1,0,0]];}
+function rotZn90(){return [[0,1,0],[-1,0,0],[0,0,1]];}
 
-    // Per small-cube state
-    const cubeStates = [];
-    for (let i = 0; i < 8; i++) {
-        cubeStates.push({
-            mat: [[1,0,0],[0,1,0],[0,0,1]],
-            targetMat: [[1,0,0],[0,1,0],[0,0,1]],
-            transitioning: false,
-        });
-    }
+function mat3ToCSS(M){
+    return `matrix3d(${M[0][0]},${M[1][0]},${M[2][0]},0,`+
+                    `${M[0][1]},${M[1][1]},${M[2][1]},0,`+
+                    `${M[0][2]},${M[1][2]},${M[2][2]},0,0,0,0,1)`;
+}
+function parseMatrix3d(s){
+    const m=s.match(/matrix3d\((.+)\)/);
+    if(!m)return null;
+    const v=m[1].split(',').map(Number);
+    return [[v[0],v[4],v[8]],[v[1],v[5],v[9]],[v[2],v[6],v[10]]];
+}
+function transformNormal(M,n){
+    return [M[0][0]*n[0]+M[0][1]*n[1]+M[0][2]*n[2],
+            M[1][0]*n[0]+M[1][1]*n[1]+M[1][2]*n[2],
+            M[2][0]*n[0]+M[2][1]*n[1]+M[2][2]*n[2]];
+}
 
-    const slotEls = [];
-    const megaBlock = document.getElementById('megaBlock');
-    const megaScene = document.getElementById('megaScene');
+// Build a 3x3 rotation matrix from angle (deg) around X axis
+function makeRotX(deg){
+    const r=deg*Math.PI/180,c=Math.cos(r),s=Math.sin(r);
+    return [[1,0,0],[0,c,-s],[0,s,c]];
+}
+// Build a 3x3 rotation matrix from angle (deg) around Y axis
+function makeRotY(deg){
+    const r=deg*Math.PI/180,c=Math.cos(r),s=Math.sin(r);
+    return [[c,0,s],[0,1,0],[-s,0,c]];
+}
 
-    // ==========================================================
-    // MATRIX MATH
-    // ==========================================================
-    function mul3(A, B) {
-        const R = [[0,0,0],[0,0,0],[0,0,0]];
-        for (let i = 0; i < 3; i++)
-            for (let j = 0; j < 3; j++)
-                for (let k = 0; k < 3; k++)
-                    R[i][j] += A[i][k] * B[k][j];
-        return R;
-    }
+// ============================================================
+// MEGA ROTATION
+// ============================================================
+const megaBlock = document.getElementById('megaBlock');
+const megaScene = document.getElementById('megaScene');
+const faceLabelEl = document.getElementById('faceLabel');
 
-    function cleanMat(M) {
-        return M.map(row => row.map(v => {
-            const r = Math.round(v);
-            return Math.abs(v - r) < 0.0001 ? r : v;
-        }));
-    }
+function applyMegaRotation(){
+    // Order: first X then Y (intrinsic)
+    megaBlock.style.transform = `rotateX(${megaAngX}deg) rotateY(${megaAngY}deg)`;
+}
 
-    function rotX90()  { return [[1,0,0],[0,0,-1],[0,1,0]]; }
-    function rotXn90() { return [[1,0,0],[0,0,1],[0,-1,0]]; }
-    function rotY90()  { return [[0,0,1],[0,1,0],[-1,0,0]]; }
-    function rotYn90() { return [[0,0,-1],[0,1,0],[1,0,0]]; }
-    function rotZn90() { return [[0,1,0],[-1,0,0],[0,0,1]]; }
+function snapAngle(a){ return Math.round(a/90)*90; }
 
-    function mat3ToCSS(M) {
-        return `matrix3d(${M[0][0]},${M[1][0]},${M[2][0]},0,${M[0][1]},${M[1][1]},${M[2][1]},0,${M[0][2]},${M[1][2]},${M[2][2]},0,0,0,0,1)`;
-    }
+function easeOutQuart(t){ return 1-Math.pow(1-t,4); }
 
-    function parseMatrix3d(str) {
-        const match = str.match(/matrix3d\((.+)\)/);
-        if (!match) return null;
-        const v = match[1].split(',').map(Number);
-        return [[v[0],v[4],v[8]], [v[1],v[5],v[9]], [v[2],v[6],v[10]]];
-    }
+function updateFaceLabel(){
+    const normY=(((megaTgtY%360)+360)%360);
+    const normX=(((megaTgtX%360)+360)%360);
+    const sY=Math.round(normY/90)*90%360;
+    const sX=Math.round(normX/90)*90%360;
+    const yLabels={0:'FRONT',90:'LEFT',180:'BACK',270:'RIGHT'};
+    const xLabels={0:'',90:'BOTTOM',180:'',270:'TOP'};
+    const yL=yLabels[sY]||'';
+    const xL=xLabels[sX]||'';
+    faceLabelEl.textContent = xL ? `${yL} · ${xL}` : yL;
+}
 
-    function transformNormal(mat, n) {
-        return [
-            mat[0][0]*n[0]+mat[0][1]*n[1]+mat[0][2]*n[2],
-            mat[1][0]*n[0]+mat[1][1]*n[1]+mat[1][2]*n[2],
-            mat[2][0]*n[0]+mat[2][1]*n[1]+mat[2][2]*n[2],
-        ];
-    }
+function isAtRest(){ return !isDragging && !isSnapping; }
 
-    // ==========================================================
-    // BUILD
-    // ==========================================================
-    function build() {
-        for (let i = 0; i < 8; i++) {
-            const pos = CUBE_POSITIONS[i];
-            const slot = document.createElement('div');
-            slot.className = 'cube-slot';
-            slot.style.transform = `translate3d(${pos.x}px, ${pos.y}px, ${pos.z}px)`;
+// ============================================================
+// BUILD
+// ============================================================
+function build(){
+    for(let i=0;i<8;i++){
+        const pos=CUBE_POSITIONS[i];
+        const slot=document.createElement('div');
+        slot.className='cube-slot';
+        slot.style.transform=`translate3d(${pos.x}px,${pos.y}px,${pos.z}px)`;
 
-            // Far cubes get slightly darker base styling
-            if (pos.z < 0) slot.classList.add('depth-far');
+        const cubeEl=document.createElement('div');
+        cubeEl.className='cube';
+        slot.appendChild(cubeEl);
 
-            const cubeEl = document.createElement('div');
-            cubeEl.className = 'cube';
-            slot.appendChild(cubeEl);
-
-            const order = CUBE_ORDERS[i];
-            const faceEls = [];
-
-            order.forEach((dominoIdx, faceIdx) => {
-                const pair = DOMINOS[dominoIdx];
-                const face = document.createElement('div');
-                face.className = 'face ' + FACE_CLASSES[faceIdx];
-                face.innerHTML = `<svg viewBox="0 0 90 90">
-                    <line class="separator" x1="0" y1="45" x2="90" y2="45"/>
-                    <g>${pair[0]}</g>
-                    <g transform="translate(0, 45)">${pair[1]}</g>
-                </svg>`;
-                cubeEl.appendChild(face);
-                faceEls.push(face);
-            });
-
-            megaBlock.appendChild(slot);
-            slotEls.push({ slot, cubeEl, faceEls, cubeIdx: i });
-
-            attachCubeEvents(slot, i);
-        }
-
-        applyMegaRotation();
-    }
-
-    // ==========================================================
-    // MEGA ROTATION — now with combined X tilt
-    // ==========================================================
-    const TILT_X = 18; // degrees of permanent X tilt to see top faces
-
-    function applyMegaRotation() {
-        megaBlock.style.transform = `rotateX(${TILT_X}deg) rotateY(${megaAngleY}deg)`;
-    }
-
-    function getSnappedAngle(angle) {
-        return Math.round(angle / 90) * 90;
-    }
-
-    function getFaceLabel() {
-        const norm = (((megaAngleTarget % 360) + 360) % 360);
-        const snapped = Math.round(norm / 90) * 90 % 360;
-        return FACE_LABELS[snapped] || 'FRONT';
-    }
-
-    function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
-    function easeOutQuart(t) { return 1 - Math.pow(1 - t, 4); }
-
-    function isAtRest() { return !isDragging && !isSnapping; }
-
-    // ==========================================================
-    // SMALL CUBE INTERACTIONS
-    // ==========================================================
-    function addSmallRotation(idx, rotMat) {
-        const st = cubeStates[idx];
-        if (st.transitioning) return;
-        st.transitioning = true;
-        st.targetMat = cleanMat(mul3(rotMat, st.targetMat));
-        slotEls[idx].cubeEl.style.transform = mat3ToCSS(st.targetMat);
-        setTimeout(() => {
-            st.mat = st.targetMat.map(r => [...r]);
-            st.transitioning = false;
-        }, 650);
-    }
-
-    function navSmallCube(idx, dir) {
-        switch(dir) {
-            case 'right': addSmallRotation(idx, rotYn90()); break;
-            case 'left':  addSmallRotation(idx, rotY90());  break;
-            case 'up':    addSmallRotation(idx, rotXn90()); break;
-            case 'down':  addSmallRotation(idx, rotX90());  break;
-        }
-    }
-
-    function spinSmallCube(idx) {
-        addSmallRotation(idx, rotZn90());
-    }
-
-    function attachCubeEvents(slotEl, idx) {
-        let pStart = null, pMoved = false;
-
-        slotEl.addEventListener('pointerdown', (e) => {
-            if (!isAtRest()) return;
-            pStart = { x: e.clientX, y: e.clientY };
-            pMoved = false;
-            slotEl.setPointerCapture(e.pointerId);
-            e.stopPropagation();
+        const faceEls=[];
+        CUBE_ORDERS[i].forEach((dIdx,fIdx)=>{
+            const pair=DOMINOS[dIdx];
+            const face=document.createElement('div');
+            face.className='face '+FACE_CLASSES[fIdx];
+            face.innerHTML=`<svg viewBox="0 0 90 90">
+                <line class="separator" x1="0" y1="45" x2="90" y2="45"/>
+                <g>${pair[0]}</g>
+                <g transform="translate(0,45)">${pair[1]}</g>
+            </svg>`;
+            cubeEl.appendChild(face);
+            faceEls.push(face);
         });
 
-        slotEl.addEventListener('pointermove', (e) => {
-            if (!pStart) return;
-            if (Math.hypot(e.clientX - pStart.x, e.clientY - pStart.y) > 8) pMoved = true;
-        });
-
-        slotEl.addEventListener('pointerup', (e) => {
-            if (!pStart) return;
-            const dx = e.clientX - pStart.x;
-            const dy = e.clientY - pStart.y;
-            const adx = Math.abs(dx), ady = Math.abs(dy);
-
-            if (!pMoved || Math.max(adx, ady) < 12) {
-                spinSmallCube(idx);
-            } else {
-                if (adx > ady) navSmallCube(idx, dx > 0 ? 'left' : 'right');
-                else navSmallCube(idx, dy > 0 ? 'up' : 'down');
-            }
-            pStart = null;
-            e.stopPropagation();
-        });
-
-        slotEl.addEventListener('pointercancel', () => { pStart = null; });
-
-        // Wheel on individual cube
-        let accX = 0, accY = 0, cd = false, rt = null;
-        slotEl.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (!isAtRest() || cd) return;
-            accX += e.deltaX; accY += e.deltaY;
-            clearTimeout(rt);
-            rt = setTimeout(() => { accX = 0; accY = 0; }, 150);
-            const ax = Math.abs(accX), ay = Math.abs(accY), T = 30;
-            if (ax > T && ax >= ay) {
-                navSmallCube(idx, accX > 0 ? 'right' : 'left');
-                accX = 0; accY = 0; cd = true; setTimeout(() => cd = false, 400);
-            } else if (ay > T) {
-                navSmallCube(idx, accY > 0 ? 'down' : 'up');
-                accX = 0; accY = 0; cd = true; setTimeout(() => cd = false, 400);
-            }
-        }, { passive: false });
+        megaBlock.appendChild(slot);
+        slotEls.push({slot,cubeEl,faceEls,cubeIdx:i});
+        attachCubeEvents(slot,i);
     }
+    applyMegaRotation();
+}
 
-    // ==========================================================
-    // GLOW — direction light from top-front-left
-    // ==========================================================
-    // Light direction (normalized)
-    const LIGHT = [0.4, -0.6, 0.7];
+// ============================================================
+// SMALL CUBE ROTATION
+// ============================================================
+function addSmallRotation(idx,rotMat){
+    const st=cubeStates[idx];
+    if(st.transitioning)return;
+    st.transitioning=true;
+    st.targetMat=cleanMat(mul3(rotMat,st.targetMat));
+    slotEls[idx].cubeEl.style.transform=mat3ToCSS(st.targetMat);
+    setTimeout(()=>{
+        st.mat=st.targetMat.map(r=>[...r]);
+        st.transitioning=false;
+    },650);
+}
 
-    function dot3(a, b) { return a[0]*b[0]+a[1]*b[1]+a[2]*b[2]; }
+// Corrige les directions de swipe selon la rotation Y du megacube
+// pour que "swipe droite" tourne toujours vers la droite VISUELLE
+function navSmallCube(idx,dir){
+    // megaAngY normalisé en [0,360)
+    const norm=((megaAngY%360)+360)%360;
+    const face=Math.round(norm/90)%4; // 0=front,1=left,2=back,3=right
 
-    function updateGlow(faceEls, mat) {
-        // Also compute the mega-block Y rotation effect on world normals
-        const megaRad = megaAngleY * Math.PI / 180;
-        const tiltRad = TILT_X * Math.PI / 180;
-        const cosMega = Math.cos(megaRad), sinMega = Math.sin(megaRad);
-        const cosTilt = Math.cos(tiltRad), sinTilt = Math.sin(tiltRad);
+    // Directions corrigées selon la face visible
+    // face 0 (front): right=Yn90, left=Y90, up=Xn90, down=X90
+    // face 1 (left) : right=X90,  left=Xn90, up=Xn90→Y... 
+    // Approche propre: transformer la direction "écran" en rotation locale
+    // swipe H → rotation Y locale, swipe V → rotation X locale
+    // mais si la face est retournée (face 2 = back), H est mirroir
+    const mirror = (face===1||face===2||face===3); // faces avec X retourné visuellement
+    // En fait seule face 2 (back) inverse le gauche/droite
+    const hMirror = (face===2);
+    // top/bottom (face 4,5) → idem front pour l'instant
 
-        faceEls.forEach((faceEl, idx) => {
-            // Local normal from small-cube rotation
-            let wn = transformNormal(mat, FACE_NORMALS[idx]);
-            // Apply mega Y rotation
-            const wx = wn[0]*cosMega - wn[2]*sinMega;
-            const wy_temp = wn[1];
-            const wz = wn[0]*sinMega + wn[2]*cosMega;
-            // Apply X tilt
-            const wy = wy_temp*cosTilt - wz*sinTilt;
-            const wz2 = wy_temp*sinTilt + wz*cosTilt;
-
-            const worldN = [wx, wy, wz2];
-            const diffuse = Math.max(0, dot3(worldN, LIGHT));
-            const ambient = 0.15;
-            const intensity = ambient + diffuse * 0.85;
-
-            // Specular highlight
-            const spec = Math.pow(Math.max(0, worldN[2]), 4) * 0.4;
-
-            const outerR = diffuse * 35 + spec * 20;
-            const outerA = diffuse * 0.3 + spec * 0.4;
-            const midR   = diffuse * 14;
-            const midA   = diffuse * 0.18;
-            const innerA = intensity * 0.12;
-            const borderA = 0.2 + intensity * 0.55;
-            const bgLight = Math.round(intensity * 12);
-
-            faceEl.style.boxShadow =
-                `0 0 ${outerR}px rgba(126,200,227,${outerA.toFixed(3)}),` +
-                `0 0 ${midR}px rgba(126,200,227,${midA.toFixed(3)}),` +
-                `inset 0 0 25px rgba(126,200,227,${innerA.toFixed(3)})`;
-            faceEl.style.borderColor = `rgba(126,200,227,${borderA.toFixed(3)})`;
-            faceEl.style.background = `linear-gradient(145deg, #${bgLight.toString(16).padStart(2,'0')}${bgLight.toString(16).padStart(2,'0')}${(bgLight+4).toString(16).padStart(2,'0')} 0%, #080912 100%)`;
-        });
+    switch(dir){
+        case 'right': addSmallRotation(idx, hMirror ? rotY90()  : rotYn90()); break;
+        case 'left':  addSmallRotation(idx, hMirror ? rotYn90() : rotY90());  break;
+        case 'up':    addSmallRotation(idx, rotXn90()); break;
+        case 'down':  addSmallRotation(idx, rotX90());  break;
     }
+}
 
-    function animateGlow() {
-        slotEls.forEach(slot => {
-            const computed = getComputedStyle(slot.cubeEl).transform;
-            const mat = (computed && computed !== 'none') ? parseMatrix3d(computed) : null;
-            updateGlow(slot.faceEls, mat || cubeStates[slot.cubeIdx].mat);
-        });
-        requestAnimationFrame(animateGlow);
-    }
+function spinSmallCube(idx){ addSmallRotation(idx,rotZn90()); }
 
-    // ==========================================================
-    // MEGA DRAG — full scene draggable
-    // ==========================================================
-    let dragStartX = 0;
-    let megaAngleAtDragStart = 0;
+function attachCubeEvents(slotEl,idx){
+    let pStart=null, pMoved=false;
 
-    megaScene.addEventListener('pointerdown', (e) => {
-        // Only handle if not clicking on a cube slot directly (those stop propagation)
-        if (isSnapping) {
-            isSnapping = false;
-            megaAngleTarget = megaAngleY;
-        }
-        isDragging = true;
-        dragStartX = e.clientX;
-        lastDragX = e.clientX;
-        lastDragTime = performance.now();
-        megaAngleAtDragStart = megaAngleY;
-        velX = 0;
-        megaScene.setPointerCapture(e.pointerId);
+    slotEl.addEventListener('pointerdown',(e)=>{
+        if(!isAtRest())return;
+        // On "réserve" l'événement pour ce cube, pas le mega
+        pStart={x:e.clientX,y:e.clientY};
+        pMoved=false;
+        slotEl.setPointerCapture(e.pointerId);
+        e.stopPropagation(); // empêche le mega d'être dragué
     });
 
-    megaScene.addEventListener('pointermove', (e) => {
-        if (!isDragging) return;
-        const now = performance.now();
-        const dx = e.clientX - dragStartX;
-        const dt = now - lastDragTime;
-
-        // Compute velocity (deg/ms)
-        if (dt > 0) {
-            const dAngle = (lastDragX - e.clientX) * 0.45;
-            velX = dAngle / dt;
-        }
-
-        megaAngleY = megaAngleAtDragStart - dx * 0.45;
-        applyMegaRotation();
-        lastDragX = e.clientX;
-        lastDragTime = now;
+    slotEl.addEventListener('pointermove',(e)=>{
+        if(!pStart)return;
+        if(Math.hypot(e.clientX-pStart.x,e.clientY-pStart.y)>8) pMoved=true;
     });
 
-    function endDrag() {
-        if (!isDragging) return;
-        isDragging = false;
+    slotEl.addEventListener('pointerup',(e)=>{
+        if(!pStart)return;
+        const dx=e.clientX-pStart.x, dy=e.clientY-pStart.y;
+        const adx=Math.abs(dx), ady=Math.abs(dy);
 
-        // Apply inertia then snap
-        const inertiaAngle = velX * 180; // projected distance
-        const projectedAngle = megaAngleY + inertiaAngle;
-        megaAngleTarget = getSnappedAngle(projectedAngle);
-        snapFrom = megaAngleY;
-        isSnapping = true;
-        snapStartTime = performance.now();
-    }
-
-    megaScene.addEventListener('pointerup', endDrag);
-    megaScene.addEventListener('pointercancel', endDrag);
-
-    // Wheel on scene
-    let wheelAcc = 0, wheelCd = false, wheelRt = null;
-    megaScene.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        if (wheelCd || isSnapping) return;
-        wheelAcc += e.deltaX !== 0 ? e.deltaX : e.deltaY;
-        clearTimeout(wheelRt);
-        wheelRt = setTimeout(() => { wheelAcc = 0; }, 150);
-        if (Math.abs(wheelAcc) > 40) {
-            const dir = wheelAcc > 0 ? 1 : -1;
-            megaAngleTarget = getSnappedAngle(megaAngleY) + dir * 90;
-            snapFrom = megaAngleY;
-            isSnapping = true;
-            snapStartTime = performance.now();
-            wheelAcc = 0;
-            wheelCd = true;
-            setTimeout(() => { wheelCd = false; }, 500);
+        if(!pMoved||Math.max(adx,ady)<12){
+            spinSmallCube(idx);
+        } else {
+            if(adx>ady) navSmallCube(idx, dx>0?'right':'left');
+            else        navSmallCube(idx, dy>0?'down':'up');
         }
-    }, { passive: false });
-
-    // ==========================================================
-    // KEYBOARD: Arrow keys (no shift needed)
-    // ==========================================================
-    document.addEventListener('keydown', (e) => {
-        if (!isDragging) {
-            let dir = 0;
-            if (e.key === 'ArrowRight') { dir = -90; e.preventDefault(); }
-            if (e.key === 'ArrowLeft')  { dir = 90;  e.preventDefault(); }
-            if (dir !== 0) {
-                if (isSnapping) {
-                    megaAngleTarget += dir;
-                } else {
-                    megaAngleTarget = getSnappedAngle(megaAngleY) + dir;
-                }
-                snapFrom = megaAngleY;
-                isSnapping = true;
-                snapStartTime = performance.now();
-            }
-        }
+        pStart=null;
+        e.stopPropagation();
     });
 
-    // ==========================================================
-    // MAIN LOOP
-    // ==========================================================
-    function mainLoop(now) {
-        if (isSnapping) {
-            const elapsed = now - snapStartTime;
-            const t = Math.min(elapsed / SNAP_DURATION, 1);
-            const eased = easeOutQuart(t);
-            megaAngleY = snapFrom + (megaAngleTarget - snapFrom) * eased;
-            applyMegaRotation();
+    slotEl.addEventListener('pointercancel',()=>{ pStart=null; });
 
-            if (t >= 1) {
-                megaAngleY = megaAngleTarget;
-                isSnapping = false;
-                applyMegaRotation();
-                document.getElementById('faceLabel').textContent = getFaceLabel();
-            }
+    // Wheel individuel
+    let accX=0,accY=0,cd=false,rt=null;
+    slotEl.addEventListener('wheel',(e)=>{
+        e.preventDefault(); e.stopPropagation();
+        if(!isAtRest()||cd)return;
+        accX+=e.deltaX; accY+=e.deltaY;
+        clearTimeout(rt);
+        rt=setTimeout(()=>{accX=0;accY=0;},150);
+        const ax=Math.abs(accX),ay=Math.abs(accY),T=30;
+        if(ax>T&&ax>=ay){
+            navSmallCube(idx,accX>0?'right':'left');
+            accX=0;accY=0;cd=true;setTimeout(()=>cd=false,400);
+        } else if(ay>T){
+            navSmallCube(idx,accY>0?'down':'up');
+            accX=0;accY=0;cd=true;setTimeout(()=>cd=false,400);
         }
-        requestAnimationFrame(mainLoop);
-    }
+    },{passive:false});
+}
 
-    // ==========================================================
-    // INIT
-    // ==========================================================
-    build();
-    requestAnimationFrame(mainLoop);
+// ============================================================
+// GLOW — lumière fixe dans le monde
+// ============================================================
+const LIGHT=[0.45,-0.55,0.7]; // direction lumière (normalisée)
+function dot3(a,b){return a[0]*b[0]+a[1]*b[1]+a[2]*b[2];}
+
+function updateGlow(faceEls,smallMat){
+    // Matrice monde = rotX(megaAngX) * rotY(megaAngY) * smallMat
+    const MX=makeRotX(megaAngX);
+    const MY=makeRotY(megaAngY);
+    const megaMat=mul3(MX,MY);
+
+    faceEls.forEach((faceEl,idx)=>{
+        // Normal locale → repère mega → repère monde
+        const localN=transformNormal(smallMat,FACE_NORMALS[idx]);
+        const worldN=transformNormal(megaMat,localN);
+
+        const diffuse=Math.max(0,dot3(worldN,LIGHT));
+        const ambient=0.15;
+        const intensity=ambient+diffuse*0.85;
+        const spec=Math.pow(Math.max(0,worldN[2]),5)*0.35;
+
+        const outerR=(diffuse*32+spec*18).toFixed(1);
+        const outerA=(diffuse*0.28+spec*0.4).toFixed(3);
+        const midR=(diffuse*13).toFixed(1);
+        const midA=(diffuse*0.16).toFixed(3);
+        const innerA=(intensity*0.1).toFixed(3);
+        const borderA=(0.18+intensity*0.52).toFixed(3);
+
+        faceEl.style.boxShadow=
+            `0 0 ${outerR}px rgba(126,200,227,${outerA}),`+
+            `0 0 ${midR}px rgba(126,200,227,${midA}),`+
+            `inset 0 0 22px rgba(126,200,227,${innerA})`;
+        faceEl.style.borderColor=`rgba(126,200,227,${borderA})`;
+        // Pas de background dynamique — on garde le CSS de base stable
+    });
+}
+
+function animateGlow(){
+    slotEls.forEach(slot=>{
+        const computed=getComputedStyle(slot.cubeEl).transform;
+        const mat=(computed&&computed!=='none')?parseMatrix3d(computed):null;
+        updateGlow(slot.faceEls, mat||cubeStates[slot.cubeIdx].mat);
+    });
     requestAnimationFrame(animateGlow);
-    </script>
+}
+
+// ============================================================
+// MEGA DRAG — drag sur la scène (hors cubes)
+// ============================================================
+megaScene.addEventListener('pointerdown',(e)=>{
+    if(isSnapping){
+        isSnapping=false;
+        megaTgtY=megaAngY; megaTgtX=megaAngX;
+    }
+    isDragging=true;
+    megaDragged=false;
+    dragStartX=e.clientX; dragStartY=e.clientY;
+    dragBaseY=megaAngY;   dragBaseX=megaAngX;
+    lastEvX=e.clientX; lastEvY=e.clientY; lastEvT=performance.now();
+    velY=0; velX=0;
+    megaScene.setPointerCapture(e.pointerId);
+});
+
+megaScene.addEventListener('pointermove',(e)=>{
+    if(!isDragging)return;
+    const now=performance.now();
+    const dxPx=e.clientX-dragStartX;
+    const dyPx=e.clientY-dragStartY;
+
+    if(Math.hypot(dxPx,dyPx)>4) megaDragged=true;
+
+    const dt=now-lastEvT;
+    if(dt>0){
+        velY=(lastEvX-e.clientX)*0.45/dt;
+        velX=(e.clientY-lastEvY)*0.45/dt;
+    }
+
+    megaAngY=dragBaseY - dxPx*0.45;
+    megaAngX=dragBaseX + dyPx*0.45;
+    applyMegaRotation();
+
+    lastEvX=e.clientX; lastEvY=e.clientY; lastEvT=now;
+});
+
+function endMegaDrag(){
+    if(!isDragging)return;
+    isDragging=false;
+
+    if(!megaDragged){
+        // Simple clic dans le vide — rien
+        return;
+    }
+
+    // Inertie → snap
+    const projY=megaAngY+velY*160;
+    const projX=megaAngX+velX*160;
+    megaTgtY=snapAngle(projY);
+    megaTgtX=snapAngle(projX);
+    snapFromY=megaAngY;
+    snapFromX=megaAngX;
+    isSnapping=true;
+    snapStartTime=performance.now();
+}
+
+megaScene.addEventListener('pointerup',endMegaDrag);
+megaScene.addEventListener('pointercancel',endMegaDrag);
+
+// Wheel sur scène = rotation Y
+let wAcc=0,wCd=false,wRt=null;
+megaScene.addEventListener('wheel',(e)=>{
+    e.preventDefault();
+    if(wCd||isSnapping)return;
+    wAcc+=e.deltaX!==0?e.deltaX:e.deltaY;
+    clearTimeout(wRt);
+    wRt=setTimeout(()=>wAcc=0,150);
+    if(Math.abs(wAcc)>40){
+        const dir=wAcc>0?1:-1;
+        megaTgtY=snapAngle(megaAngY)+dir*90;
+        megaTgtX=snapAngle(megaAngX);
+        snapFromY=megaAngY; snapFromX=megaAngX;
+        isSnapping=true; snapStartTime=performance.now();
+        wAcc=0; wCd=true; setTimeout(()=>wCd=false,500);
+    }
+},{passive:false});
+
+// Keyboard
+document.addEventListener('keydown',(e)=>{
+    if(isDragging)return;
+    let dirY=0,dirX=0;
+    if(e.key==='ArrowRight'){dirY=-90;e.preventDefault();}
+    if(e.key==='ArrowLeft') {dirY= 90;e.preventDefault();}
+    if(e.key==='ArrowUp')   {dirX=-90;e.preventDefault();}
+    if(e.key==='ArrowDown') {dirX= 90;e.preventDefault();}
+    if(dirY!==0||dirX!==0){
+        if(isSnapping){
+            megaTgtY+=dirY; megaTgtX+=dirX;
+        } else {
+            megaTgtY=snapAngle(megaAngY)+dirY;
+            megaTgtX=snapAngle(megaAngX)+dirX;
+        }
+        snapFromY=megaAngY; snapFromX=megaAngX;
+        isSnapping=true; snapStartTime=performance.now();
+    }
+});
+
+// ============================================================
+// MAIN LOOP
+// ============================================================
+function mainLoop(now){
+    if(isSnapping){
+        const t=Math.min((now-snapStartTime)/SNAP_DURATION,1);
+        const e=easeOutQuart(t);
+        megaAngY=snapFromY+(megaTgtY-snapFromY)*e;
+        megaAngX=snapFromX+(megaTgtX-snapFromX)*e;
+        applyMegaRotation();
+        if(t>=1){
+            megaAngY=megaTgtY; megaAngX=megaTgtX;
+            isSnapping=false;
+            applyMegaRotation();
+            updateFaceLabel();
+        }
+    }
+    requestAnimationFrame(mainLoop);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+build();
+// Départ légèrement incliné pour voir les 3 faces
+megaAngX=-20; megaTgtX=-20; snapFromX=-20;
+applyMegaRotation();
+requestAnimationFrame(mainLoop);
+requestAnimationFrame(animateGlow);
+</script>
 </body>
 </html>
