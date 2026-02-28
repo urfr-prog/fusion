@@ -355,12 +355,32 @@
 
         let cubeMagic = { face1: 'roof', face2: 'roof' }; // état par défaut = chevron
 
-        // SVG spécial pour le cube central : chevron centré + séparateur
-        function cubeMagicSVG(f1Key, f2Key) {
-            // On utilise les SVG des symboles ou le logo si c'est 'roof' (chevron ADAM)
+        // SVG spécial pour le cube central : domino identique sur chaque face
+        // avec compensation d'orientation pour que le rendu soit identique
+        // quel que soit le côté regardé.
+        //
+        // Le problème : rotateY(180deg) sur back fait un miroir horizontal du SVG.
+        // On compense dans le SVG lui-même avec un transform sur le groupe racine.
+        const FACE_SVG_TRANSFORM = {
+            front:  '',
+            back:   'transform="translate(90,0) scale(-1,1)"',  // miroir H
+            right:  '',
+            left:   '',
+            top:    '',
+            bottom: '',
+        };
+
+        function cubeMagicSVG(f1Key, f2Key, faceKey) {
             const top = S[f1Key] || LOGO_SVG;
             const bot = S[f2Key] || LOGO_SVG;
-            return dominoSVG(top, bot);
+            const xform = (faceKey && FACE_SVG_TRANSFORM[faceKey]) || '';
+            return `<svg viewBox="0 0 90 90">
+                <g ${xform}>
+                    <line class="sep" x1="0" y1="45" x2="90" y2="45"/>
+                    <g>${top}</g>
+                    <g transform="translate(0,45)">${bot}</g>
+                </g>
+            </svg>`;
         }
 
         const CUBE_FACE_CLASSES = ['face-front','face-back','face-right','face-left','face-top','face-bottom'];
@@ -373,6 +393,9 @@
             { cls:'face-bottom', key: 'bottom' },
         ];
 
+        // ═══ COMPENSATION D'ORIENTATION PAR FACE ═══
+        // Géré dans FACE_SVG_TRANSFORM plus bas
+
         // CUBE_FACES pour le matching (toutes identiques = la mémoire du cube)
         let CUBE_FACES = {
             front:  { face1: cubeMagic.face1, face2: cubeMagic.face2 },
@@ -384,10 +407,11 @@
         };
 
         const cubeEl = document.getElementById('cube');
-        CUBE_FACES_DATA.forEach(({cls}) => {
+        CUBE_FACES_DATA.forEach(({cls, key}) => {
             const f = document.createElement('div');
             f.className = 'face ' + cls;
-            f.innerHTML = cubeMagicSVG(cubeMagic.face1, cubeMagic.face2);
+            f.dataset.faceKey = key;
+            f.innerHTML = cubeMagicSVG(cubeMagic.face1, cubeMagic.face2, key);
             cubeEl.appendChild(f);
         });
 
@@ -400,7 +424,8 @@
             });
             // Mettre à jour le DOM des 6 faces avec animation
             cubeEl.querySelectorAll('.face').forEach(f => {
-                f.innerHTML = cubeMagicSVG(face1Key, face2Key);
+                const fk = f.dataset.faceKey || 'front';
+                f.innerHTML = cubeMagicSVG(face1Key, face2Key, fk);
                 f.classList.remove('propagate');
                 void f.offsetWidth;
                 f.classList.add('propagate');
