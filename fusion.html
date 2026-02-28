@@ -42,6 +42,7 @@
             position: absolute;
             margin-left: -60px; margin-top: -60px;
             transform-style: preserve-3d;
+            transition: transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94);
         }
 
         /* ═══ CUBE CENTRAL — pièce neutre du joueur ═══ */
@@ -185,47 +186,20 @@
         .t6-g      { transform: rotateX(-90deg) translateZ(60px) translateX(   0px) translateY( 130px); }
         .t6-h      { transform: rotateX(-90deg) translateZ(60px) translateX( 130px) translateY( 130px); }
 
-        .glow {
-            height: 10px; border-radius:50%;
-            background:rgba(126,200,227,0.15);
-            box-shadow:0 0 30px rgba(126,200,227,0.15);
-            margin-top:24px; width: 90px;
-            transition: width 0.7s ease;
-        }
-        @keyframes spinFlash {
-            0%,100% { box-shadow: 0 0 30px rgba(126,200,227,0.15); }
-            50%     { box-shadow: 0 0 50px rgba(126,200,227,0.4); }
-        }
-        .glow.flash { animation: spinFlash 0.6s ease; }
-        .face-label { color:rgba(126,200,227,0.25); font-size:0.7rem; letter-spacing:0.2em; margin-top:16px; }
-        .match-info { color:rgba(52, 211, 153, 0.6); font-size:0.6rem; letter-spacing:0.1em; margin-top:4px; min-height: 1em; }
-        .hint { display: none; }
-        .nav-bar {
-            width: 320px; height: 54px;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(180,180,190,0.1);
-            border-radius: 27px;
-            margin-top: 10px;
-            display: flex; align-items: center; justify-content: center;
-            cursor: grab; touch-action: none;
-            position: relative; overflow: hidden;
-        }
-        .nav-bar::before {
-            content: '';
-            position: absolute; inset: 0;
-            background: radial-gradient(ellipse at center, rgba(126,200,227,0.06) 0%, transparent 70%);
-        }
-        .nav-bar-label {
-            color: rgba(126,200,227,0.2);
-            font-size: 0.5rem;
-            letter-spacing: 0.3em;
+        .face-label {
+            position: fixed; top: 20px; left: 0; right: 0;
+            text-align: center;
+            color:rgba(126,200,227,0.25); font-size:0.7rem; letter-spacing:0.2em;
             text-transform: uppercase;
-            pointer-events: none;
-            user-select: none;
+            z-index: 10; pointer-events: none;
         }
-        .nav-bar:active { cursor: grabbing; background: rgba(255,255,255,0.05); }
-
-        .debug-bar { display: flex; gap: 6px; margin-top: 12px; }
+        .match-info {
+            position: fixed; top: 40px; left: 0; right: 0;
+            text-align: center;
+            color:rgba(52, 211, 153, 0.6); font-size:0.6rem; letter-spacing:0.1em;
+            min-height: 1em;
+            z-index: 10; pointer-events: none;
+        }
         /* ═══ DRAG SATELLITES ═══ */
         .sat.dragging {
             opacity: 0.85;
@@ -250,15 +224,11 @@
             outline-offset: -2px;
         }
 
-        .dbtn {
-            background: transparent; border: 1px solid rgba(180,180,190,0.25);
-            color: rgba(180,180,190,0.5); padding: 4px 10px; border-radius: 6px;
-            cursor: pointer; font-size: 0.6rem; letter-spacing: 0.05em; transition: all 0.2s;
-        }
-        .dbtn:hover { border-color: rgba(180,180,190,0.5); color: rgba(220,220,230,0.8); }
     </style>
 </head>
 <body>
+    <div class="face-label" id="faceLabel">front</div>
+    <div class="match-info" id="matchInfo"></div>
     <div class="scene" id="scene">
         <div class="zoom-wrapper" id="zoomWrapper">
             <div class="group" id="group">
@@ -303,17 +273,6 @@
             </div>
         </div>
     </div>
-    <div class="glow" id="glow"></div>
-    <div class="face-label" id="faceLabel">front</div>
-    <div class="match-info" id="matchInfo"></div>
-    <div class="hint"></div>
-    <div class="nav-bar" id="navBar"><span class="nav-bar-label">naviguer</span></div>
-
-    <div class="debug-bar">
-        <button class="dbtn" onclick="randomizeStates()">random états</button>
-        <button class="dbtn" onclick="resetStates()">reset white</button>
-        <button class="dbtn" onclick="testPromote()">promote adjacents</button>
-    </div>
 
     <script>
         // ═══ SYMBOLES SVG ═══
@@ -355,27 +314,18 @@
 
         let cubeMagic = { face1: 'roof', face2: 'roof' }; // état par défaut = chevron
 
-        // SVG spécial pour le cube central : domino identique sur chaque face
-        // avec compensation d'orientation pour que le rendu soit identique
-        // quel que soit le côté regardé.
-        //
-        // Le problème : rotateY(180deg) sur back fait un miroir horizontal du SVG.
-        // On compense dans le SVG lui-même avec un transform sur le groupe racine.
-        const FACE_SVG_TRANSFORM = {
-            front:  '',
-            back:   'transform="translate(90,0) scale(-1,1)"',  // miroir H
-            right:  '',
-            left:   '',
-            top:    '',
-            bottom: '',
+        // SVG spécial pour le cube central : chevron centré + séparateur
+        // La face "back" a un miroir horizontal dû à rotateY(180deg) → compensation SVG
+        const FACE_SVG_FIX = {
+            front:'', back:'transform="translate(90,0) scale(-1,1)"',
+            right:'', left:'', top:'', bottom:''
         };
-
         function cubeMagicSVG(f1Key, f2Key, faceKey) {
             const top = S[f1Key] || LOGO_SVG;
             const bot = S[f2Key] || LOGO_SVG;
-            const xform = (faceKey && FACE_SVG_TRANSFORM[faceKey]) || '';
+            const fix = (faceKey && FACE_SVG_FIX[faceKey]) || '';
             return `<svg viewBox="0 0 90 90">
-                <g ${xform}>
+                <g ${fix}>
                     <line class="sep" x1="0" y1="45" x2="90" y2="45"/>
                     <g>${top}</g>
                     <g transform="translate(0,45)">${bot}</g>
@@ -392,9 +342,6 @@
             { cls:'face-top',    key: 'top'    },
             { cls:'face-bottom', key: 'bottom' },
         ];
-
-        // ═══ COMPENSATION D'ORIENTATION PAR FACE ═══
-        // Géré dans FACE_SVG_TRANSFORM plus bas
 
         // CUBE_FACES pour le matching (toutes identiques = la mémoire du cube)
         let CUBE_FACES = {
@@ -577,35 +524,20 @@
         // Init
         SAT_DATA.forEach(renderSat);
 
-        // ═══ DEBUG ═══
-        function randomizeStates() {
-            SAT_DATA.forEach(sat => { sat.state = STATES[Math.floor(Math.random() * STATES.length)]; renderSat(sat); });
-        }
-        function resetStates() {
-            SAT_DATA.forEach(sat => { sat.state = 'white'; renderSat(sat); });
-        }
-        function testPromote() {
-            const faceKey = currentFace;
-            const matches = checkMatches(faceKey);
-            matches.forEach(m => promoteSat(m.sat.id));
-            highlightMatches(faceKey);
-        }
-
         // ═══ ZOOM ═══
         const ZOOM = {
-            front:  { scale: 1.0,  glowW: 90  },
-            right:  { scale: 1.0,  glowW: 90  },
-            left:   { scale: 1.0,  glowW: 90  },
-            back:   { scale: 1.0,  glowW: 90  },
-            top:    { scale: 1.0,  glowW: 90  },
-            bottom: { scale: 1.0,  glowW: 90  },
+            front:  { scale: 1.0 },
+            right:  { scale: 1.0 },
+            left:   { scale: 1.0 },
+            back:   { scale: 1.0 },
+            top:    { scale: 1.0 },
+            bottom: { scale: 1.0 },
         };
 
         // ═══ ROTATION ═══
         const groupEl = document.getElementById('group');
         const zoomEl  = document.getElementById('zoomWrapper');
         const labelEl = document.getElementById('faceLabel');
-        const glowEl  = document.getElementById('glow');
         const scene   = document.getElementById('scene');
 
         let M = [[1,0,0],[0,1,0],[0,0,1]];
@@ -631,7 +563,6 @@
         function applyZoom(name) {
             const z = ZOOM[name];
             zoomEl.style.transform = `scale3d(${z.scale},${z.scale},${z.scale})`;
-            glowEl.style.width = z.glowW + 'px';
         }
 
         // Désactiver pointer-events sur les sats des faces non visibles
@@ -652,9 +583,64 @@
             applyZoom(currentFace);
             labelEl.textContent = currentFace;
             updatePointerEvents(currentFace);
+            // ═══ CONTRE-ROTATION du cube central ═══
+            // Calcule le "roll" résiduel : quand on regarde la face visible,
+            // l'axe "up" local de cette face peut ne plus être aligné avec
+            // le "up" écran. On calcule l'angle et on contre-rotate le #cube
+            // en interne pour que le domino reste toujours droit.
+            compensateCubeRoll();
             // Highlight matches après rotation
             setTimeout(() => highlightMatches(currentFace), 400);
             setTimeout(()=>{ busy=false; }, 700);
+        }
+
+        // Calcule et applique la contre-rotation du cube central
+        // pour que le domino soit toujours "droit" (médiane horizontale,
+        // face1 en haut, face2 en bas) quelle que soit l'orientation.
+        function compensateCubeRoll() {
+            // La matrice M transforme les coordonnées monde → cube.
+            // La colonne Z de M (M[*][2]) = la direction "vers la caméra" en coords cube.
+            // La colonne Y de M (M[*][1]) = la direction "bas écran" en coords cube.
+            //
+            // Pour la face visible, on doit trouver quel vecteur "up écran" (0,-1,0)
+            // correspond en coords locales de cette face.
+            //
+            // M est appliqué comme : point_écran = M * point_cube
+            // Donc : la 3ème ligne de M donne la composante Z (profondeur) de chaque axe cube.
+            //        la 2ème ligne de M donne la composante Y (vertical écran) de chaque axe cube.
+            //        la 1ère ligne de M donne la composante X (horizontal écran) de chaque axe cube.
+            //
+            // Pour chaque face, on connaît sa normale et son "up" par défaut dans l'espace cube.
+            // On projette le "up" par défaut à travers M et on calcule l'angle avec le "up écran".
+
+            const faceInfo = {
+                //            normale cube       up par défaut cube
+                front:  { n:[ 0, 0, 1], up:[ 0,-1, 0] },
+                back:   { n:[ 0, 0,-1], up:[ 0,-1, 0] },
+                right:  { n:[ 1, 0, 0], up:[ 0,-1, 0] },
+                left:   { n:[-1, 0, 0], up:[ 0,-1, 0] },
+                top:    { n:[ 0,-1, 0], up:[ 0, 0,-1] },
+                bottom: { n:[ 0, 1, 0], up:[ 0, 0, 1] },
+            };
+
+            const info = faceInfo[currentFace];
+            if (!info) return;
+
+            // Transformer le vecteur "up" local par M → coords écran
+            const u = info.up;
+            const screenX = M[0][0]*u[0] + M[0][1]*u[1] + M[0][2]*u[2];
+            const screenY = M[1][0]*u[0] + M[1][1]*u[1] + M[1][2]*u[2];
+
+            // L'angle entre ce vecteur projeté et le "up écran" (0, -1)
+            // atan2 donne l'angle du vecteur (screenX, screenY)
+            // "up écran" = angle -π/2. On veut la différence.
+            const angle = Math.atan2(screenX, -screenY); // 0 quand aligné avec up écran
+
+            // Arrondir à 0, 90, 180, 270 (on ne fait que des rotations de 90°)
+            const deg = Math.round(angle * 180 / Math.PI / 90) * 90;
+
+            cubeEl.style.transition = 'transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94)';
+            cubeEl.style.transform = deg !== 0 ? `rotateZ(${-deg}deg)` : '';
         }
 
         function nav(d) {
@@ -896,29 +882,32 @@
             if (!drag) return;
             cleanupDrag(); drag = null;
         });
-        // ═══ NAVIGATION — barre du bas uniquement ═══
-        const navBar = document.getElementById('navBar');
-        let ps=null, pm=false;
-        navBar.addEventListener('pointerdown', e=>{
-            ps={x:e.clientX,y:e.clientY}; pm=false; navBar.setPointerCapture(e.pointerId);
+        // ═══ NAVIGATION — plein écran (swipe/wheel/clavier) ═══
+        // Le swipe navigue SAUF si le pointer a démarré sur un .sat ou #cube
+        // (car dans ce cas c'est le drag de dominos qui prend la main)
+        let ns=null, nm=false;
+        document.addEventListener('pointerdown', e=>{
+            // Si c'est un domino ou le cube, on laisse le drag gérer
+            if (e.target.closest('.sat') || e.target.closest('#cube')) return;
+            ns={x:e.clientX,y:e.clientY,id:e.pointerId}; nm=false;
         });
-        navBar.addEventListener('pointermove', e=>{
-            if(!ps) return;
-            if(Math.hypot(e.clientX-ps.x,e.clientY-ps.y)>10) pm=true;
+        document.addEventListener('pointermove', e=>{
+            if(!ns || e.pointerId!==ns.id) return;
+            if(Math.hypot(e.clientX-ns.x,e.clientY-ns.y)>10) nm=true;
         });
-        navBar.addEventListener('pointerup', e=>{
-            if(!ps) return;
-            const dx=e.clientX-ps.x, dy=e.clientY-ps.y, adx=Math.abs(dx), ady=Math.abs(dy);
-            if(pm && Math.max(adx,ady)>=15) {
+        document.addEventListener('pointerup', e=>{
+            if(!ns || e.pointerId!==ns.id) return;
+            const dx=e.clientX-ns.x, dy=e.clientY-ns.y, adx=Math.abs(dx), ady=Math.abs(dy);
+            if(nm && Math.max(adx,ady)>=15) {
                 if(adx>ady) nav(dx>0?'left':'right');
                 else nav(dy>0?'up':'down');
             }
-            ps=null;
+            ns=null;
         });
-        navBar.addEventListener('pointercancel', ()=>{ ps=null; });
+        document.addEventListener('pointercancel', ()=>{ ns=null; });
 
         let wx=0,wy=0,wcd=false,wt=null;
-        navBar.addEventListener('wheel', e=>{
+        document.addEventListener('wheel', e=>{
             e.preventDefault(); if(wcd)return;
             wx+=e.deltaX; wy+=e.deltaY;
             clearTimeout(wt); wt=setTimeout(()=>{wx=0;wy=0;},150);
