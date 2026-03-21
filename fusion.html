@@ -3,927 +3,441 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADAM Cube — K3</title>
+    <title>ADAM Cube — K5 v4 · Three.js</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background-color: #0c0d14;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            overflow: hidden;
-            user-select: none;
+            background: #0c0d14; min-height: 100vh;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            font-family: 'Courier New', monospace;
+            overflow: hidden; user-select: none;
+            color: rgba(180,180,190,0.5);
         }
-        .scene {
-            width: 600px; height: 600px;
-            perspective: 900px;
-            position: relative;
-            touch-action: none;
-            pointer-events: none;
-        }
-        .zoom-wrapper {
-            width: 0; height: 0;
-            position: absolute;
-            top: 50%; left: 50%;
-            transform-style: preserve-3d;
-            transition: transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94);
-        }
-        .group {
-            width: 0; height: 0;
-            position: absolute;
-            transform-style: preserve-3d;
-            transition: transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94);
-        }
-        .cube {
-            width: 120px; height: 120px;
-            position: absolute;
-            margin-left: -60px; margin-top: -60px;
-            transform-style: preserve-3d;
-            transition: transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94);
-        }
-
-        /* ═══ CUBE CENTRAL — pièce neutre du joueur ═══ */
-        .face {
-            position: absolute;
-            width: 120px; height: 120px;
-            border-radius: 14px; overflow: hidden;
-            backface-visibility: hidden;
-            background: #0e0f18;
-            border: 1.5px solid rgba(220, 220, 230, 0.5);
-            box-shadow: 0 0 25px rgba(220, 220, 230, 0.08), inset 0 0 30px rgba(220, 220, 230, 0.03);
-            pointer-events: auto;
-        }
-        .face svg { width: 100%; height: 100%; display: block; }
-        .face-front  { transform: rotateY(0deg)   translateZ(60px); }
-        .face-back   { transform: rotateY(180deg)  translateZ(60px); }
-        .face-right  { transform: rotateY(90deg)   translateZ(60px); }
-        .face-left   { transform: rotateY(-90deg)  translateZ(60px); }
-        .face-top    { transform: rotateX(90deg)   translateZ(60px); }
-        .face-bottom { transform: rotateX(-90deg)  translateZ(60px); }
-
-        /* Icônes du cube central — blanc neutre */
-        .face .sep  { stroke: rgba(220, 220, 230, 0.3); stroke-width: 0.8; fill: none; }
-        .face .icon { stroke: rgba(220, 220, 230, 0.6); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; }
-        .face .pt   { fill: rgba(220, 220, 230, 0.6); stroke: none; }
-
-        /* ═══ SATELLITES ═══ */
-        .sat {
-            position: absolute;
-            width: 120px; height: 120px;
-            margin-left: -60px; margin-top: -60px;
-            border-radius: 14px; overflow: hidden;
-            backface-visibility: hidden;
-            background: #0e0f18;
-            transition: border-color 0.5s, box-shadow 0.5s;
-            pointer-events: auto;
-        }
-        .sat svg { width: 100%; height: 100%; display: block; }
-
-        /* ═══ ÉTATS ADAM ═══ */
-
-        .sat.white {
-            border: 1px solid rgba(180, 180, 190, 0.25);
-            box-shadow: none;
-        }
-        .sat.white .sep  { stroke: rgba(180, 180, 190, 0.2); stroke-width: 0.8; fill: none; }
-        .sat.white .icon { stroke: rgba(180, 180, 190, 0.3); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; }
-        .sat.white .pt   { fill: rgba(180, 180, 190, 0.3); stroke: none; }
-
-        .sat.silver {
-            border: 1px solid rgba(6, 182, 212, 0.5);
-            box-shadow: 0 0 15px rgba(6, 182, 212, 0.15), inset 0 0 15px rgba(6, 182, 212, 0.04);
-        }
-        .sat.silver .sep  { stroke: rgba(34, 211, 238, 0.3); stroke-width: 0.8; fill: none; }
-        .sat.silver .icon { stroke: rgba(34, 211, 238, 0.7); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; filter: drop-shadow(0 0 3px rgba(34, 211, 238, 0.4)); }
-        .sat.silver .pt   { fill: rgba(34, 211, 238, 0.7); stroke: none; filter: drop-shadow(0 0 3px rgba(34, 211, 238, 0.4)); }
-
-        .sat.gold {
-            border: 1px solid rgba(255, 215, 0, 0.6);
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.2), inset 0 0 18px rgba(255, 215, 0, 0.04);
-        }
-        .sat.gold .sep  { stroke: rgba(255, 215, 0, 0.3); stroke-width: 0.8; fill: none; }
-        .sat.gold .icon { stroke: rgba(255, 215, 0, 0.85); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.5)); }
-        .sat.gold .pt   { fill: rgba(255, 215, 0, 0.85); stroke: none; filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.5)); }
-
-        .sat.emerald {
-            border: 1px solid rgba(52, 211, 153, 0.7);
-            box-shadow: 0 0 25px rgba(5, 150, 105, 0.35), inset 0 0 20px rgba(52, 211, 153, 0.06);
-            animation: emeraldPulse 2.5s ease-in-out infinite;
-        }
-        .sat.emerald .sep  { stroke: rgba(52, 211, 153, 0.4); stroke-width: 0.8; fill: none; }
-        .sat.emerald .icon { stroke: rgba(52, 211, 153, 0.9); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.7)); }
-        .sat.emerald .pt   { fill: rgba(52, 211, 153, 0.9); stroke: none; filter: drop-shadow(0 0 6px rgba(52, 211, 153, 0.7)); }
-        @keyframes emeraldPulse {
-            0%, 100% { box-shadow: 0 0 25px rgba(5, 150, 105, 0.35), inset 0 0 20px rgba(52, 211, 153, 0.06); }
-            50%      { box-shadow: 0 0 35px rgba(5, 150, 105, 0.5), inset 0 0 28px rgba(52, 211, 153, 0.1); }
-        }
-
-        .sat.cosmic {
-            border: 2px solid transparent;
-            background: linear-gradient(#0e0f18, #0e0f18) padding-box,
-                        conic-gradient(from var(--cosmic-angle, 0deg), #ff006e, #8338ec, #06b6d4, #34d399, #ffd700, #ff006e) border-box;
-            box-shadow: 0 0 35px rgba(131, 56, 236, 0.4), 0 0 55px rgba(255, 0, 110, 0.2), inset 0 0 30px rgba(131, 56, 236, 0.1);
-            animation: cosmicSpin 4s linear infinite, cosmicBreath 2s ease-in-out infinite;
-        }
-        .sat.cosmic .sep  { stroke: rgba(196, 181, 253, 0.5); stroke-width: 0.8; fill: none; }
-        .sat.cosmic .icon { stroke: #c4b5fd; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; filter: drop-shadow(0 0 8px rgba(131, 56, 236, 0.8)); animation: cosmicShift 3s ease-in-out infinite; }
-        .sat.cosmic .pt   { fill: #c4b5fd; stroke: none; filter: drop-shadow(0 0 8px rgba(131, 56, 236, 0.8)); animation: cosmicDot 1.5s ease-in-out infinite; }
-        @property --cosmic-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
-        @keyframes cosmicSpin { to { --cosmic-angle: 360deg; } }
-        @keyframes cosmicBreath {
-            0%, 100% { box-shadow: 0 0 35px rgba(131, 56, 236, 0.4), 0 0 55px rgba(255, 0, 110, 0.2), inset 0 0 30px rgba(131, 56, 236, 0.1); }
-            50%      { box-shadow: 0 0 50px rgba(131, 56, 236, 0.6), 0 0 70px rgba(255, 0, 110, 0.35), inset 0 0 40px rgba(131, 56, 236, 0.15); }
-        }
-        @keyframes cosmicShift { 0%, 100% { stroke: #c4b5fd; } 33% { stroke: #22d3ee; } 66% { stroke: #f472b6; } }
-        @keyframes cosmicDot   { 0%, 100% { fill: #c4b5fd; } 50% { fill: #f472b6; } }
-
-        /* Highlight quand match possible */
-        .sat.match-hint {
-            outline: 2px solid rgba(255, 255, 255, 0.4);
-            outline-offset: 2px;
-        }
-
-        /* ═══ POSITIONS CSS — GRILLE ENTIÈRE UNIQUEMENT ═══
-           Toutes positions sur multiples de G=130 : 0, ±130, ±260
-           JAMAIS de ±65 ou ±195
-        ═══════════════════════════════════════════════════════ */
-
-        /* T1 — FRONT : 1 col — haut + bas */
-        .t1-a      { transform: rotateY(0deg)   translateZ(60px) translateY(-130px); }
-        .t1-b      { transform: rotateY(0deg)   translateZ(60px) translateY( 130px); }
-
-        /* T2 — RIGHT : 2 cols — col droite ×2 alignés */
-        .t2-a      { transform: rotateY(90deg)  translateZ(60px) translateX( 130px) translateY(-130px); }
-        .t2-b      { transform: rotateY(90deg)  translateZ(60px) translateX( 130px) translateY(   0px); }
-
-        /* T3 — LEFT : 2 cols — col gauche ×3 */
-        .t3-a      { transform: rotateY(-90deg) translateZ(60px) translateX(-130px) translateY(-130px); }
-        .t3-b      { transform: rotateY(-90deg) translateZ(60px) translateX(-130px) translateY(   0px); }
-        .t3-c      { transform: rotateY(-90deg) translateZ(60px) translateX(-130px) translateY( 130px); }
-
-        /* T4 — BACK : 3 cols — 2 gauche + 2 droite, positions entières */
-        .t4-a      { transform: rotateY(180deg) translateZ(60px) translateX(-130px) translateY(-130px); }
-        .t4-b      { transform: rotateY(180deg) translateZ(60px) translateX(-130px) translateY(   0px); }
-        .t4-c      { transform: rotateY(180deg) translateZ(60px) translateX( 130px) translateY(-130px); }
-        .t4-d      { transform: rotateY(180deg) translateZ(60px) translateX( 130px) translateY(   0px); }
-
-        /* T5 — TOP : croix — 4 directions */
-        .t5-a      { transform: rotateX(90deg)  translateZ(60px) translateY(-130px); }
-        .t5-b      { transform: rotateX(90deg)  translateZ(60px) translateY( 130px); }
-        .t5-c      { transform: rotateX(90deg)  translateZ(60px) translateX(-130px); }
-        .t5-d      { transform: rotateX(90deg)  translateZ(60px) translateX( 130px); }
-
-        /* T6 — BOTTOM : 3×3 serré autour du cube (8 satellites) */
-        .t6-a      { transform: rotateX(-90deg) translateZ(60px) translateX(-130px) translateY(-130px); }
-        .t6-b      { transform: rotateX(-90deg) translateZ(60px) translateX(   0px) translateY(-130px); }
-        .t6-c      { transform: rotateX(-90deg) translateZ(60px) translateX( 130px) translateY(-130px); }
-        .t6-d      { transform: rotateX(-90deg) translateZ(60px) translateX(-130px) translateY(   0px); }
-        .t6-e      { transform: rotateX(-90deg) translateZ(60px) translateX( 130px) translateY(   0px); }
-        .t6-f      { transform: rotateX(-90deg) translateZ(60px) translateX(-130px) translateY( 130px); }
-        .t6-g      { transform: rotateX(-90deg) translateZ(60px) translateX(   0px) translateY( 130px); }
-        .t6-h      { transform: rotateX(-90deg) translateZ(60px) translateX( 130px) translateY( 130px); }
-
-        .face-label {
-            position: fixed; top: 20px; left: 0; right: 0;
-            text-align: center;
-            color:rgba(126,200,227,0.25); font-size:0.7rem; letter-spacing:0.2em;
-            text-transform: uppercase;
-            z-index: 10; pointer-events: none;
-        }
-        .match-info {
-            position: fixed; top: 40px; left: 0; right: 0;
-            text-align: center;
-            color:rgba(52, 211, 153, 0.6); font-size:0.6rem; letter-spacing:0.1em;
-            min-height: 1em;
-            z-index: 10; pointer-events: none;
-        }
-        /* ═══ DRAG SATELLITES ═══ */
-        .sat.dragging {
-            opacity: 0.85;
-            z-index: 100;
-            cursor: grabbing;
-        }
-        .sat.drag-trail {
-            outline: 1px solid rgba(34, 211, 238, 0.3);
-        }
-        /* Animation propagation sur le cube central */
-        @keyframes cubePropagate {
-            0%   { box-shadow: 0 0 0px rgba(34,211,238,0); }
-            40%  { box-shadow: 0 0 40px rgba(34,211,238,0.7); }
-            100% { box-shadow: 0 0 20px rgba(34,211,238,0.15); }
-        }
-        .face.propagate {
-            animation: cubePropagate 0.6s ease-out forwards;
-        }
-        /* Hint drop sur le cube */
-        .face.drop-target {
-            outline: 2px solid rgba(34,211,238,0.5);
-            outline-offset: -2px;
-        }
-
+        #c { width: 600px; height: 600px; touch-action: none; cursor: default; }
+        .hud { display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:12px; }
+        .face-label { color:rgba(126,200,227,0.25);font-size:0.7rem;letter-spacing:0.2em; }
+        .info-line { color:rgba(180,180,190,0.3);font-size:0.6rem;min-height:1.2em; }
+        .hint { color:rgba(180,180,190,0.15);font-size:0.55rem; }
+        .nav-dots { display:flex;gap:6px;margin-top:4px; }
+        .nav-dot { width:7px;height:7px;border-radius:50%;background:rgba(126,200,227,0.12);transition:all 0.4s; }
+        .nav-dot.active { background:rgba(126,200,227,0.6);box-shadow:0 0 7px rgba(126,200,227,0.4); }
+        .dbtn { background:transparent;border:1px solid rgba(180,180,190,0.25);color:rgba(180,180,190,0.5);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:0.6rem;font-family:inherit;margin-top:8px; }
+        .dbtn:hover { border-color:rgba(180,180,190,0.5);color:rgba(220,220,230,0.8); }
     </style>
 </head>
 <body>
-    <div class="face-label" id="faceLabel">front</div>
-    <div class="match-info" id="matchInfo"></div>
-    <div class="scene" id="scene">
-        <div class="zoom-wrapper" id="zoomWrapper">
-            <div class="group" id="group">
-
-                <!-- T1 — FRONT -->
-                <div class="sat white t1-a" id="s-t1-a"></div>
-                <div class="sat white t1-b" id="s-t1-b"></div>
-
-                <!-- T2 — RIGHT -->
-                <div class="sat white t2-a" id="s-t2-a"></div>
-                <div class="sat white t2-b" id="s-t2-b"></div>
-
-                <!-- T3 — LEFT -->
-                <div class="sat white t3-a" id="s-t3-a"></div>
-                <div class="sat white t3-b" id="s-t3-b"></div>
-                <div class="sat white t3-c" id="s-t3-c"></div>
-
-                <!-- T4 — BACK -->
-                <div class="sat white t4-a" id="s-t4-a"></div>
-                <div class="sat white t4-b" id="s-t4-b"></div>
-                <div class="sat white t4-c" id="s-t4-c"></div>
-                <div class="sat white t4-d" id="s-t4-d"></div>
-
-                <!-- T5 — TOP -->
-                <div class="sat white t5-a" id="s-t5-a"></div>
-                <div class="sat white t5-b" id="s-t5-b"></div>
-                <div class="sat white t5-c" id="s-t5-c"></div>
-                <div class="sat white t5-d" id="s-t5-d"></div>
-
-                <!-- T6 — BOTTOM : 3×3 (8 satellites) -->
-                <div class="sat white t6-a" id="s-t6-a"></div>
-                <div class="sat white t6-b" id="s-t6-b"></div>
-                <div class="sat white t6-c" id="s-t6-c"></div>
-                <div class="sat white t6-d" id="s-t6-d"></div>
-                <div class="sat white t6-e" id="s-t6-e"></div>
-                <div class="sat white t6-f" id="s-t6-f"></div>
-                <div class="sat white t6-g" id="s-t6-g"></div>
-                <div class="sat white t6-h" id="s-t6-h"></div>
-
-                <!-- Cube central -->
-                <div class="cube" id="cube"></div>
-            </div>
-        </div>
+    <canvas id="c" width="1200" height="1200"></canvas>
+    <div class="hud">
+        <div class="face-label" id="faceLabel">1 / 6</div>
+        <div class="nav-dots" id="navDots"></div>
+        <div class="info-line" id="infoLine"></div>
+        <div class="hint">← → naviguer · tap bloquer · re-tap ancrer</div>
+        <button class="dbtn" id="btnReset">reset</button>
     </div>
 
-    <script>
-        // ═══ SYMBOLES SVG ═══
-        const S = {
-            wave:    `<path class="icon" d="M 10 22 Q 25 5 45 22 Q 65 39 80 22"/>`,
-            tri:     `<path class="icon" d="M 45 8 L 72 36 L 18 36 Z"/>`,
-            zigzag:  `<path class="icon" d="M 10 30 L 28 10 L 46 30 L 64 10 L 80 30"/>`,
-            circle:  `<circle class="icon" cx="45" cy="22" r="14"/>`,
-            twocir:  `<circle class="icon" cx="28" cy="22" r="10"/><circle class="icon" cx="62" cy="22" r="10"/>`,
-            lines:   `<line class="icon" x1="25" y1="8" x2="25" y2="36"/><line class="icon" x1="45" y1="8" x2="45" y2="36"/><line class="icon" x1="65" y1="8" x2="65" y2="36"/>`,
-            diamond: `<path class="icon" d="M 45 8 L 72 22 L 45 36 L 18 22 Z"/>`,
-            dot1:    `<circle class="pt" cx="45" cy="22" r="5"/>`,
-            dot3:    `<circle class="pt" cx="45" cy="12" r="4"/><circle class="pt" cx="30" cy="32" r="4"/><circle class="pt" cx="60" cy="32" r="4"/>`,
-            dot4:    `<circle class="pt" cx="30" cy="12" r="4"/><circle class="pt" cx="60" cy="12" r="4"/><circle class="pt" cx="30" cy="32" r="4"/><circle class="pt" cx="60" cy="32" r="4"/>`,
-            roof:    `<path class="icon" d="M 15 32 L 45 8 L 75 32"/>`,
-            arc:     `<path class="icon" d="M 15 30 Q 45 5 75 30"/>`,
-            cross:   `<line class="icon" x1="45" y1="8" x2="45" y2="36"/><line class="icon" x1="18" y1="22" x2="72" y2="22"/>`,
-            spiral:  `<path class="icon" d="M 45 22 Q 55 10 65 22 Q 75 34 55 36 Q 30 38 22 18 Q 14 0 40 8"/>`,
-            hex:     `<path class="icon" d="M 45 8 L 65 18 L 65 32 L 45 42 L 25 32 L 25 18 Z"/>`,
-            eye:     `<path class="icon" d="M 15 22 Q 45 5 75 22 Q 45 39 15 22 Z"/><circle class="pt" cx="45" cy="22" r="5"/>`,
-        };
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
 
-        // Clés pour identifier les symboles par nom
-        const S_KEYS = Object.keys(S);
+// ═══ TABLEAUX ═══
 
-        function dominoSVG(top, bot) {
-            return `<svg viewBox="0 0 90 90">
-                <line class="sep" x1="0" y1="45" x2="90" y2="45"/>
-                <g>${top}</g>
-                <g transform="translate(0,45)">${bot}</g>
-            </svg>`;
+const GAP = 1.15;
+const TABLEAUX = [
+    { name:'T1', sats:[ {x:0, y:GAP, v:5}, {x:0, y:-GAP, v:2} ] },
+    { name:'T2', sats:[ {x:-GAP, y:0, v:4}, {x:GAP, y:0, v:1} ] },
+    { name:'T3', sats:[ {x:0, y:GAP, v:3}, {x:-GAP, y:-GAP, v:6}, {x:GAP, y:-GAP, v:2} ] },
+    { name:'T4', sats:[ {x:-GAP, y:GAP, v:1}, {x:GAP, y:GAP, v:6}, {x:-GAP, y:-GAP, v:4}, {x:GAP, y:-GAP, v:3} ] },
+    { name:'T5', sats:[ {x:0, y:GAP, v:3}, {x:0, y:-GAP, v:5}, {x:-GAP, y:0, v:1}, {x:GAP, y:0, v:6} ] },
+    { name:'T6', sats:[
+        {x:-2*GAP, y:GAP, v:4}, {x:-2*GAP, y:0, v:1},
+        {x:-GAP, y:-GAP, v:2}, {x:GAP, y:-GAP, v:6},
+        {x:2*GAP, y:GAP, v:5}, {x:2*GAP, y:0, v:3}, {x:2*GAP, y:-GAP, v:7}
+    ] },
+];
+const TOTAL = TABLEAUX.length;
+
+// ═══ CONFIG ═══
+
+const HALF = 0.52;
+const CAM_Z = 18; // fixe, tout rentre
+
+// Calculer le centre X + zoom optimal pour un tableau
+function camTargetFor(tIdx){
+    let cx=0,mxX=0,mxY=0,count=0;
+    sats.forEach(s=>{
+        if(s.tableau===tIdx&&!s.locked){
+            cx+=s.lx;
+            mxX=Math.max(mxX,Math.abs(s.lx));mxY=Math.max(mxY,Math.abs(s.ly));
+            count++;
         }
+    });
+    if(count===0) return camTargetForStatic(tIdx); // fallback gracieux
+    cx/=count;
+    const w=(mxX+0.5)*1.2, h=mxY+0.5;
+    return {x:cx*0.5, z:1.35+Math.max(w,h)*5.85};
+}
+function camTargetForStatic(tIdx){
+    const tab=TABLEAUX[tIdx]; if(!tab)return {x:0,z:CAM_Z};
+    let cx=0,mxX=0,mxY=0;
+    tab.sats.forEach(s=>{cx+=s.x;mxX=Math.max(mxX,Math.abs(s.x));mxY=Math.max(mxY,Math.abs(s.y));});
+    cx/=tab.sats.length;
+    const w=(mxX+0.5)*1.2, h=mxY+0.5;
+    return {x:cx*0.5, z:1.35+Math.max(w,h)*5.85};
+}
 
-        // ═══ CUBE CENTRAL MAGIQUE ═══
-        // Logo ADAM (chevron) sur les 6 faces — même visuel partout
-        // cubeMagic mémorise l'icône actuelle (face1/face2) répliquée sur toutes les faces
+let targetCamX=0;
+function refreshZoom(){
+    const t=camTargetFor(mod(currentIdx));
+    targetCamX=t.x;targetCamZ=t.z;
+}
 
-        const LOGO_SVG = `<path class="icon" d="M 20 32 L 45 12 L 70 32"/>`;
+const FACE_ROT=[0, Math.PI/2, Math.PI, -Math.PI/2];
 
-        let cubeMagic = { face1: 'roof', face2: 'roof' }; // état par défaut = chevron
+// ═══ THREE SETUP ═══
 
-        // SVG spécial pour le cube central : chevron centré + séparateur
-        // La face "back" a un miroir horizontal dû à rotateY(180deg) → compensation SVG
-        const FACE_SVG_FIX = {
-            front:'', back:'transform="translate(90,0) scale(-1,1)"',
-            right:'', left:'', top:'', bottom:''
-        };
-        function cubeMagicSVG(f1Key, f2Key, faceKey) {
-            const top = S[f1Key] || LOGO_SVG;
-            const bot = S[f2Key] || LOGO_SVG;
-            const fix = (faceKey && FACE_SVG_FIX[faceKey]) || '';
-            return `<svg viewBox="0 0 90 90">
-                <g ${fix}>
-                    <line class="sep" x1="0" y1="45" x2="90" y2="45"/>
-                    <g>${top}</g>
-                    <g transform="translate(0,45)">${bot}</g>
-                </g>
-            </svg>`;
+const canvas=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setSize(600,600);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+renderer.setClearColor(0x0c0d14);
+
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(40,1,0.1,100);
+const initCam=camTargetForStatic(0);
+camera.position.set(initCam.x,0,initCam.z);camera.lookAt(0,0,0);
+
+scene.add(new THREE.AmbientLight(0xffffff,0.5));
+const dl=new THREE.DirectionalLight(0xffffff,0.5);dl.position.set(2,4,5);scene.add(dl);
+
+// ═══ HELPERS ═══
+
+function rrShape(w,h,r){
+    const s=new THREE.Shape(),hw=w/2,hh=h/2;
+    s.moveTo(-hw+r,-hh);s.lineTo(hw-r,-hh);
+    s.quadraticCurveTo(hw,-hh,hw,-hh+r);s.lineTo(hw,hh-r);
+    s.quadraticCurveTo(hw,hh,hw-r,hh);s.lineTo(-hw+r,hh);
+    s.quadraticCurveTo(-hw,hh,-hw,hh-r);s.lineTo(-hw,-hh+r);
+    s.quadraticCurveTo(-hw,-hh,-hw+r,-hh);return s;
+}
+
+const _tc={};
+function getNumTex(v,c){
+    const k=v+'|'+c;if(!_tc[k]){
+    const cv=document.createElement('canvas');cv.width=256;cv.height=256;
+    const ctx=cv.getContext('2d');ctx.clearRect(0,0,256,256);ctx.fillStyle=c;
+    ctx.font='200 115px "Courier New",monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(String(v),128,128);_tc[k]=new THREE.CanvasTexture(cv);}return _tc[k];
+}
+
+function placeSat(sat,faceRotY){
+    const q=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),faceRotY);
+    sat.mesh.position.copy(new THREE.Vector3(sat.lx,sat.ly,HALF+0.01).applyQuaternion(q));
+    sat.mesh.quaternion.copy(q);
+}
+
+// ═══ PORTE ═══
+
+let porteValue=3;
+const cubeGroup=new THREE.Group();scene.add(cubeGroup);
+
+function makePorteTex(val){
+    const c=document.createElement('canvas');c.width=256;c.height=256;const ctx=c.getContext('2d');
+    ctx.fillStyle='#0e0f18';const r=30,w=256;
+    ctx.beginPath();ctx.moveTo(r,0);ctx.lineTo(w-r,0);ctx.quadraticCurveTo(w,0,w,r);
+    ctx.lineTo(w,w-r);ctx.quadraticCurveTo(w,w,w-r,w);ctx.lineTo(r,w);ctx.quadraticCurveTo(0,w,0,w-r);
+    ctx.lineTo(0,r);ctx.quadraticCurveTo(0,0,r,0);ctx.fill();
+    ctx.strokeStyle='rgba(220,220,230,0.5)';ctx.lineWidth=3;ctx.stroke();
+    ctx.fillStyle='rgba(220,220,230,0.7)';ctx.font='200 115px "Courier New",monospace';
+    ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(val),128,128);
+    return new THREE.CanvasTexture(c);
+}
+const cubeMats=[];for(let i=0;i<6;i++)cubeMats.push(new THREE.MeshBasicMaterial({map:makePorteTex(porteValue)}));
+const cubeMesh=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),cubeMats);cubeMesh.userData.isCube=true;cubeGroup.add(cubeMesh);
+function updatePorte(val){porteValue=val;const tex=makePorteTex(val);cubeMats.forEach(m=>{m.map=tex;m.needsUpdate=true;});}
+
+// ═══ SATELLITES ═══
+
+const sats=[];
+function createSatMesh(value){
+    const grp=new THREE.Group(),SZ=1.0,R=0.12,shape=rrShape(SZ,SZ,R);
+    grp.add(new THREE.Mesh(new THREE.ShapeGeometry(shape),new THREE.MeshBasicMaterial({color:0x0e0f18,transparent:true,opacity:0.92})));
+    const pts=shape.getPoints(48);
+    const eLine=new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0xdcdce6,transparent:true,opacity:0.2}));
+    eLine.position.z=0.002;grp.add(eLine);
+    const nMesh=new THREE.Mesh(new THREE.PlaneGeometry(SZ*0.7,SZ*0.7),new THREE.MeshBasicMaterial({map:getNumTex(value,'rgba(180,180,190,0.5)'),transparent:true,depthWrite:false}));
+    nMesh.position.z=0.003;grp.add(nMesh);
+    const gMesh=new THREE.Mesh(new THREE.ShapeGeometry(rrShape(SZ+0.08,SZ+0.08,R+0.04)),new THREE.MeshBasicMaterial({color:0x06b6d4,transparent:true,opacity:0}));
+    gMesh.position.z=-0.005;grp.add(gMesh);
+    const hMesh=new THREE.Mesh(new THREE.ShapeGeometry(rrShape(SZ+0.25,SZ+0.25,R+0.1)),new THREE.MeshBasicMaterial({color:0x06b6d4,transparent:true,opacity:0}));
+    hMesh.position.z=-0.01;grp.add(hMesh);
+    grp.userData={edgeLine:eLine,numMesh:nMesh,glowMesh:gMesh,haloMesh:hMesh,isSat:true};return grp;
+}
+
+TABLEAUX.forEach((tab,tIdx)=>{tab.sats.forEach((sd,sIdx)=>{
+    const mesh=createSatMesh(sd.v);mesh.visible=false;cubeGroup.add(mesh);
+    sats.push({id:tIdx*100+sIdx,value:sd.v,tableau:tIdx,origTableau:tIdx,lx:sd.x,ly:sd.y,origLx:sd.x,origLy:sd.y,locked:false,mesh});
+});});
+
+// ═══ STATE ═══
+
+let lockedSat=null,currentIdx=0,busy=false,isAnimating=false,navDir=0;
+let targetCamZ=camTargetForStatic(0).z;
+const targetQuat=new THREE.Quaternion();
+let startQuat=new THREE.Quaternion(); // snapshot au départ de chaque rotation
+let slerpT=0; // progression 0→1 propre
+function mod(n){return((n%TOTAL)+TOTAL)%TOTAL;}
+
+// ═══ ASSIGN ═══
+
+function assignFaces(){
+    const vis=[mod(currentIdx),mod(currentIdx+1),mod(currentIdx+2),mod(currentIdx-1)];
+    sats.forEach(sat=>{
+        if(sat.locked)return;
+        const fi=vis.indexOf(sat.tableau);
+        if(fi>=0){
+            placeSat(sat,FACE_ROT[fi]);
+            if(sat.mesh.parent!==cubeGroup)cubeGroup.attach(sat.mesh);
+            sat.mesh.visible=true;
+        } else {
+            sat.mesh.visible=false; // tableaux hors des 4 faces visibles
         }
+    });
+}
 
-        const CUBE_FACE_CLASSES = ['face-front','face-back','face-right','face-left','face-top','face-bottom'];
-        const CUBE_FACES_DATA = [
-            { cls:'face-front',  key: 'front'  },
-            { cls:'face-back',   key: 'back'   },
-            { cls:'face-right',  key: 'right'  },
-            { cls:'face-left',   key: 'left'   },
-            { cls:'face-top',    key: 'top'    },
-            { cls:'face-bottom', key: 'bottom' },
-        ];
+// ═══ NAV ═══
 
-        // CUBE_FACES pour le matching (toutes identiques = la mémoire du cube)
-        let CUBE_FACES = {
-            front:  { face1: cubeMagic.face1, face2: cubeMagic.face2 },
-            back:   { face1: cubeMagic.face1, face2: cubeMagic.face2 },
-            right:  { face1: cubeMagic.face1, face2: cubeMagic.face2 },
-            left:   { face1: cubeMagic.face1, face2: cubeMagic.face2 },
-            top:    { face1: cubeMagic.face1, face2: cubeMagic.face2 },
-            bottom: { face1: cubeMagic.face1, face2: cubeMagic.face2 },
-        };
+function navRight(){
+    if(busy||isAnimating)return;busy=true;isAnimating=true;navDir=1;slerpT=0;
+    startQuat.copy(cubeGroup.quaternion);
+    targetQuat.copy(startQuat).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),-Math.PI/2));
+    const t=camTargetFor(mod(currentIdx+1));targetCamX=t.x;targetCamZ=t.z;
+    const show=[mod(currentIdx),mod(currentIdx+1)];
+    sats.forEach(s=>{if(!s.locked&&show.includes(s.tableau))s.mesh.visible=true;});
+}
+function navLeft(){
+    if(busy||isAnimating)return;busy=true;isAnimating=true;navDir=-1;slerpT=0;
+    startQuat.copy(cubeGroup.quaternion);
+    targetQuat.copy(startQuat).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),Math.PI/2));
+    const t=camTargetFor(mod(currentIdx-1));targetCamX=t.x;targetCamZ=t.z;
+    const show=[mod(currentIdx),mod(currentIdx-1)];
+    sats.forEach(s=>{if(!s.locked&&show.includes(s.tableau))s.mesh.visible=true;});
+}
+function onRotationComplete(){
+    currentIdx=mod(currentIdx+navDir);cubeGroup.quaternion.identity();targetQuat.identity();navDir=0;
+    assignFaces();isAnimating=false;busy=false;updateUI();
+}
 
-        const cubeEl = document.getElementById('cube');
-        CUBE_FACES_DATA.forEach(({cls, key}) => {
-            const f = document.createElement('div');
-            f.className = 'face ' + cls;
-            f.dataset.faceKey = key;
-            f.innerHTML = cubeMagicSVG(cubeMagic.face1, cubeMagic.face2, key);
-            cubeEl.appendChild(f);
+// ═══ TAP ═══
+
+function tapLock(sat){
+    if(busy||isAnimating)return;if(lockedSat)tapRelease(lockedSat);
+    sat.locked=true;lockedSat=sat;sat.srcTableau=sat.tableau;sat.srcLx=sat.lx;sat.srcLy=sat.ly;
+    scene.attach(sat.mesh);console.log('LOCK',sat.id,'val',sat.value);refreshZoom();updateUI();
+}
+function tapRelease(sat){
+    if(!sat.locked)return;
+    if(isAnimating||busy)return; // ne pas release pendant une rotation
+    // Lire la position world AVANT de re-attacher au cubeGroup
+    const wp=new THREE.Vector3();sat.mesh.getWorldPosition(wp);
+    cubeGroup.attach(sat.mesh);
+    const fIdx=mod(currentIdx);
+    // Convertir world→local du cubeGroup pour comparer aux lx/ly des autres sats
+    const lp=cubeGroup.worldToLocal(wp.clone());
+    const lx=lp.x,ly=lp.y;
+    let closest=null,cd=Infinity;
+    for(const o of sats){if(o===sat||o.locked||o.tableau!==fIdx)continue;const d=Math.hypot(o.lx-lx,o.ly-ly);if(d<cd){cd=d;closest=o;}}
+    if(closest&&cd<GAP*0.9){
+        const cT=closest.tableau,cX=closest.lx,cY=closest.ly;
+        sat.tableau=cT;sat.lx=cX;sat.ly=cY;placeSat(sat,FACE_ROT[0]);sat.mesh.scale.set(1,1,1);
+        closest.tableau=sat.srcTableau;closest.lx=sat.srcLx;closest.ly=sat.srcLy;placeSat(closest,FACE_ROT[0]);
+    } else {sat.tableau=fIdx;sat.lx=lx;sat.ly=ly;placeSat(sat,FACE_ROT[0]);sat.mesh.scale.set(1,1,1);}
+    sat.locked=false;lockedSat=null;assignFaces();refreshZoom();updateUI();
+}
+
+// ═══ DRAG SWAP (cardinal, animé) ═══
+
+let swapAnim=null; // {sats:[], targets:[], t:0}
+
+function dragSwap(sat, dirX, dirY){
+    if(!sat||sat.locked||busy||isAnimating||swapAnim)return false;
+    const fIdx=mod(currentIdx);
+    if(sat.tableau!==fIdx)return false;
+
+    const tx=sat.lx+dirX*GAP, ty=sat.ly+dirY*GAP;
+
+    // Chercher satellite à la position cible
+    const target=sats.find(s=>s!==sat&&!s.locked&&s.tableau===fIdx&&Math.abs(s.lx-tx)<0.1&&Math.abs(s.ly-ty)<0.1);
+
+    if(target){
+        // Swap deux satellites — lancer animation
+        const aFrom={x:sat.lx,y:sat.ly}, bFrom={x:target.lx,y:target.ly};
+        sat.lx=bFrom.x;sat.ly=bFrom.y;target.lx=aFrom.x;target.ly=aFrom.y;
+        swapAnim={pairs:[
+            {mesh:sat.mesh, from:aFrom, to:bFrom},
+            {mesh:target.mesh, from:bFrom, to:aFrom},
+        ], t:0};
+        console.log('DRAG SWAP',sat.id,'↔',target.id);
+        return true;
+    }
+
+    // Vérifier si la cible est la porte (0,0)
+    if(Math.abs(tx)<0.1&&Math.abs(ty)<0.1){
+        const old=porteValue;
+        const aFrom={x:sat.lx,y:sat.ly};
+        updatePorte(sat.value);
+        sat.value=old;
+        sat.mesh.userData.numMesh.material.map=getNumTex(old,'rgba(180,180,190,0.5)');
+        // Animer le satellite vers le centre puis retour à sa place (visuellement le swap)
+        // On ne bouge pas la position logique, juste on anime un aller-retour
+        swapAnim={pairs:[
+            {mesh:sat.mesh, from:aFrom, to:{x:0,y:0}, bounce:true, finalPos:aFrom},
+        ], t:0, isPorte:true};
+        console.log('PORTE SWAP val',porteValue,'←→',old);
+        return true;
+    }
+
+    return false;
+}
+
+function tickSwapAnim(dt){
+    if(!swapAnim)return;
+    swapAnim.t+=dt*4; // vitesse d'animation
+    const p=Math.min(1, swapAnim.t);
+    const ease=p<0.5?2*p*p:(1-Math.pow(-2*p+2,2)/2); // easeInOutQuad
+
+    if(swapAnim.isPorte){
+        // Animation porte : aller vers centre (0→0.5) puis retour (0.5→1)
+        const pp=p<0.5?p*2:(2-p*2);
+        const ep=pp<0.5?2*pp*pp:(1-Math.pow(-2*pp+2,2)/2);
+        swapAnim.pairs.forEach(pair=>{
+            const x=pair.from.x+(0-pair.from.x)*ep;
+            const y=pair.from.y+(0-pair.from.y)*ep;
+            pair.mesh.position.x=x;pair.mesh.position.y=y;
         });
-
-        // Propagation : met à jour les 6 faces du cube avec les icônes du satellite
-        function propagateToCube(face1Key, face2Key) {
-            cubeMagic = { face1: face1Key, face2: face2Key };
-            // Mettre à jour CUBE_FACES (matching)
-            Object.keys(CUBE_FACES).forEach(k => {
-                CUBE_FACES[k] = { face1: face1Key, face2: face2Key };
-            });
-            // Mettre à jour le DOM des 6 faces avec animation
-            cubeEl.querySelectorAll('.face').forEach(f => {
-                const fk = f.dataset.faceKey || 'front';
-                f.innerHTML = cubeMagicSVG(face1Key, face2Key, fk);
-                f.classList.remove('propagate');
-                void f.offsetWidth;
-                f.classList.add('propagate');
-                setTimeout(() => f.classList.remove('propagate'), 700);
-            });
-        }
-
-        // Récupère le satellite depuis le cube : le cube donne ses icônes au satellite
-        function propagateFromCube(sat) {
-            sat.face1 = cubeMagic.face1;
-            sat.face2 = cubeMagic.face2;
-            renderSat(sat);
-        }
-
-        // ═══ SATELLITES — données + adjacence ═══
-        const STATES = ['white', 'silver', 'gold', 'emerald', 'cosmic'];
-
-        // Chaque satellite :
-        //   id, face1/face2 (clés string), state,
-        //   tableau (quelle face du cube il appartient),
-        //   pos: {x, y} position dans le plan local (en unités G)
-        //   → adjacence au cube : un sat à pos {0, -1} est au-dessus du cube
-        //     le cube expose face1 en haut, face2 en bas
-        //     le sat expose face2 vers le bas (vers le cube) = sa face2
-        //     match si cube.face1 === sat.face2 (quand sat est au-dessus)
-        const SAT_DATA = [
-            // T1 — FRONT (face Y=0deg) : colonne verticale
-            //   pos(0,-1) = au-dessus → adjacent au cube par le bas du sat (face2) vs haut du cube (face1)
-            //   pos(0,+1) = en-dessous → adjacent au cube par le haut du sat (face1) vs bas du cube (face2)
-            { id:'s-t1-a', face1:'arc',     face2:'dot1',   state:'white', tableau:'front', pos:{x:0, y:-1} },
-            { id:'s-t1-b', face1:'wave',    face2:'dot3',   state:'white', tableau:'front', pos:{x:0, y: 1} },
-
-            // T2 — RIGHT (face Y=90deg) : col droite
-            { id:'s-t2-a', face1:'twocir',  face2:'lines',  state:'white', tableau:'right', pos:{x:1, y:-1} },
-            { id:'s-t2-b', face1:'circle',  face2:'cross',  state:'white', tableau:'right', pos:{x:1, y: 0} },
-
-            // T3 — LEFT (face Y=-90deg) : col gauche
-            { id:'s-t3-a', face1:'tri',     face2:'roof',   state:'white', tableau:'left',  pos:{x:-1, y:-1} },
-            { id:'s-t3-b', face1:'diamond', face2:'dot1',   state:'white', tableau:'left',  pos:{x:-1, y: 0} },
-            { id:'s-t3-c', face1:'hex',     face2:'zigzag', state:'white', tableau:'left',  pos:{x:-1, y: 1} },
-
-            // T4 — BACK (face Y=180deg) : 2 cols
-            { id:'s-t4-a', face1:'dot4',    face2:'wave',   state:'white', tableau:'back',  pos:{x:-1, y:-1} },
-            { id:'s-t4-b', face1:'spiral',  face2:'circle', state:'white', tableau:'back',  pos:{x:-1, y: 0} },
-            { id:'s-t4-c', face1:'cross',   face2:'dot3',   state:'white', tableau:'back',  pos:{x: 1, y:-1} },
-            { id:'s-t4-d', face1:'eye',     face2:'arc',    state:'white', tableau:'back',  pos:{x: 1, y: 0} },
-
-            // T5 — TOP (face X=90deg) : croix
-            { id:'s-t5-a', face1:'spiral',  face2:'arc',    state:'white', tableau:'top',   pos:{x: 0, y:-1} },
-            { id:'s-t5-b', face1:'arc',     face2:'spiral', state:'white', tableau:'top',   pos:{x: 0, y: 1} },
-            { id:'s-t5-c', face1:'cross',   face2:'dot3',   state:'white', tableau:'top',   pos:{x:-1, y: 0} },
-            { id:'s-t5-d', face1:'dot3',    face2:'cross',  state:'white', tableau:'top',   pos:{x: 1, y: 0} },
-
-            // T6 — BOTTOM (face X=-90deg) : grille 3×3 serrée autour du cube
-            { id:'s-t6-a', face1:'eye',     face2:'wave',   state:'white', tableau:'bottom', pos:{x:-1, y:-1} },
-            { id:'s-t6-b', face1:'wave',    face2:'spiral', state:'white', tableau:'bottom', pos:{x: 0, y:-1} },
-            { id:'s-t6-c', face1:'dot4',    face2:'cross',  state:'white', tableau:'bottom', pos:{x: 1, y:-1} },
-            { id:'s-t6-d', face1:'zigzag',  face2:'hex',    state:'white', tableau:'bottom', pos:{x:-1, y: 0} },
-            { id:'s-t6-e', face1:'cross',   face2:'circle', state:'white', tableau:'bottom', pos:{x: 1, y: 0} },
-            { id:'s-t6-f', face1:'hex',     face2:'eye',    state:'white', tableau:'bottom', pos:{x:-1, y: 1} },
-            { id:'s-t6-g', face1:'circle',  face2:'lines',  state:'white', tableau:'bottom', pos:{x: 0, y: 1} },
-            { id:'s-t6-h', face1:'tri',     face2:'dot1',   state:'white', tableau:'bottom', pos:{x: 1, y: 1} },
-        ];
-
-        // ═══ ADJACENCE CUBE ↔ SATELLITE ═══
-        // Le cube est toujours à pos {0,0} dans chaque tableau.
-        // Un domino a face1 en haut, face2 en bas.
-        // Adjacence = satellite directement collé au cube (distance 1 en X ou Y)
-        //
-        // Si sat est au-dessus du cube (y=-1, x=0):
-        //   → la face du sat qui touche le cube = face2 du sat (son bas)
-        //   → la face du cube qui touche le sat = face1 du cube (son haut)
-        //   → MATCH si sat.face2 === cubeFace.face1
-        //
-        // Si sat est en-dessous (y=1, x=0):
-        //   → sat.face1 touche cube.face2
-        //   → MATCH si sat.face1 === cubeFace.face2
-        //
-        // Si sat est à gauche (x=-1, y=0) ou à droite (x=1, y=0):
-        //   → pas de face exposée dans cette direction (dominos verticaux)
-        //   → PAS DE MATCH latéral pour l'instant (les dominos sont orientés haut/bas)
-
-        function getAdjacentSats(faceKey) {
-            return SAT_DATA.filter(s => s.tableau === faceKey);
-        }
-
-        function checkMatches(faceKey) {
-            const cubeFace = CUBE_FACES[faceKey];
-            const sats = getAdjacentSats(faceKey);
-            const matches = [];
-
-            sats.forEach(sat => {
-                const {x, y} = sat.pos;
-                // Adjacent direct au cube = distance 1 sur un axe, 0 sur l'autre
-                if (x === 0 && y === -1) {
-                    // Sat au-dessus : sat.face2 (bas du sat) vs cube.face1 (haut du cube)
-                    if (sat.face2 === cubeFace.face1) matches.push({ sat, matched: 'face2', cubeSide: 'face1' });
-                } else if (x === 0 && y === 1) {
-                    // Sat en-dessous : sat.face1 (haut du sat) vs cube.face2 (bas du cube)
-                    if (sat.face1 === cubeFace.face2) matches.push({ sat, matched: 'face1', cubeSide: 'face2' });
-                }
-                // Latéral : pas de match pour l'instant (dominos verticaux)
-            });
-
-            return matches;
-        }
-
-        // ═══ RENDU ═══
-        function renderSat(sat) {
-            const el = document.getElementById(sat.id);
-            el.innerHTML = dominoSVG(S[sat.face1], S[sat.face2]);
-            STATES.forEach(s => el.classList.remove(s));
-            el.classList.add(sat.state);
-            el.classList.remove('match-hint');
-        }
-
-        function setSatState(satId, newState) {
-            const sat = SAT_DATA.find(s => s.id === satId);
-            if (!sat) return;
-            sat.state = newState;
-            renderSat(sat);
-        }
-
-        function promoteSat(satId) {
-            const sat = SAT_DATA.find(s => s.id === satId);
-            if (!sat) return;
-            const idx = STATES.indexOf(sat.state);
-            if (idx < STATES.length - 1) {
-                sat.state = STATES[idx + 1];
-                renderSat(sat);
-            }
-        }
-
-        // Highlight les satellites qui matchent avec la face visible
-        function highlightMatches(faceKey) {
-            // Reset tous les hints
-            SAT_DATA.forEach(sat => document.getElementById(sat.id).classList.remove('match-hint'));
-            // Check matches
-            const matches = checkMatches(faceKey);
-            const infoEl = document.getElementById('matchInfo');
-            if (matches.length > 0) {
-                matches.forEach(m => document.getElementById(m.sat.id).classList.add('match-hint'));
-                infoEl.textContent = matches.length + ' match' + (matches.length > 1 ? 'es' : '');
-            } else {
-                infoEl.textContent = '';
-            }
-        }
-
-        // Init
-        SAT_DATA.forEach(renderSat);
-
-        // ═══ ZOOM ═══
-        const ZOOM = {
-            front:  { scale: 1.0 },
-            right:  { scale: 1.0 },
-            left:   { scale: 1.0 },
-            back:   { scale: 1.0 },
-            top:    { scale: 1.0 },
-            bottom: { scale: 1.0 },
-        };
-
-        // ═══ ROTATION ═══
-        const groupEl = document.getElementById('group');
-        const zoomEl  = document.getElementById('zoomWrapper');
-        const labelEl = document.getElementById('faceLabel');
-        const scene   = document.getElementById('scene');
-
-        let M = [[1,0,0],[0,1,0],[0,0,1]];
-        let busy = false;
-        let currentFace = 'front';
-
-        const mul   = (A,B)=>{ const R=[[0,0,0],[0,0,0],[0,0,0]]; for(let i=0;i<3;i++)for(let j=0;j<3;j++)for(let k=0;k<3;k++)R[i][j]+=A[i][k]*B[k][j]; return R; };
-        const clean = M=>M.map(r=>r.map(v=>{const rr=Math.round(v);return Math.abs(v-rr)<1e-4?rr:v;}));
-        const Rx90  = ()=>[[1,0,0],[0,0,-1],[0,1,0]];
-        const Rxn90 = ()=>[[1,0,0],[0,0,1],[0,-1,0]];
-        const Ry90  = ()=>[[0,0,1],[0,1,0],[-1,0,0]];
-        const Ryn90 = ()=>[[0,0,-1],[0,1,0],[1,0,0]];
-        const cssM = M => `matrix3d(${M[0][0]},${M[1][0]},${M[2][0]},0,${M[0][1]},${M[1][1]},${M[2][1]},0,${M[0][2]},${M[1][2]},${M[2][2]},0,0,0,0,1)`;
-
-        function faceName(M) {
-            const n=[M[2][0],M[2][1],M[2][2]];
-            if(n[2]=== 1)return'front'; if(n[2]===-1)return'back';
-            if(n[0]=== 1)return'right'; if(n[0]===-1)return'left';
-            if(n[1]===-1)return'top';   if(n[1]=== 1)return'bottom';
-            return'front';
-        }
-
-        function applyZoom(name) {
-            const z = ZOOM[name];
-            zoomEl.style.transform = `scale3d(${z.scale},${z.scale},${z.scale})`;
-        }
-
-        // Désactiver pointer-events sur les sats des faces non visibles
-        // (backface-visibility:hidden cache le rendu mais PAS les hit-tests)
-        function updatePointerEvents(faceKey) {
-            SAT_DATA.forEach(s => {
-                const el = document.getElementById(s.id);
-                el.style.pointerEvents = (s.tableau === faceKey) ? 'auto' : 'none';
-            });
-        }
-
-        function rotate(R) {
-            if(busy) return;
-            busy = true;
-            M = clean(mul(R, M));
-            currentFace = faceName(M);
-            groupEl.style.transform = cssM(M);
-            applyZoom(currentFace);
-            labelEl.textContent = currentFace;
-            updatePointerEvents(currentFace);
-            // ═══ CONTRE-ROTATION du cube central ═══
-            // Calcule le "roll" résiduel : quand on regarde la face visible,
-            // l'axe "up" local de cette face peut ne plus être aligné avec
-            // le "up" écran. On calcule l'angle et on contre-rotate le #cube
-            // en interne pour que le domino reste toujours droit.
-            compensateCubeRoll();
-            // Highlight matches après rotation
-            setTimeout(() => highlightMatches(currentFace), 400);
-            setTimeout(()=>{ busy=false; }, 700);
-        }
-
-        // Calcule et applique la contre-rotation du cube central
-        // pour que le domino soit toujours "droit" (médiane horizontale,
-        // face1 en haut, face2 en bas) quelle que soit l'orientation.
-        function compensateCubeRoll() {
-            // La matrice M transforme les coordonnées monde → cube.
-            // La colonne Z de M (M[*][2]) = la direction "vers la caméra" en coords cube.
-            // La colonne Y de M (M[*][1]) = la direction "bas écran" en coords cube.
-            //
-            // Pour la face visible, on doit trouver quel vecteur "up écran" (0,-1,0)
-            // correspond en coords locales de cette face.
-            //
-            // M est appliqué comme : point_écran = M * point_cube
-            // Donc : la 3ème ligne de M donne la composante Z (profondeur) de chaque axe cube.
-            //        la 2ème ligne de M donne la composante Y (vertical écran) de chaque axe cube.
-            //        la 1ère ligne de M donne la composante X (horizontal écran) de chaque axe cube.
-            //
-            // Pour chaque face, on connaît sa normale et son "up" par défaut dans l'espace cube.
-            // On projette le "up" par défaut à travers M et on calcule l'angle avec le "up écran".
-
-            const faceInfo = {
-                //            normale cube       up par défaut cube
-                front:  { n:[ 0, 0, 1], up:[ 0,-1, 0] },
-                back:   { n:[ 0, 0,-1], up:[ 0,-1, 0] },
-                right:  { n:[ 1, 0, 0], up:[ 0,-1, 0] },
-                left:   { n:[-1, 0, 0], up:[ 0,-1, 0] },
-                top:    { n:[ 0,-1, 0], up:[ 0, 0,-1] },
-                bottom: { n:[ 0, 1, 0], up:[ 0, 0, 1] },
-            };
-
-            const info = faceInfo[currentFace];
-            if (!info) return;
-
-            // Transformer le vecteur "up" local par M → coords écran
-            const u = info.up;
-            const screenX = M[0][0]*u[0] + M[0][1]*u[1] + M[0][2]*u[2];
-            const screenY = M[1][0]*u[0] + M[1][1]*u[1] + M[1][2]*u[2];
-
-            // L'angle entre ce vecteur projeté et le "up écran" (0, -1)
-            // atan2 donne l'angle du vecteur (screenX, screenY)
-            // "up écran" = angle -π/2. On veut la différence.
-            const angle = Math.atan2(screenX, -screenY); // 0 quand aligné avec up écran
-
-            // Arrondir à 0, 90, 180, 270 (on ne fait que des rotations de 90°)
-            const deg = Math.round(angle * 180 / Math.PI / 90) * 90;
-
-            cubeEl.style.transition = 'transform 0.7s cubic-bezier(0.25,0.46,0.45,0.94)';
-            cubeEl.style.transform = deg !== 0 ? `rotateZ(${-deg}deg)` : '';
-        }
-
-        function nav(d) {
-            switch(d) {
-                case'right': rotate(Ryn90()); break;
-                case'left':  rotate(Ry90());  break;
-                case'up':    rotate(Rxn90()); break;
-                case'down':  rotate(Rx90());  break;
-            }
-        }
-        // Init
-        groupEl.style.transform = cssM(M);
-        applyZoom('front');
-        updatePointerEvents('front');
-        highlightMatches('front');
-
-        // ═══ DRAG — libre directionnel, adjacence Chebyshev stricte ═══
-        //
-        // Règles :
-        //   - Adjacence Chebyshev = max(|dx|,|dy|) === 1 (inclut diagonales)
-        //   - Le cube est à {0,0} dans chaque tableau
-        //   - Drag libre : la cible est le voisin adjacent le plus aligné
-        //     avec la direction du glissement (en coords écran)
-        //   - Ghosts en position:fixed pour le mouvement visuel
-        //   - PAS de setPointerCapture (conflit avec navBar)
-
-        let drag = null;
-
-        // Trouver les voisins adjacents (Chebyshev 1) d'un élément
-        function getAdjacentTargets(srcType, srcSat) {
-            const targets = [];
-            const sats = SAT_DATA.filter(s => s.tableau === currentFace);
-
-            if (srcType === 'sat') {
-                const {x: sx, y: sy} = srcSat.pos;
-                sats.forEach(s => {
-                    if (s.id === srcSat.id) return;
-                    if (Math.max(Math.abs(s.pos.x - sx), Math.abs(s.pos.y - sy)) === 1) {
-                        targets.push({ type: 'sat', sat: s, el: document.getElementById(s.id) });
-                    }
-                });
-                // Cube adjacent ?
-                if (Math.max(Math.abs(sx), Math.abs(sy)) === 1) {
-                    targets.push({ type: 'cube', sat: null, el: cubeEl });
-                }
-            } else {
-                // Source = cube
-                sats.forEach(s => {
-                    if (Math.max(Math.abs(s.pos.x), Math.abs(s.pos.y)) === 1) {
-                        targets.push({ type: 'sat', sat: s, el: document.getElementById(s.id) });
-                    }
-                });
-            }
-            return targets;
-        }
-
-        // Parmi les voisins, trouver celui le plus aligné avec la direction du drag
-        function findBestTarget(targets, srcCx, srcCy, deltaX, deltaY) {
-            const dragLen = Math.hypot(deltaX, deltaY);
-            if (dragLen < 1) return null;
-            const dX = deltaX / dragLen, dY = deltaY / dragLen;
-            let best = null, bestDot = -Infinity;
-
-            for (const t of targets) {
-                const r = t.el.getBoundingClientRect();
-                if (r.width < 2) continue;
-                const tx = r.left + r.width / 2 - srcCx;
-                const ty = r.top + r.height / 2 - srcCy;
-                const len = Math.hypot(tx, ty);
-                if (len < 1) continue;
-                const dot = (tx * dX + ty * dY) / len;
-                if (dot > 0.3 && dot > bestDot) {
-                    bestDot = dot;
-                    best = t;
-                    best._cx = r.left + r.width / 2;
-                    best._cy = r.top + r.height / 2;
-                }
-            }
-            return best;
-        }
-
-        function createGhost(el) {
-            const r = el.getBoundingClientRect();
-            const ghost = el.cloneNode(true);
-            ghost.id = '';
-            ghost.className = '';
-            ghost.style.cssText = `
-                position:fixed; left:${r.left}px; top:${r.top}px;
-                width:${r.width}px; height:${r.height}px;
-                margin:0; transform:none; z-index:9999; pointer-events:none;
-                transition:none; border-radius:14px; overflow:hidden;
-                backface-visibility:visible;
-            `;
-            const cs = getComputedStyle(el);
-            ghost.style.border = cs.border;
-            ghost.style.boxShadow = cs.boxShadow;
-            ghost.style.background = cs.background || '#0e0f18';
-            document.body.appendChild(ghost);
-            return { ghost, baseX: r.left, baseY: r.top };
-        }
-
-        function doSwap(src, dst) {
-            if (src.type === 'sat' && dst.type === 'sat') {
-                const s = src.sat, d = dst.sat;
-                const t1 = s.face1, t2 = s.face2;
-                s.face1 = d.face1; s.face2 = d.face2;
-                d.face1 = t1;      d.face2 = t2;
-                renderSat(s); renderSat(d);
-            } else if (src.type === 'sat' && dst.type === 'cube') {
-                const o1 = cubeMagic.face1, o2 = cubeMagic.face2;
-                propagateToCube(src.sat.face1, src.sat.face2);
-                src.sat.face1 = o1; src.sat.face2 = o2;
-                renderSat(src.sat);
-            } else if (src.type === 'cube' && dst.type === 'sat') {
-                const o1 = cubeMagic.face1, o2 = cubeMagic.face2;
-                propagateToCube(dst.sat.face1, dst.sat.face2);
-                dst.sat.face1 = o1; dst.sat.face2 = o2;
-                renderSat(dst.sat);
-            }
-            highlightMatches(currentFace);
-        }
-
-        function cleanupDrag() {
-            if (!drag) return;
-            if (drag.srcGhost) drag.srcGhost.ghost.remove();
-            if (drag.tgtGhost) drag.tgtGhost.ghost.remove();
-            if (drag.srcEl) drag.srcEl.style.opacity = '';
-            if (drag.targetEl) {
-                drag.targetEl.style.opacity = '';
-                drag.targetEl.style.outline = '';
-            }
-            cubeEl.querySelectorAll('.face').forEach(f => f.classList.remove('drop-target'));
-        }
-
-        // POINTERDOWN sur document (pas scene — les transforms 3D empechent
-        // les hit-tests corrects sur les faces non-front)
-        document.addEventListener('pointerdown', e => {
-            if (busy) return;
-            const satEl = e.target.closest('.sat');
-            const cubeHit = e.target.closest('#cube');
-            if (!satEl && !cubeHit) return;
-
-            const srcEl = satEl || cubeEl;
-            const srcType = satEl ? 'sat' : 'cube';
-            const srcSat = satEl ? SAT_DATA.find(s => s.id === satEl.id) : null;
-
-            // Verifier que le sat est bien sur le tableau visible
-            if (srcSat && srcSat.tableau !== currentFace) return;
-
-            const adjacents = getAdjacentTargets(srcType, srcSat);
-            if (adjacents.length === 0) return;
-
-            e.preventDefault();
-            const srcR = srcEl.getBoundingClientRect();
-
-            drag = {
-                type: srcType, sat: srcSat, srcEl,
-                srcCx: srcR.left + srcR.width / 2,
-                srcCy: srcR.top + srcR.height / 2,
-                startX: e.clientX, startY: e.clientY,
-                adjacents, committed: false,
-                target: null, targetEl: null,
-                srcGhost: null, tgtGhost: null,
-                dirX: 0, dirY: 0, fullDist: 1, offset: 0
-            };
+    } else {
+        swapAnim.pairs.forEach(pair=>{
+            const x=pair.from.x+(pair.to.x-pair.from.x)*ease;
+            const y=pair.from.y+(pair.to.y-pair.from.y)*ease;
+            pair.mesh.position.x=x;pair.mesh.position.y=y;
         });
+    }
 
-        // POINTERMOVE sur document (pas scene — pour ne rien rater)
-        document.addEventListener('pointermove', e => {
-            if (!drag) return;
-            e.preventDefault();
-            const dx = e.clientX - drag.startX;
-            const dy = e.clientY - drag.startY;
-
-            if (!drag.committed) {
-                if (Math.hypot(dx, dy) < 12) return;
-                const best = findBestTarget(drag.adjacents, drag.srcCx, drag.srcCy, dx, dy);
-                if (!best) return;
-
-                drag.committed = true;
-                drag.target = { type: best.type, sat: best.sat };
-                drag.targetEl = best.el;
-                drag.fullDist = Math.max(Math.hypot(best._cx - drag.srcCx, best._cy - drag.srcCy), 1);
-                drag.dirX = (best._cx - drag.srcCx) / drag.fullDist;
-                drag.dirY = (best._cy - drag.srcCy) / drag.fullDist;
-
-                drag.srcGhost = createGhost(drag.srcEl);
-                drag.tgtGhost = createGhost(best.el);
-                drag.srcEl.style.opacity = '0.15';
-                best.el.style.opacity = '0.15';
-
-                if (best.type === 'cube') {
-                    cubeEl.querySelectorAll('.face').forEach(f => f.classList.add('drop-target'));
-                } else {
-                    best.el.style.outline = '2px solid rgba(34,211,238,0.6)';
-                }
-                return;
-            }
-
-            // Mouvement miroir
-            const proj = dx * drag.dirX + dy * drag.dirY;
-            const t = Math.max(0, Math.min(1, proj / drag.fullDist));
-            drag.offset = t;
-            const mx = drag.dirX * drag.fullDist * t;
-            const my = drag.dirY * drag.fullDist * t;
-            drag.srcGhost.ghost.style.left = (drag.srcGhost.baseX + mx) + 'px';
-            drag.srcGhost.ghost.style.top  = (drag.srcGhost.baseY + my) + 'px';
-            drag.tgtGhost.ghost.style.left = (drag.tgtGhost.baseX - mx) + 'px';
-            drag.tgtGhost.ghost.style.top  = (drag.tgtGhost.baseY - my) + 'px';
+    if(p>=1){
+        // Finaliser — replacer proprement via placeSat (coordonnées 3D face)
+        swapAnim.pairs.forEach(pair=>{
+            const sat=sats.find(s=>s.mesh===pair.mesh);
+            if(sat&&!sat.locked) placeSat(sat,FACE_ROT[0]);
         });
+        assignFaces();
+        swapAnim=null;
+        refreshZoom();updateUI();
+    }
+}
 
-        // POINTERUP sur document
-        document.addEventListener('pointerup', e => {
-            if (!drag) return;
-            const { type, sat, committed, target, offset } = drag;
+// ═══ RAYCAST ═══
 
-            if (!committed) { cleanupDrag(); drag = null; return; }
+const raycaster=new THREE.Raycaster(),mouse=new THREE.Vector2();
+function getSatAt(cx,cy){
+    const r=canvas.getBoundingClientRect();mouse.x=((cx-r.left)/r.width)*2-1;mouse.y=-((cy-r.top)/r.height)*2+1;
+    raycaster.setFromCamera(mouse,camera);const all=[];
+    sats.forEach(s=>{if(s.mesh.visible)s.mesh.traverse(c=>{if(c.isMesh)all.push(c);});});
+    for(const h of raycaster.intersectObjects(all,false)){let o=h.object;while(o){if(o.userData&&o.userData.isSat){const s=sats.find(x=>x.mesh===o);if(s)return s;}o=o.parent;}}return null;
+}
 
-            if (offset > 0.35) {
-                cleanupDrag(); drag = null;
-                doSwap({ type, sat }, target);
-            } else {
-                const sg = drag.srcGhost, tg = drag.tgtGhost;
-                const T = 'left 0.15s ease-out, top 0.15s ease-out';
-                if (sg) { sg.ghost.style.transition = T; sg.ghost.style.left = sg.baseX+'px'; sg.ghost.style.top = sg.baseY+'px'; }
-                if (tg) { tg.ghost.style.transition = T; tg.ghost.style.left = tg.baseX+'px'; tg.ghost.style.top = tg.baseY+'px'; }
-                const d = drag; drag = null;
-                setTimeout(() => {
-                    if (sg) sg.ghost.remove();
-                    if (tg) tg.ghost.remove();
-                    if (d.srcEl) d.srcEl.style.opacity = '';
-                    if (d.targetEl) { d.targetEl.style.opacity = ''; d.targetEl.style.outline = ''; }
-                    cubeEl.querySelectorAll('.face').forEach(f => f.classList.remove('drop-target'));
-                }, 170);
-            }
-        });
+// ═══ POINTER ═══
 
-        document.addEventListener('pointercancel', () => {
-            if (!drag) return;
-            cleanupDrag(); drag = null;
-        });
-        // ═══ NAVIGATION — plein écran (swipe/wheel/clavier) ═══
-        // Le swipe navigue SAUF si le pointer a démarré sur un .sat ou #cube
-        // (car dans ce cas c'est le drag de dominos qui prend la main)
-        let ns=null, nm=false;
-        document.addEventListener('pointerdown', e=>{
-            // Si c'est un domino ou le cube, on laisse le drag gérer
-            if (e.target.closest('.sat') || e.target.closest('#cube')) return;
-            ns={x:e.clientX,y:e.clientY,id:e.pointerId}; nm=false;
-        });
-        document.addEventListener('pointermove', e=>{
-            if(!ns || e.pointerId!==ns.id) return;
-            if(Math.hypot(e.clientX-ns.x,e.clientY-ns.y)>10) nm=true;
-        });
-        document.addEventListener('pointerup', e=>{
-            if(!ns || e.pointerId!==ns.id) return;
-            const dx=e.clientX-ns.x, dy=e.clientY-ns.y, adx=Math.abs(dx), ady=Math.abs(dy);
-            if(nm && Math.max(adx,ady)>=15) {
-                if(adx>ady) nav(dx>0?'left':'right');
-                else nav(dy>0?'up':'down');
-            }
-            ns=null;
-        });
-        document.addEventListener('pointercancel', ()=>{ ns=null; });
+let pStart=null,pMoved=false,pSat=null;
+canvas.addEventListener('pointerdown',e=>{pStart={x:e.clientX,y:e.clientY};pMoved=false;pSat=getSatAt(e.clientX,e.clientY);canvas.setPointerCapture(e.pointerId);});
+canvas.addEventListener('pointermove',e=>{if(pStart&&Math.hypot(e.clientX-pStart.x,e.clientY-pStart.y)>10)pMoved=true;});
+canvas.addEventListener('pointerup',e=>{
+    if(!pStart)return;const dx=e.clientX-pStart.x,dy=e.clientY-pStart.y,dist=Math.hypot(dx,dy);
+    if(!pMoved){
+        // TAP
+        const sat=getSatAt(e.clientX,e.clientY);
+        if(sat){if(sat.locked)tapRelease(sat);else tapLock(sat);}
+        else if(lockedSat)tapRelease(lockedSat);
+    } else if(dist>=15){
+        if(pSat&&!pSat.locked){
+            // Drag sur un satellite → swap cardinal
+            let dirX=0,dirY=0;
+            if(Math.abs(dx)>Math.abs(dy)){dirX=dx>0?1:-1;}
+            else{dirY=dy>0?-1:1;} // Y inversé (écran vs 3D)
+            if(dragSwap(pSat,dirX,dirY)){pStart=null;pSat=null;return;}
+        }
+        // Pas de swap → navigation
+        if(Math.abs(dx)>=Math.abs(dy)){dx>0?navRight():navLeft();}
+    }
+    pStart=null;pSat=null;
+});
+canvas.addEventListener('pointercancel',()=>{pStart=null;pSat=null;});
 
-        let wx=0,wy=0,wcd=false,wt=null;
-        document.addEventListener('wheel', e=>{
-            e.preventDefault(); if(wcd)return;
-            wx+=e.deltaX; wy+=e.deltaY;
-            clearTimeout(wt); wt=setTimeout(()=>{wx=0;wy=0;},150);
-            const T=30;
-            if(Math.abs(wx)>T&&Math.abs(wx)>=Math.abs(wy)){ nav(wx>0?'right':'left'); wx=0;wy=0; wcd=true; setTimeout(()=>{wcd=false;},400); }
-            else if(Math.abs(wy)>T){ nav(wy>0?'down':'up'); wx=0;wy=0; wcd=true; setTimeout(()=>{wcd=false;},400); }
-        },{passive:false});
+// ═══ WHEEL + KEY ═══
 
-        document.addEventListener('keydown', e=>{
-            switch(e.key){
-                case'ArrowRight': nav('right'); break;
-                case'ArrowLeft':  nav('left');  break;
-                case'ArrowUp':    nav('up');    e.preventDefault(); break;
-                case'ArrowDown':  nav('down');  e.preventDefault(); break;
-            }
-        });
-    </script>
+let wx=0,wcd=false,wt=null;
+canvas.addEventListener('wheel',e=>{e.preventDefault();if(wcd)return;wx+=e.deltaX+e.deltaY;clearTimeout(wt);wt=setTimeout(()=>{wx=0;},150);if(Math.abs(wx)>30){wx>0?navRight():navLeft();wx=0;wcd=true;setTimeout(()=>{wcd=false;},400);}},{passive:false});
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'){navRight();e.preventDefault();}else if(e.key==='ArrowLeft'){navLeft();e.preventDefault();}});
+
+// ═══ UI ═══
+
+const dotsEl=document.getElementById('navDots');
+for(let i=0;i<TOTAL;i++){const d=document.createElement('div');d.className='nav-dot'+(i===0?' active':'');dotsEl.appendChild(d);}
+function updateUI(){
+    const idx=mod(currentIdx);document.getElementById('faceLabel').textContent=`${idx+1} / ${TOTAL}`;
+    dotsEl.querySelectorAll('.nav-dot').forEach((d,i)=>d.classList.toggle('active',i===idx));
+    const c=sats.filter(s=>s.tableau===idx&&!s.locked).length;
+    let t=`T${idx+1} [porte:${porteValue}] · ${c} sat${c>1?'s':''}`;if(lockedSat)t+=` · ⟐ ${lockedSat.value} flotte`;
+    document.getElementById('infoLine').textContent=t;
+}
+
+// ═══ RESET ═══
+
+document.getElementById('btnReset').addEventListener('click',()=>{
+    if(lockedSat){cubeGroup.attach(lockedSat.mesh);lockedSat.locked=false;}lockedSat=null;
+    let si=0;TABLEAUX.forEach((tab,tIdx)=>{tab.sats.forEach(sd=>{
+        const sat=sats[si++];sat.value=sd.v;sat.tableau=tIdx;sat.origTableau=tIdx;
+        sat.lx=sd.x;sat.ly=sd.y;sat.origLx=sd.x;sat.origLy=sd.y;sat.locked=false;
+        if(sat.mesh.parent!==cubeGroup)cubeGroup.attach(sat.mesh);sat.mesh.scale.set(1,1,1);
+        const ud=sat.mesh.userData;ud.glowMesh.material.opacity=0;ud.haloMesh.material.opacity=0;
+        ud.edgeLine.material.color.setHex(0xdcdce6);ud.edgeLine.material.opacity=0.2;
+        ud.numMesh.material.map=getNumTex(sd.v,'rgba(180,180,190,0.5)');
+    });});
+    updatePorte(3);cubeGroup.quaternion.identity();targetQuat.identity();
+    currentIdx=0;isAnimating=false;busy=false;navDir=0;
+    refreshZoom();camera.position.set(targetCamX,0,targetCamZ);assignFaces();updateUI();
+});
+
+// ═══ RENDER ═══
+
+const clock=new THREE.Clock();
+let lastTime=0;
+function animate(){
+    requestAnimationFrame(animate);const t=clock.getElapsedTime();const dt=t-lastTime;lastTime=t;
+    if(isAnimating){slerpT=Math.min(1,slerpT+dt*3.5);
+        const ease=slerpT<0.5?2*slerpT*slerpT:(1-Math.pow(-2*slerpT+2,2)/2);
+        cubeGroup.quaternion.copy(startQuat).slerp(targetQuat,ease);
+        if(slerpT>=1){cubeGroup.quaternion.copy(targetQuat);onRotationComplete();}}
+    tickSwapAnim(dt);
+    camera.position.x+=(targetCamX-camera.position.x)*0.1;
+    camera.position.z+=(targetCamZ-camera.position.z)*0.1;
+    camera.lookAt(camera.position.x*0.8, 0, 0);
+    const fIdx=mod(currentIdx);
+    sats.forEach(sat=>{const ud=sat.mesh.userData;
+        if(sat.locked){sat.mesh.visible=true;const p=0.5+0.5*Math.sin(t*3.5);
+            ud.glowMesh.material.opacity=0.3+p*0.4;ud.haloMesh.material.opacity=0.08+p*0.12;
+            ud.edgeLine.material.color.setHex(0x06b6d4);ud.edgeLine.material.opacity=0.7+p*0.3;
+            ud.numMesh.material.map=getNumTex(sat.value,'rgba(34,211,238,0.95)');
+        } else {
+            if(!isAnimating)sat.mesh.visible=(sat.tableau===fIdx);
+            ud.glowMesh.material.opacity=0;ud.haloMesh.material.opacity=0;
+            const foreign=sat.tableau!==sat.origTableau;
+            ud.edgeLine.material.color.setHex(foreign?0xffd700:0xdcdce6);
+            ud.edgeLine.material.opacity=foreign?0.35:0.2;
+            ud.numMesh.material.map=getNumTex(sat.value,foreign?'rgba(255,215,0,0.6)':'rgba(180,180,190,0.5)');
+        }
+    });
+    renderer.render(scene,camera);
+}
+assignFaces();updateUI();animate();
+</script>
 </body>
 </html>
