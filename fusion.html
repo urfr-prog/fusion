@@ -34,7 +34,10 @@
         <div class="info-line" id="infoLine"></div>
         <div class="hint">← → naviguer · tap bloquer · re-tap ancrer</div>
         <button class="dbtn" id="btnReset">reset</button>
+        <button class="dbtn" id="btnExport">export JSON</button>
+        <button class="dbtn" id="btnCenter">axe ∣</button>
     </div>
+    <div id="centerLine" style="display:none;position:fixed;top:0;left:50%;width:1px;height:100vh;background:rgba(255,0,0,0.4);pointer-events:none;z-index:999;"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -151,10 +154,16 @@ function getDominoTex(leftIdx, rightIdx, tint) {
     const ctx = cv.getContext('2d');
 
     // Couleurs selon tint
-    const border = tint==='cyan' ? 'rgba(126,200,227,0.9)' : tint==='gold' ? 'rgba(255,215,0,0.7)' : 'rgba(126,200,227,0.5)';
-    const sep    = tint==='cyan' ? 'rgba(126,200,227,0.6)' : tint==='gold' ? 'rgba(255,215,0,0.4)' : 'rgba(126,200,227,0.3)';
-    const iconC  = tint==='cyan' ? '#5eefff' : tint==='gold' ? '#ffd700' : '#7ec8e3';
-    const glow   = tint==='cyan' ? 'rgba(94,239,255,0.3)' : tint==='gold' ? 'rgba(255,215,0,0.15)' : 'rgba(126,200,227,0.12)';
+    const C={
+        normal:  {border:'rgba(126,200,227,0.5)',sep:'rgba(126,200,227,0.3)',icon:'#7ec8e3',glow:'rgba(126,200,227,0.12)'},
+        cyan:    {border:'rgba(126,200,227,0.9)',sep:'rgba(126,200,227,0.6)',icon:'#5eefff',glow:'rgba(94,239,255,0.3)'},
+        pink:    {border:'rgba(255,120,180,0.7)',sep:'rgba(255,120,180,0.4)',icon:'#ff78b4',glow:'rgba(255,120,180,0.15)'},
+        silver:  {border:'rgba(34,211,238,0.6)',sep:'rgba(34,211,238,0.35)',icon:'#22d3ee',glow:'rgba(34,211,238,0.15)'},
+        gold:    {border:'rgba(255,215,0,0.6)',sep:'rgba(255,215,0,0.35)',icon:'#ffd700',glow:'rgba(255,215,0,0.15)'},
+        emerald: {border:'rgba(52,211,153,0.6)',sep:'rgba(52,211,153,0.35)',icon:'#34d399',glow:'rgba(52,211,153,0.15)'},
+    };
+    const c=C[tint]||C.normal;
+    const border=c.border, sep=c.sep, iconC=c.icon, glow=c.glow;
 
     // Fond arrondi
     const r = 36, m = 8;
@@ -178,8 +187,10 @@ function getDominoTex(leftIdx, rightIdx, tint) {
     ctx.shadowBlur = 0;
 
     // Séparateur vertical (médiane)
-    ctx.strokeStyle = sep; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(S/2, m+30); ctx.lineTo(S/2, S-m-30); ctx.stroke();
+    ctx.strokeStyle = sep; ctx.lineWidth = 2.5;
+    ctx.shadowColor = sep; ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.moveTo(S/2, m+16); ctx.lineTo(S/2, S-m-16); ctx.stroke();
+    ctx.shadowBlur = 0;
 
     // Icônes — gauche et droite
     const iconSz = S * 0.42;
@@ -195,12 +206,16 @@ function getDominoTex(leftIdx, rightIdx, tint) {
 
 const GAP = 1.15;
 const TABLEAUX = [
-    { name:'T1', sats:[ {x:0, y:GAP, v:[0,5]}, {x:0, y:-GAP, v:[2,3]} ] },
-    { name:'T2', sats:[ {x:-GAP, y:0, v:[6,4]}, {x:GAP, y:0, v:[8,1]} ] },
+    { name:'T1', sats:[ {x:0, y:GAP, v:[0,5]}, {x:0, y:-GAP, v:[2,3], state:'emerald'} ] },
+    { name:'T2', sats:[ {x:-GAP, y:0, v:[6,4], state:'silver'}, {x:GAP, y:0, v:[8,1]} ] },
     { name:'T3', sats:[
-        {x:-2*GAP, y:GAP, v:[10,7]}, {x:-2*GAP, y:0, v:[9,4]},
         {x:-GAP, y:-GAP, v:[11,2]}, {x:GAP, y:-GAP, v:[12,5]},
         {x:2*GAP, y:GAP, v:[13,6]}, {x:2*GAP, y:0, v:[14,3]}, {x:2*GAP, y:-GAP, v:[15,0]}
+    ] },
+    { name:'T4', sats:[
+        {x:-2*GAP, y:GAP, v:[10,7]}, {x:-2*GAP, y:0, v:[9,4], state:'gold'},
+        {x:-GAP, y:GAP, v:[3,10]}, {x:GAP, y:GAP, v:[7,13]},
+        {x:-GAP, y:-GAP, v:[5,11]}, {x:GAP, y:-GAP, v:[1,9]}
     ] },
 ];
 const TOTAL = TABLEAUX.length;
@@ -210,27 +225,53 @@ const TOTAL = TABLEAUX.length;
 const HALF = 0.52;
 const CAM_Z = 18;
 
-function camTargetFor(tIdx){
-    let cx=0,mxX=0,mxY=0,count=0;
+const CAM_Z_MIN = 8;    // zoom max (caméra au plus près)
+const CAM_Z_MAX = 18;   // zoom min (caméra au plus loin)
+
+function camTargetFor(tIdx, viewIdx){
+    // viewIdx = le tableau qu'on est en train de viser (peut différer de currentIdx pendant nav)
+    if(viewIdx===undefined) viewIdx=mod(currentIdx);
+    // Collecter les positions de tous les sats du tableau (non locked)
+    // Toujours inclure le cube central (porte) à (0,0) car il est toujours visible
+    const pts=[{x:0, y:0}];
     sats.forEach(s=>{
-        if(s.tableau===tIdx&&!s.locked){
-            cx+=s.lx;
-            mxX=Math.max(mxX,Math.abs(s.lx));mxY=Math.max(mxY,Math.abs(s.ly));
-            count++;
-        }
+        if(s.tableau===tIdx&&!s.locked) pts.push({x:s.lx, y:s.ly});
     });
-    if(count===0) return camTargetForStatic(tIdx);
-    cx/=count;
-    const w=(mxX+0.5)*1.2, h=mxY+0.5;
-    return {x:cx*0.5, z:1.35+Math.max(w,h)*5.85};
+    // Inclure la position physique du flottant si on calcule pour le tableau visé
+    if(lockedSat && tIdx===viewIdx){
+        const wp=new THREE.Vector3();lockedSat.mesh.getWorldPosition(wp);
+        const lp=cubeGroup.worldToLocal(wp.clone());
+        pts.push({x:lp.x, y:lp.y});
+    }
+    // Boîte englobante
+    let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+    pts.forEach(p=>{
+        minX=Math.min(minX,p.x);maxX=Math.max(maxX,p.x);
+        minY=Math.min(minY,p.y);maxY=Math.max(maxY,p.y);
+    });
+    const cx=(minX+maxX)/2;
+    const hw=(maxX-minX)/2+0.6;
+    const hh=(maxY-minY)/2+0.6;
+    const spread=Math.max(hw,hh)*1.2;
+    const z=Math.min(CAM_Z_MAX, Math.max(CAM_Z_MIN, 1.8+spread*4.5));
+    return {x:cx, z};
 }
 function camTargetForStatic(tIdx){
     const tab=TABLEAUX[tIdx]; if(!tab)return {x:0,z:CAM_Z};
-    let cx=0,mxX=0,mxY=0;
-    tab.sats.forEach(s=>{cx+=s.x;mxX=Math.max(mxX,Math.abs(s.x));mxY=Math.max(mxY,Math.abs(s.y));});
-    cx/=tab.sats.length;
-    const w=(mxX+0.5)*1.2, h=mxY+0.5;
-    return {x:cx*0.5, z:1.35+Math.max(w,h)*5.85};
+    // Inclure le cube central
+    const pts=[{x:0, y:0}];
+    tab.sats.forEach(s=>pts.push({x:s.x, y:s.y}));
+    let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+    pts.forEach(p=>{
+        minX=Math.min(minX,p.x);maxX=Math.max(maxX,p.x);
+        minY=Math.min(minY,p.y);maxY=Math.max(maxY,p.y);
+    });
+    const cx=(minX+maxX)/2;
+    const hw=(maxX-minX)/2+0.6;
+    const hh=(maxY-minY)/2+0.6;
+    const spread=Math.max(hw,hh)*1.2;
+    const z=Math.min(CAM_Z_MAX, Math.max(CAM_Z_MIN, 1.8+spread*4.5));
+    return {x:cx, z};
 }
 
 let targetCamX=0;
@@ -286,12 +327,11 @@ function updatePorte(val){porteValue=val;const tex=makePorteTex(val);cubeMats.fo
 // ═══ SATELLITES — un seul plane texturé, pas de double carré ═══
 
 const sats=[];
-function createSatMesh(value){
+function createSatMesh(value,tint){
     const grp=new THREE.Group(), SZ=1.0, R=0.12;
-    // Plane unique avec la texture domino (fond+bordure+icônes intégrés)
     const nMesh=new THREE.Mesh(
         new THREE.PlaneGeometry(SZ, SZ),
-        new THREE.MeshBasicMaterial({map:getDominoTex(value[0],value[1],'normal'),transparent:true})
+        new THREE.MeshBasicMaterial({map:getDominoTex(value[0],value[1],tint||'normal'),transparent:true})
     );
     grp.add(nMesh);
     // Glow (derrière)
@@ -305,8 +345,9 @@ function createSatMesh(value){
 }
 
 TABLEAUX.forEach((tab,tIdx)=>{tab.sats.forEach((sd,sIdx)=>{
-    const mesh=createSatMesh(sd.v);mesh.visible=false;cubeGroup.add(mesh);
-    sats.push({id:tIdx*100+sIdx,value:sd.v,tableau:tIdx,origTableau:tIdx,lx:sd.x,ly:sd.y,origLx:sd.x,origLy:sd.y,locked:false,mesh});
+    const st=sd.state||'white';
+    const mesh=createSatMesh(sd.v,st!=='white'?st:undefined);mesh.visible=false;cubeGroup.add(mesh);
+    sats.push({id:tIdx*100+sIdx,value:sd.v,state:st,tableau:tIdx,origTableau:tIdx,lx:sd.x,ly:sd.y,origLx:sd.x,origLy:sd.y,locked:false,mesh});
 });});
 
 // ═══ STATE ═══
@@ -329,19 +370,26 @@ function assignFaces(){
 
 // ═══ NAV ═══
 
+// Helper: masquer tout satellite aux mêmes coordonnées que la source du locked, tous tableaux confondus
+function isHiddenBySrc(s){
+    return lockedSat&&!s.locked&&Math.abs(s.lx-lockedSat.srcLx)<0.2&&Math.abs(s.ly-lockedSat.srcLy)<0.2;
+}
+
 function navRight(){
     if(busy||isAnimating)return;busy=true;isAnimating=true;navDir=1;
     targetQuat.setFromAxisAngle(new THREE.Vector3(0,1,0),-Math.PI/2);
-    const t=camTargetFor(mod(currentIdx+1));targetCamX=t.x;targetCamZ=t.z;
-    const show=[mod(currentIdx),mod(currentIdx+1)];
-    sats.forEach(s=>{if(!s.locked&&show.includes(s.tableau))s.mesh.visible=true;});
+    const nextIdx=mod(currentIdx+1);
+    const t=camTargetFor(nextIdx, nextIdx);targetCamX=t.x;targetCamZ=t.z;
+    const show=[mod(currentIdx),nextIdx];
+    sats.forEach(s=>{if(!s.locked&&show.includes(s.tableau))s.mesh.visible=!isHiddenBySrc(s);});
 }
 function navLeft(){
     if(busy||isAnimating)return;busy=true;isAnimating=true;navDir=-1;
     targetQuat.setFromAxisAngle(new THREE.Vector3(0,1,0),Math.PI/2);
-    const t=camTargetFor(mod(currentIdx-1));targetCamX=t.x;targetCamZ=t.z;
-    const show=[mod(currentIdx),mod(currentIdx-1)];
-    sats.forEach(s=>{if(!s.locked&&show.includes(s.tableau))s.mesh.visible=true;});
+    const nextIdx=mod(currentIdx-1);
+    const t=camTargetFor(nextIdx, nextIdx);targetCamX=t.x;targetCamZ=t.z;
+    const show=[mod(currentIdx),nextIdx];
+    sats.forEach(s=>{if(!s.locked&&show.includes(s.tableau))s.mesh.visible=!isHiddenBySrc(s);});
 }
 function onRotationComplete(){
     currentIdx=mod(currentIdx+navDir);cubeGroup.quaternion.identity();targetQuat.identity();navDir=0;
@@ -353,6 +401,11 @@ function onRotationComplete(){
 function tapLock(sat){
     if(busy||isAnimating)return;if(lockedSat)tapRelease(lockedSat);
     sat.locked=true;lockedSat=sat;sat.srcTableau=sat.tableau;sat.srcLx=sat.lx;sat.srcLy=sat.ly;
+    // Masquer tout satellite à la même position source (évite superposition pendant navigation)
+    sats.forEach(s=>{
+        if(s!==sat&&!s.locked&&s.tableau===sat.srcTableau&&Math.abs(s.lx-sat.srcLx)<0.2&&Math.abs(s.ly-sat.srcLy)<0.2)
+            s.mesh.visible=false;
+    });
     scene.attach(sat.mesh);refreshZoom();updateUI();
 }
 function tapRelease(sat){
@@ -367,10 +420,18 @@ function tapRelease(sat){
     for(const o of sats){if(o===sat||o.locked||o.tableau!==fIdx)continue;const d=Math.hypot(o.lx-lx,o.ly-ly);if(d<cd){cd=d;closest=o;}}
     if(closest&&cd<GAP*0.9){
         const cT=closest.tableau,cX=closest.lx,cY=closest.ly;
+        // Le satellite flottant prend la place du closest (sur le tableau courant)
         sat.tableau=cT;sat.lx=cX;sat.ly=cY;placeSat(sat,FACE_ROT[0]);sat.mesh.scale.set(1,1,1);
-        closest.tableau=sat.srcTableau;closest.lx=sat.srcLx;closest.ly=sat.srcLy;placeSat(closest,FACE_ROT[0]);
-    } else {sat.tableau=fIdx;sat.lx=lx;sat.ly=ly;placeSat(sat,FACE_ROT[0]);sat.mesh.scale.set(1,1,1);}
-    sat.locked=false;lockedSat=null;assignFaces();refreshZoom();updateUI();
+        // Le closest prend la place source (peut être un autre tableau)
+        closest.tableau=sat.srcTableau;closest.lx=sat.srcLx;closest.ly=sat.srcLy;
+        // Restaurer visibilité du closest (il était peut-être masqué)
+        closest.mesh.visible=true;
+    } else {
+        sat.tableau=fIdx;sat.lx=lx;sat.ly=ly;placeSat(sat,FACE_ROT[0]);sat.mesh.scale.set(1,1,1);
+    }
+    sat.locked=false;lockedSat=null;assignFaces();
+    // Un seul mouvement de zoom : on calcule directement la cible finale (sans flottant)
+    refreshZoom();updateUI();
 }
 
 // ═══ DRAG SWAP ═══
@@ -381,9 +442,16 @@ function dragSwap(sat, dirX, dirY){
     if(!sat||sat.locked||busy||isAnimating||swapAnim)return false;
     const fIdx=mod(currentIdx);
     if(sat.tableau!==fIdx)return false;
-    const tx=sat.lx+dirX*GAP, ty=sat.ly+dirY*GAP;
+    const st=sat.state||'white';
+    if(st==='white') return false;
 
-    const target=sats.find(s=>s!==sat&&!s.locked&&s.tableau===fIdx&&Math.abs(s.lx-tx)<0.1&&Math.abs(s.ly-ty)<0.1);
+    // Direction constraints
+    if(st==='silver' && (dirY!==0||dirX===0)) return false;
+    if(st==='emerald' && (dirX!==0||dirY===0)) return false;
+    if(st==='gold' && (dirX===0||dirY===0)) return false;
+
+    const tx=sat.lx+dirX*GAP, ty=sat.ly+dirY*GAP;
+    const target=sats.find(s=>s!==sat&&!s.locked&&s.tableau===fIdx&&Math.abs(s.lx-tx)<0.2&&Math.abs(s.ly-ty)<0.2);
     if(target){
         const aFrom={x:sat.lx,y:sat.ly}, bFrom={x:target.lx,y:target.ly};
         sat.lx=bFrom.x;sat.ly=bFrom.y;target.lx=aFrom.x;target.ly=aFrom.y;
@@ -393,44 +461,92 @@ function dragSwap(sat, dirX, dirY){
         ], t:0};
         return true;
     }
-    if(Math.abs(tx)<0.1&&Math.abs(ty)<0.1){
-        const old=porteValue;
-        const aFrom={x:sat.lx,y:sat.ly};
-        updatePorte(sat.value);
-        sat.value=old;
-        sat.mesh.userData.numMesh.material.map=getDominoTex(old[0],old[1],'normal');
-        swapAnim={pairs:[
-            {mesh:sat.mesh, from:aFrom, to:{x:0,y:0}, bounce:true, finalPos:aFrom},
-        ], t:0, isPorte:true};
-        return true;
-    }
     return false;
+}
+
+function dragPorte(dirX, dirY){
+    if(busy||isAnimating||swapAnim)return false;
+    const fIdx=mod(currentIdx);
+    const tx=dirX*GAP, ty=dirY*GAP;
+    const target=sats.find(s=>!s.locked&&s.tableau===fIdx&&Math.abs(s.lx-tx)<0.2&&Math.abs(s.ly-ty)<0.2);
+    if(!target)return false;
+    
+    // Créer un ghost de la porte (plane temporaire) qui va voyager vers la position du satellite
+    const ghostMesh=new THREE.Mesh(
+        new THREE.PlaneGeometry(1,1),
+        new THREE.MeshBasicMaterial({map:getDominoTex(porteValue[0],porteValue[1],'normal'),transparent:true})
+    );
+    ghostMesh.position.set(0,0,HALF+0.02);
+    cubeGroup.add(ghostMesh);
+    
+    // Stocker les valeurs pour le swap final
+    swapAnim={
+        pairs:[{mesh:target.mesh, from:{x:target.lx,y:target.ly}, to:{x:0,y:0}}],
+        ghost:ghostMesh, ghostFrom:{x:0,y:0}, ghostTo:{x:target.lx,y:target.ly},
+        target:target, oldPorte:[...porteValue], oldSat:[...target.value],
+        t:0, isPorteSwap:true
+    };
+    return true;
 }
 
 function tickSwapAnim(dt){
     if(!swapAnim)return;
-    swapAnim.t+=dt*4;
+    swapAnim.t+=dt*2.5; // plus lent pour bien voir
     const p=Math.min(1, swapAnim.t);
     const ease=p<0.5?2*p*p:(1-Math.pow(-2*p+2,2)/2);
-    if(swapAnim.isPorte){
+    
+    if(swapAnim.isPorteSwap){
+        // Satellite va vers le centre
+        swapAnim.pairs.forEach(pair=>{
+            pair.mesh.position.x=pair.from.x+(pair.to.x-pair.from.x)*ease;
+            pair.mesh.position.y=pair.from.y+(pair.to.y-pair.from.y)*ease;
+        });
+        // Ghost porte va vers la position du satellite
+        const g=swapAnim.ghost;
+        g.position.x=swapAnim.ghostFrom.x+(swapAnim.ghostTo.x-swapAnim.ghostFrom.x)*ease;
+        g.position.y=swapAnim.ghostFrom.y+(swapAnim.ghostTo.y-swapAnim.ghostFrom.y)*ease;
+        g.position.z=HALF+0.02;
+        
+        if(p>=1){
+            // Swap effectif
+            const target=swapAnim.target;
+            updatePorte(swapAnim.oldSat);
+            target.value=swapAnim.oldPorte;
+            target.mesh.userData.numMesh.material.map=getDominoTex(target.value[0],target.value[1],'normal');
+            // Nettoyer le ghost
+            cubeGroup.remove(swapAnim.ghost);
+            swapAnim.ghost.geometry.dispose();
+            swapAnim.ghost.material.dispose();
+            // Replacer le satellite
+            placeSat(target,FACE_ROT[0]);
+            assignFaces();swapAnim=null;refreshZoom();updateUI();
+        }
+    } else if(swapAnim.isPorte){
         const pp=p<0.5?p*2:(2-p*2);
         const ep=pp<0.5?2*pp*pp:(1-Math.pow(-2*pp+2,2)/2);
         swapAnim.pairs.forEach(pair=>{
             pair.mesh.position.x=pair.from.x+(0-pair.from.x)*ep;
             pair.mesh.position.y=pair.from.y+(0-pair.from.y)*ep;
         });
+        if(p>=1){
+            swapAnim.pairs.forEach(pair=>{
+                const sat=sats.find(s=>s.mesh===pair.mesh);
+                if(sat&&!sat.locked) placeSat(sat,FACE_ROT[0]);
+            });
+            assignFaces();swapAnim=null;refreshZoom();updateUI();
+        }
     } else {
         swapAnim.pairs.forEach(pair=>{
             pair.mesh.position.x=pair.from.x+(pair.to.x-pair.from.x)*ease;
             pair.mesh.position.y=pair.from.y+(pair.to.y-pair.from.y)*ease;
         });
-    }
-    if(p>=1){
-        swapAnim.pairs.forEach(pair=>{
-            const sat=sats.find(s=>s.mesh===pair.mesh);
-            if(sat&&!sat.locked) placeSat(sat,FACE_ROT[0]);
-        });
-        assignFaces();swapAnim=null;refreshZoom();updateUI();
+        if(p>=1){
+            swapAnim.pairs.forEach(pair=>{
+                const sat=sats.find(s=>s.mesh===pair.mesh);
+                if(sat&&!sat.locked) placeSat(sat,FACE_ROT[0]);
+            });
+            assignFaces();swapAnim=null;refreshZoom();updateUI();
+        }
     }
 }
 
@@ -444,10 +560,17 @@ function getSatAt(cx,cy){
     for(const h of raycaster.intersectObjects(all,false)){let o=h.object;while(o){if(o.userData&&o.userData.isSat){const s=sats.find(x=>x.mesh===o);if(s)return s;}o=o.parent;}}return null;
 }
 
+function isCubeAt(cx,cy){
+    const r=canvas.getBoundingClientRect();mouse.x=((cx-r.left)/r.width)*2-1;mouse.y=-((cy-r.top)/r.height)*2+1;
+    raycaster.setFromCamera(mouse,camera);
+    const hits=raycaster.intersectObject(cubeMesh,false);
+    return hits.length>0;
+}
+
 // ═══ POINTER ═══
 
-let pStart=null,pMoved=false,pSat=null;
-canvas.addEventListener('pointerdown',e=>{pStart={x:e.clientX,y:e.clientY};pMoved=false;pSat=getSatAt(e.clientX,e.clientY);canvas.setPointerCapture(e.pointerId);});
+let pStart=null,pMoved=false,pSat=null,pCube=false;
+canvas.addEventListener('pointerdown',e=>{pStart={x:e.clientX,y:e.clientY};pMoved=false;pSat=getSatAt(e.clientX,e.clientY);pCube=!pSat&&isCubeAt(e.clientX,e.clientY);canvas.setPointerCapture(e.pointerId);});
 canvas.addEventListener('pointermove',e=>{if(pStart&&Math.hypot(e.clientX-pStart.x,e.clientY-pStart.y)>10)pMoved=true;});
 canvas.addEventListener('pointerup',e=>{
     if(!pStart)return;const dx=e.clientX-pStart.x,dy=e.clientY-pStart.y,dist=Math.hypot(dx,dy);
@@ -456,17 +579,32 @@ canvas.addEventListener('pointerup',e=>{
         if(sat){if(sat.locked)tapRelease(sat);else tapLock(sat);}
         else if(lockedSat)tapRelease(lockedSat);
     } else if(dist>=15){
-        if(pSat&&!pSat.locked){
+        // Swipe depuis la porte
+        if(pCube){
             let dirX=0,dirY=0;
             if(Math.abs(dx)>Math.abs(dy)){dirX=dx>0?1:-1;}
             else{dirY=dy>0?-1:1;}
-            if(dragSwap(pSat,dirX,dirY)){pStart=null;pSat=null;return;}
+            if(dragPorte(dirX,dirY)){pStart=null;pSat=null;pCube=false;return;}
+        }
+        // Swipe depuis un satellite (swap entre sats si non-white)
+        if(pSat&&!pSat.locked){
+            let dirX=0,dirY=0;
+            const st=pSat.state||'white';
+            if(st==='gold'){
+                // Diagonal: both axes
+                dirX=dx>0?1:-1;
+                dirY=dy>0?-1:1;
+            } else {
+                if(Math.abs(dx)>Math.abs(dy)){dirX=dx>0?1:-1;}
+                else{dirY=dy>0?-1:1;}
+            }
+            if(dragSwap(pSat,dirX,dirY)){pStart=null;pSat=null;pCube=false;return;}
         }
         if(Math.abs(dx)>=Math.abs(dy)){dx>0?navRight():navLeft();}
     }
-    pStart=null;pSat=null;
+    pStart=null;pSat=null;pCube=false;
 });
-canvas.addEventListener('pointercancel',()=>{pStart=null;pSat=null;});
+canvas.addEventListener('pointercancel',()=>{pStart=null;pSat=null;pCube=false;});
 
 // ═══ WHEEL + KEY ═══
 
@@ -512,6 +650,42 @@ document.getElementById('btnReset').addEventListener('click',()=>{
     refreshZoom();camera.position.set(targetCamX,0,targetCamZ);assignFaces();updateUI();
 });
 
+// ═══ EXPORT JSON ═══
+
+document.getElementById('btnExport').addEventListener('click',()=>{
+    const data={tableaux:[]};
+    // Regrouper les sats par tableau
+    const groups={};
+    sats.forEach(s=>{
+        if(!groups[s.tableau]) groups[s.tableau]=[];
+        const entry={x:Math.round(s.lx*100)/100, y:Math.round(s.ly*100)/100, v:[...s.value]};
+        if(s.state&&s.state!=='white') entry.state=s.state;
+        groups[s.tableau].push(entry);
+    });
+    // Trier par index de tableau
+    const keys=Object.keys(groups).map(Number).sort((a,b)=>a-b);
+    keys.forEach(k=>{
+        data.tableaux.push({name:'T'+(k+1), sats:groups[k]});
+    });
+    data.porte=[...porteValue];
+    const json=JSON.stringify(data,null,2);
+    // Copier dans le presse-papier
+    navigator.clipboard.writeText(json).then(()=>{
+        document.getElementById('infoLine').textContent='JSON copié !';
+        setTimeout(updateUI,1500);
+    }).catch(()=>{
+        // Fallback: prompt
+        prompt('JSON exporté :', json);
+    });
+});
+
+// ═══ AXE CENTRAL ═══
+
+document.getElementById('btnCenter').addEventListener('click',()=>{
+    const el=document.getElementById('centerLine');
+    el.style.display=el.style.display==='none'?'block':'none';
+});
+
 // ═══ RENDER ═══
 
 const clock=new THREE.Clock();
@@ -521,19 +695,35 @@ function animate(){
     if(isAnimating){cubeGroup.quaternion.slerp(targetQuat,0.12);
         if(1-Math.abs(cubeGroup.quaternion.dot(targetQuat))<0.0001){cubeGroup.quaternion.copy(targetQuat);onRotationComplete();}}
     tickSwapAnim(dt);
-    camera.position.x+=(targetCamX-camera.position.x)*0.1;
-    camera.position.z+=(targetCamZ-camera.position.z)*0.1;
-    camera.lookAt(camera.position.x*0.8, 0, 0);
+    camera.position.x+=(targetCamX-camera.position.x)*0.08;
+    camera.position.z+=(targetCamZ-camera.position.z)*0.08;
+    camera.lookAt(camera.position.x, 0, 0);
     const fIdx=mod(currentIdx);
+    // Trouver le satellite sous le flottant (le plus proche sur le tableau courant)
+    let hoveredSat=null;
+    if(lockedSat){
+        const wp=new THREE.Vector3();lockedSat.mesh.getWorldPosition(wp);
+        const lp=cubeGroup.worldToLocal(wp.clone());
+        let bestD=GAP*0.9, bestS=null;
+        sats.forEach(s=>{
+            if(s===lockedSat||s.locked||s.tableau!==fIdx)return;
+            const d=Math.hypot(s.lx-lp.x,s.ly-lp.y);
+            if(d<bestD){bestD=d;bestS=s;}
+        });
+        hoveredSat=bestS;
+    }
     sats.forEach(sat=>{const ud=sat.mesh.userData;
         if(sat.locked){sat.mesh.visible=true;const p=0.5+0.5*Math.sin(t*3.5);
             ud.glowMesh.material.opacity=0.2+p*0.35;ud.haloMesh.material.opacity=0.05+p*0.1;
             ud.numMesh.material.map=getDominoTex(sat.value[0],sat.value[1],'cyan');
         } else {
-            if(!isAnimating)sat.mesh.visible=(sat.tableau===fIdx);
+            // Masquer si position source OU si sous le flottant
+            if(isHiddenBySrc(sat)||sat===hoveredSat){sat.mesh.visible=false;}
+            else if(!isAnimating){sat.mesh.visible=(sat.tableau===fIdx);}
             ud.glowMesh.material.opacity=0;ud.haloMesh.material.opacity=0;
-            const foreign=sat.tableau!==sat.origTableau;
-            ud.numMesh.material.map=getDominoTex(sat.value[0],sat.value[1],foreign?'gold':'normal');
+            const st=sat.state||'white';
+            let tint=(st!=='white'?st:'normal');
+            ud.numMesh.material.map=getDominoTex(sat.value[0],sat.value[1],tint);
         }
     });
     renderer.render(scene,camera);
