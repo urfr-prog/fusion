@@ -253,7 +253,7 @@ function camTargetFor(tIdx, viewIdx){
     const hw=(maxX-minX)/2+0.6;
     const hh=(maxY-minY)/2+0.6;
     const spread=Math.max(hw,hh)*1.2;
-    const z=Math.min(CAM_Z_MAX, Math.max(CAM_Z_MIN, 1.8+spread*4.5));
+    const z=Math.min(CAM_Z_MAX, Math.max(CAM_Z_MIN, 1.5+spread*3.8));
     return {x:cx, z};
 }
 function camTargetForStatic(tIdx){
@@ -270,7 +270,7 @@ function camTargetForStatic(tIdx){
     const hw=(maxX-minX)/2+0.6;
     const hh=(maxY-minY)/2+0.6;
     const spread=Math.max(hw,hh)*1.2;
-    const z=Math.min(CAM_Z_MAX, Math.max(CAM_Z_MIN, 1.8+spread*4.5));
+    const z=Math.min(CAM_Z_MAX, Math.max(CAM_Z_MIN, 1.5+spread*3.8));
     return {x:cx, z};
 }
 
