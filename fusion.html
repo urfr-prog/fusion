@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADAM Cube — K5 v7 · Three.js</title>
+    <title>ADAM Cube — K5 v18 · Three.js</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -36,6 +36,7 @@
         <button class="dbtn" id="btnReset">reset</button>
         <button class="dbtn" id="btnExport">export JSON</button>
         <button class="dbtn" id="btnCenter">axe ∣</button>
+        <button class="dbtn" id="btnBg">fond: étoiles ✦</button>
     </div>
     <div id="centerLine" style="display:none;position:fixed;top:0;left:50%;width:1px;height:100vh;background:rgba(255,0,0,0.4);pointer-events:none;z-index:999;"></div>
 
@@ -58,86 +59,51 @@ function drawIcon(ctx, iconIdx, cx, cy, sz, color) {
     const h = sz * 0.4, w = sz * 0.4;
 
     switch(iconIdx) {
-        case 0: // wave
-            ctx.beginPath();
-            ctx.moveTo(cx-w, cy);
-            ctx.quadraticCurveTo(cx-w*0.3, cy-h, cx, cy);
-            ctx.quadraticCurveTo(cx+w*0.3, cy+h, cx+w, cy);
-            ctx.stroke(); break;
-        case 1: // triangle
-            ctx.beginPath();
-            ctx.moveTo(cx, cy-h); ctx.lineTo(cx+w, cy+h*0.7); ctx.lineTo(cx-w, cy+h*0.7); ctx.closePath();
-            ctx.stroke(); break;
-        case 2: // zigzag
-            ctx.beginPath();
-            ctx.moveTo(cx-w, cy+h*0.5); ctx.lineTo(cx-w*0.33, cy-h*0.5);
-            ctx.lineTo(cx+w*0.33, cy+h*0.5); ctx.lineTo(cx+w, cy-h*0.5);
-            ctx.stroke(); break;
-        case 3: // circle
-            ctx.beginPath();
-            ctx.arc(cx, cy, sz*0.28, 0, Math.PI*2);
-            ctx.stroke(); break;
-        case 4: // dot1
-            ctx.beginPath();
-            ctx.arc(cx, cy, sz*0.12, 0, Math.PI*2);
-            ctx.fill(); break;
-        case 5: // dot3
-            ctx.beginPath(); ctx.arc(cx, cy-h*0.5, sz*0.09, 0, Math.PI*2); ctx.fill();
-            ctx.beginPath(); ctx.arc(cx-w*0.55, cy+h*0.45, sz*0.09, 0, Math.PI*2); ctx.fill();
-            ctx.beginPath(); ctx.arc(cx+w*0.55, cy+h*0.45, sz*0.09, 0, Math.PI*2); ctx.fill();
-            break;
-        case 6: // diamond
-            ctx.beginPath();
-            ctx.moveTo(cx, cy-h); ctx.lineTo(cx+w, cy); ctx.lineTo(cx, cy+h); ctx.lineTo(cx-w, cy); ctx.closePath();
-            ctx.stroke(); break;
-        case 7: // cross
-            ctx.beginPath(); ctx.moveTo(cx, cy-h); ctx.lineTo(cx, cy+h); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(cx-w, cy); ctx.lineTo(cx+w, cy); ctx.stroke();
-            break;
-        case 8: // roof
+        case 0: // chevronUp
             ctx.beginPath();
             ctx.moveTo(cx-w, cy+h*0.5); ctx.lineTo(cx, cy-h*0.5); ctx.lineTo(cx+w, cy+h*0.5);
             ctx.stroke(); break;
-        case 9: // arc
+        case 1: // chevronDown
             ctx.beginPath();
-            ctx.moveTo(cx-w, cy+h*0.4);
-            ctx.quadraticCurveTo(cx, cy-h*0.7, cx+w, cy+h*0.4);
+            ctx.moveTo(cx-w, cy-h*0.5); ctx.lineTo(cx, cy+h*0.5); ctx.lineTo(cx+w, cy-h*0.5);
             ctx.stroke(); break;
-        case 10: // hex
+        case 2: // circle
             ctx.beginPath();
-            for(let i=0;i<6;i++){const a=Math.PI/2+i*Math.PI/3;ctx.lineTo(cx+Math.cos(a)*sz*0.28,cy-Math.sin(a)*sz*0.28);}
-            ctx.closePath(); ctx.stroke(); break;
-        case 11: // eye
-            ctx.beginPath();
-            ctx.moveTo(cx-w, cy); ctx.quadraticCurveTo(cx, cy-h, cx+w, cy);
-            ctx.quadraticCurveTo(cx, cy+h, cx-w, cy);
-            ctx.stroke();
-            ctx.beginPath(); ctx.arc(cx, cy, sz*0.08, 0, Math.PI*2); ctx.fill();
+            ctx.arc(cx, cy, sz*0.28, 0, Math.PI*2);
+            ctx.stroke(); break;
+        case 3: // twoCircles
+            ctx.beginPath(); ctx.arc(cx-w*0.45, cy, sz*0.18, 0, Math.PI*2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(cx+w*0.45, cy, sz*0.18, 0, Math.PI*2); ctx.stroke();
             break;
-        case 12: // spiral
-            ctx.beginPath();
-            ctx.arc(cx, cy, sz*0.1, 0, Math.PI*1.5);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.arc(cx, cy, sz*0.22, Math.PI*1.5, Math.PI*0.2, true);
-            ctx.stroke();
-            break;
-        case 13: // 3 lines
+        case 4: // line
+            ctx.beginPath(); ctx.moveTo(cx-w, cy); ctx.lineTo(cx+w, cy);
+            ctx.stroke(); break;
+        case 5: // threeLines
             ctx.beginPath(); ctx.moveTo(cx-w*0.5, cy-h); ctx.lineTo(cx-w*0.5, cy+h); ctx.stroke();
             ctx.beginPath(); ctx.moveTo(cx, cy-h); ctx.lineTo(cx, cy+h); ctx.stroke();
             ctx.beginPath(); ctx.moveTo(cx+w*0.5, cy-h); ctx.lineTo(cx+w*0.5, cy+h); ctx.stroke();
             break;
-        case 14: // dot4
-            const dd = sz*0.18;
-            ctx.beginPath(); ctx.arc(cx-dd, cy-dd, sz*0.08, 0, Math.PI*2); ctx.fill();
-            ctx.beginPath(); ctx.arc(cx+dd, cy-dd, sz*0.08, 0, Math.PI*2); ctx.fill();
-            ctx.beginPath(); ctx.arc(cx-dd, cy+dd, sz*0.08, 0, Math.PI*2); ctx.fill();
-            ctx.beginPath(); ctx.arc(cx+dd, cy+dd, sz*0.08, 0, Math.PI*2); ctx.fill();
+        case 6: // twoPoints
+            ctx.beginPath(); ctx.arc(cx-w*0.45, cy, sz*0.09, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(cx+w*0.45, cy, sz*0.09, 0, Math.PI*2); ctx.fill();
             break;
-        case 15: // twocir
-            ctx.beginPath(); ctx.arc(cx-sz*0.14, cy, sz*0.15, 0, Math.PI*2); ctx.stroke();
-            ctx.beginPath(); ctx.arc(cx+sz*0.14, cy, sz*0.15, 0, Math.PI*2); ctx.stroke();
+        case 7: // threePoints
+            ctx.beginPath(); ctx.arc(cx, cy-h*0.5, sz*0.09, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(cx-w*0.55, cy+h*0.45, sz*0.09, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(cx+w*0.55, cy+h*0.45, sz*0.09, 0, Math.PI*2); ctx.fill();
             break;
+        case 8: // waveUp
+            ctx.beginPath();
+            ctx.moveTo(cx-w, cy+h*0.3);
+            ctx.quadraticCurveTo(cx-w*0.3, cy-h, cx, cy);
+            ctx.quadraticCurveTo(cx+w*0.3, cy+h, cx+w, cy-h*0.3);
+            ctx.stroke(); break;
+        case 9: // waveDown
+            ctx.beginPath();
+            ctx.moveTo(cx-w, cy-h*0.3);
+            ctx.quadraticCurveTo(cx-w*0.3, cy+h, cx, cy);
+            ctx.quadraticCurveTo(cx+w*0.3, cy-h, cx+w, cy+h*0.3);
+            ctx.stroke(); break;
     }
     ctx.restore();
 }
@@ -156,6 +122,7 @@ function getDominoTex(leftIdx, rightIdx, tint) {
     // Couleurs selon tint
     const C={
         normal:  {border:'rgba(126,200,227,0.5)',sep:'rgba(126,200,227,0.3)',icon:'#7ec8e3',glow:'rgba(126,200,227,0.12)'},
+        ice:     {border:'rgba(220,235,248,0.45)',sep:'rgba(220,235,248,0.25)',icon:'rgba(230,240,250,0.85)',glow:'rgba(220,235,248,0.1)'},
         cyan:    {border:'rgba(126,200,227,0.9)',sep:'rgba(126,200,227,0.6)',icon:'#5eefff',glow:'rgba(94,239,255,0.3)'},
         pink:    {border:'rgba(255,120,180,0.7)',sep:'rgba(255,120,180,0.4)',icon:'#ff78b4',glow:'rgba(255,120,180,0.15)'},
         silver:  {border:'rgba(34,211,238,0.6)',sep:'rgba(34,211,238,0.35)',icon:'#22d3ee',glow:'rgba(34,211,238,0.15)'},
@@ -165,9 +132,9 @@ function getDominoTex(leftIdx, rightIdx, tint) {
     const c=C[tint]||C.normal;
     const border=c.border, sep=c.sep, iconC=c.icon, glow=c.glow;
 
-    // Fond arrondi
+    // Fond arrondi — semi-transparent
     const r = 36, m = 8;
-    ctx.fillStyle = '#0e0f18';
+    ctx.fillStyle = 'rgba(14,15,24,0.55)';
     ctx.beginPath();
     ctx.moveTo(m+r, m); ctx.lineTo(S-m-r, m); ctx.quadraticCurveTo(S-m, m, S-m, m+r);
     ctx.lineTo(S-m, S-m-r); ctx.quadraticCurveTo(S-m, S-m, S-m-r, S-m);
@@ -186,16 +153,16 @@ function getDominoTex(leftIdx, rightIdx, tint) {
     ctx.stroke();
     ctx.shadowBlur = 0;
 
-    // Séparateur vertical (médiane)
+    // Séparateur horizontal (médiane)
     ctx.strokeStyle = sep; ctx.lineWidth = 2.5;
     ctx.shadowColor = sep; ctx.shadowBlur = 8;
-    ctx.beginPath(); ctx.moveTo(S/2, m+16); ctx.lineTo(S/2, S-m-16); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(m+16, S/2); ctx.lineTo(S-m-16, S/2); ctx.stroke();
     ctx.shadowBlur = 0;
 
-    // Icônes — gauche et droite
+    // Icônes — haut et bas
     const iconSz = S * 0.42;
-    drawIcon(ctx, leftIdx,  S*0.25, S*0.5, iconSz, iconC);
-    drawIcon(ctx, rightIdx, S*0.75, S*0.5, iconSz, iconC);
+    drawIcon(ctx, leftIdx,  S*0.5, S*0.25, iconSz, iconC);
+    drawIcon(ctx, rightIdx, S*0.5, S*0.75, iconSz, iconC);
 
     const tex = new THREE.CanvasTexture(cv);
     _dtc[k] = tex;
@@ -206,16 +173,16 @@ function getDominoTex(leftIdx, rightIdx, tint) {
 
 const GAP = 1.15;
 const TABLEAUX = [
-    { name:'T1', sats:[ {x:0, y:GAP, v:[0,5]}, {x:0, y:-GAP, v:[2,3], state:'emerald'} ] },
-    { name:'T2', sats:[ {x:-GAP, y:0, v:[6,4], state:'silver'}, {x:GAP, y:0, v:[8,1]} ] },
+    { name:'T1', sats:[ {x:GAP, y:0, v:[0,2]}, {x:-GAP, y:0, v:[8,7], state:'emerald'} ] },
+    { name:'T2', sats:[ {x:0, y:-GAP, v:[3,4], state:'silver'}, {x:0, y:GAP, v:[1,6]} ] },
     { name:'T3', sats:[
-        {x:-GAP, y:-GAP, v:[11,2]}, {x:GAP, y:-GAP, v:[12,5]},
-        {x:2*GAP, y:GAP, v:[13,6]}, {x:2*GAP, y:0, v:[14,3]}, {x:2*GAP, y:-GAP, v:[15,0]}
+        {x:-GAP, y:-GAP, v:[9,0]}, {x:-GAP, y:GAP, v:[5,2]},
+        {x:GAP, y:2*GAP, v:[7,3]}, {x:0, y:2*GAP, v:[6,8]}, {x:-GAP, y:2*GAP, v:[4,1]}
     ] },
     { name:'T4', sats:[
-        {x:-2*GAP, y:GAP, v:[10,7]}, {x:-2*GAP, y:0, v:[9,4], state:'gold'},
-        {x:-GAP, y:GAP, v:[3,10]}, {x:GAP, y:GAP, v:[7,13]},
-        {x:-GAP, y:-GAP, v:[5,11]}, {x:GAP, y:-GAP, v:[1,9]}
+        {x:GAP, y:-2*GAP, v:[2,9]}, {x:0, y:-2*GAP, v:[8,4], state:'gold'},
+        {x:GAP, y:-GAP, v:[0,5]}, {x:GAP, y:GAP, v:[6,1]},
+        {x:-GAP, y:-GAP, v:[3,7]}, {x:-GAP, y:GAP, v:[9,2]}
     ] },
 ];
 const TOTAL = TABLEAUX.length;
@@ -310,38 +277,94 @@ function rrShape(w,h,r){
 
 function placeSat(sat,faceRotY){
     const q=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),faceRotY);
-    sat.mesh.position.copy(new THREE.Vector3(sat.lx,sat.ly,HALF+0.01).applyQuaternion(q));
+    sat.mesh.position.copy(new THREE.Vector3(sat.lx,sat.ly,HALF+SAT_LIFT).applyQuaternion(q));
     sat.mesh.quaternion.copy(q);
+    sat.baseQuat = q.clone(); // référence pour le breathing
 }
 
 // ═══ PORTE ═══
 
-let porteValue=[7,8];
+let porteValue=[4,2];
 const cubeGroup=new THREE.Group();scene.add(cubeGroup);
 
-function makePorteTex(val){ return getDominoTex(val[0], val[1], 'normal'); }
+function makePorteTex(val){ return getDominoTex(val[0], val[1], 'ice'); }
 const cubeMats=[];for(let i=0;i<6;i++)cubeMats.push(new THREE.MeshBasicMaterial({map:makePorteTex(porteValue),transparent:true}));
 const cubeMesh=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),cubeMats);cubeMesh.userData.isCube=true;cubeGroup.add(cubeMesh);
+
+// Halo ice — sprite radial gradient face-caméra
+const haloCanvas=document.createElement('canvas');haloCanvas.width=256;haloCanvas.height=256;
+const hctx=haloCanvas.getContext('2d');
+const grad=hctx.createRadialGradient(128,128,0,128,128,128);
+grad.addColorStop(0,'rgba(220,235,248,0.25)');
+grad.addColorStop(0.3,'rgba(200,220,240,0.12)');
+grad.addColorStop(0.6,'rgba(180,210,235,0.04)');
+grad.addColorStop(1,'rgba(180,210,235,0)');
+hctx.fillStyle=grad;hctx.fillRect(0,0,256,256);
+const haloTex=new THREE.CanvasTexture(haloCanvas);
+const haloSpriteMat=new THREE.SpriteMaterial({map:haloTex,transparent:true,opacity:0.7,depthWrite:false});
+const haloSprite=new THREE.Sprite(haloSpriteMat);
+haloSprite.scale.set(2.8,2.8,1);
+cubeGroup.add(haloSprite);
+
 function updatePorte(val){porteValue=val;const tex=makePorteTex(val);cubeMats.forEach(m=>{m.map=tex;m.needsUpdate=true;});}
 
 // ═══ SATELLITES — un seul plane texturé, pas de double carré ═══
 
 const sats=[];
+const SAT_DEPTH = 0.06;  // épaisseur du domino
+const SAT_LIFT = 0.08;   // hauteur de flottement au-dessus de la face
 function createSatMesh(value,tint){
     const grp=new THREE.Group(), SZ=1.0, R=0.12;
+
+    // ── Face avant (texture domino) ──
     const nMesh=new THREE.Mesh(
         new THREE.PlaneGeometry(SZ, SZ),
         new THREE.MeshBasicMaterial({map:getDominoTex(value[0],value[1],tint||'normal'),transparent:true})
     );
+    nMesh.position.z = SAT_DEPTH/2 + 0.001; // devant la box
     grp.add(nMesh);
-    // Glow (derrière)
+
+    // ── Corps 3D (épaisseur) — semi-transparent ──
+    const boxGeo = new THREE.BoxGeometry(SZ, SZ, SAT_DEPTH);
+    const sideMat = new THREE.MeshBasicMaterial({color:0x141520, transparent:true, opacity:0.45});
+    const edgeMat = new THREE.MeshBasicMaterial({color:0x7ec8e3, transparent:true, opacity:0.08});
+    const backMat = new THREE.MeshBasicMaterial({color:0x0a0b12, transparent:true, opacity:0.35});
+    // BoxGeometry faces: +x, -x, +y, -y, +z (front), -z (back)
+    const boxMats = [sideMat, sideMat, sideMat, sideMat, edgeMat, backMat];
+    const boxMesh = new THREE.Mesh(boxGeo, boxMats);
+    grp.add(boxMesh);
+
+    // ── Liseré néon sur les arêtes ──
+    const edgesGeo = new THREE.EdgesGeometry(boxGeo);
+    const edgeLines = new THREE.LineSegments(edgesGeo, new THREE.LineBasicMaterial({color:0x7ec8e3, transparent:true, opacity:0.18}));
+    grp.add(edgeLines);
+
+    // ── Ombre portée (plan sombre flou derrière) ──
+    const shadowCanvas = document.createElement('canvas'); shadowCanvas.width=128; shadowCanvas.height=128;
+    const sctx = shadowCanvas.getContext('2d');
+    const sg = sctx.createRadialGradient(64,64,10,64,64,60);
+    sg.addColorStop(0,'rgba(0,0,0,0.35)');
+    sg.addColorStop(0.5,'rgba(0,0,0,0.15)');
+    sg.addColorStop(1,'rgba(0,0,0,0)');
+    sctx.fillStyle=sg; sctx.fillRect(0,0,128,128);
+    const shadowTex = new THREE.CanvasTexture(shadowCanvas);
+    const shadowMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(SZ*1.25, SZ*1.25),
+        new THREE.MeshBasicMaterial({map:shadowTex, transparent:true, opacity:0.6, depthWrite:false})
+    );
+    shadowMesh.position.z = -SAT_DEPTH/2 - SAT_LIFT + 0.005; // collée sur la face du cube
+    grp.add(shadowMesh);
+
+    // ── Glow (derrière, pour état locked) ──
     const gShape=rrShape(SZ+0.06,SZ+0.06,R+0.03);
     const gMesh=new THREE.Mesh(new THREE.ShapeGeometry(gShape),new THREE.MeshBasicMaterial({color:0x7ec8e3,transparent:true,opacity:0}));
-    gMesh.position.z=-0.005;grp.add(gMesh);
+    gMesh.position.z=-SAT_DEPTH/2-0.005;grp.add(gMesh);
     // Halo
     const hMesh=new THREE.Mesh(new THREE.ShapeGeometry(rrShape(SZ+0.2,SZ+0.2,R+0.08)),new THREE.MeshBasicMaterial({color:0x7ec8e3,transparent:true,opacity:0}));
-    hMesh.position.z=-0.01;grp.add(hMesh);
-    grp.userData={numMesh:nMesh,glowMesh:gMesh,haloMesh:hMesh,isSat:true};return grp;
+    hMesh.position.z=-SAT_DEPTH/2-0.01;grp.add(hMesh);
+
+    grp.userData={numMesh:nMesh,glowMesh:gMesh,haloMesh:hMesh,boxMesh:boxMesh,edgeLines:edgeLines,shadowMesh:shadowMesh,isSat:true};
+    return grp;
 }
 
 TABLEAUX.forEach((tab,tIdx)=>{tab.sats.forEach((sd,sIdx)=>{
@@ -474,7 +497,7 @@ function dragPorte(dirX, dirY){
     // Créer un ghost de la porte (plane temporaire) qui va voyager vers la position du satellite
     const ghostMesh=new THREE.Mesh(
         new THREE.PlaneGeometry(1,1),
-        new THREE.MeshBasicMaterial({map:getDominoTex(porteValue[0],porteValue[1],'normal'),transparent:true})
+        new THREE.MeshBasicMaterial({map:getDominoTex(porteValue[0],porteValue[1],'ice'),transparent:true})
     );
     ghostMesh.position.set(0,0,HALF+0.02);
     cubeGroup.add(ghostMesh);
@@ -645,7 +668,7 @@ document.getElementById('btnReset').addEventListener('click',()=>{
         const ud=sat.mesh.userData;ud.glowMesh.material.opacity=0;ud.haloMesh.material.opacity=0;
         ud.numMesh.material.map=getDominoTex(sd.v[0],sd.v[1],'normal');
     });});
-    updatePorte([7,8]);cubeGroup.quaternion.identity();targetQuat.identity();
+    updatePorte([4,2]);cubeGroup.quaternion.identity();targetQuat.identity();
     currentIdx=0;isAnimating=false;busy=false;navDir=0;
     refreshZoom();camera.position.set(targetCamX,0,targetCamZ);assignFaces();updateUI();
 });
@@ -686,6 +709,189 @@ document.getElementById('btnCenter').addEventListener('click',()=>{
     el.style.display=el.style.display==='none'?'block':'none';
 });
 
+// ═══ BACKGROUND MODES — multi-couches scrollantes ═══
+
+const BG_MODES = ['stars','grid','nebula','dust','off'];
+const BG_LABELS = ['étoiles ✦','grille ⊞','nebula ☁','poussière ·','off'];
+let bgMode = 0;
+
+// ── Mode 0 : Étoiles — 3 couches à profondeurs différentes ──
+const starLayers = [];
+const STAR_CONFIGS = [
+    {count:80,  depth:[-8,-25],  speed:2.5, size:0.18, opacity:0.55, spread:50},
+    {count:150, depth:[-25,-55], speed:1.2, size:0.10, opacity:0.35, spread:65},
+    {count:250, depth:[-55,-90], speed:0.4, size:0.05, opacity:0.18, spread:80},
+];
+STAR_CONFIGS.forEach(cfg=>{
+    const geo=new THREE.BufferGeometry();
+    const pos=new Float32Array(cfg.count*3);
+    const speeds=new Float32Array(cfg.count);
+    for(let i=0;i<cfg.count;i++){
+        pos[i*3]=(Math.random()-0.5)*cfg.spread;
+        pos[i*3+1]=(Math.random()-0.5)*cfg.spread*0.7;
+        pos[i*3+2]=cfg.depth[0]+Math.random()*(cfg.depth[1]-cfg.depth[0]);
+        speeds[i]=cfg.speed*(0.5+Math.random());
+    }
+    geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+    const mat=new THREE.PointsMaterial({color:0x7ec8e3,size:cfg.size,transparent:true,opacity:cfg.opacity,depthWrite:false});
+    const pts=new THREE.Points(geo,mat);
+    scene.add(pts);
+    starLayers.push({pts,geo,speeds,cfg});
+});
+
+// ── Mode 1 : Grille — 2 couches (proche + lointaine) ──
+const gridLayers = [];
+const GRID_CONFIGS = [
+    {depth:-12, step:2,  span:40, opacity:0.09, color:0x7ec8e3, scrollSpeed:0.8},
+    {depth:-35, step:4,  span:60, opacity:0.04, color:0x5a9ab5, scrollSpeed:0.3},
+];
+GRID_CONFIGS.forEach(cfg=>{
+    const grp=new THREE.Group();
+    const mat=new THREE.LineBasicMaterial({color:cfg.color,transparent:true,opacity:cfg.opacity,depthWrite:false});
+    for(let x=-cfg.span;x<=cfg.span;x+=cfg.step){
+        const g=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x,-cfg.span,cfg.depth),new THREE.Vector3(x,cfg.span,cfg.depth)]);
+        grp.add(new THREE.Line(g,mat));
+    }
+    for(let y=-cfg.span;y<=cfg.span;y+=cfg.step){
+        const g=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-cfg.span,y,cfg.depth),new THREE.Vector3(cfg.span,y,cfg.depth)]);
+        grp.add(new THREE.Line(g,mat));
+    }
+    grp.visible=false;
+    scene.add(grp);
+    gridLayers.push({grp,cfg});
+});
+
+// ── Mode 2 : Nebula — 3 couches de brume ──
+const nebulaLayers = [];
+const NEB_CONFIGS = [
+    {count:5,  depth:[-10,-20], scale:[10,18], opacity:0.10, speed:0.20, hueRange:[190,220]},
+    {count:8,  depth:[-25,-40], scale:[12,22], opacity:0.06, speed:0.10, hueRange:[200,230]},
+    {count:6,  depth:[-45,-65], scale:[15,28], opacity:0.03, speed:0.05, hueRange:[210,240]},
+];
+NEB_CONFIGS.forEach(cfg=>{
+    const grp=new THREE.Group();
+    const sprites=[];
+    for(let i=0;i<cfg.count;i++){
+        const nc=document.createElement('canvas'); nc.width=128; nc.height=128;
+        const nctx=nc.getContext('2d');
+        const hue=cfg.hueRange[0]+Math.random()*(cfg.hueRange[1]-cfg.hueRange[0]);
+        const ng=nctx.createRadialGradient(64,64,0,64,64,64);
+        ng.addColorStop(0,`hsla(${hue},60%,60%,${cfg.opacity})`);
+        ng.addColorStop(0.4,`hsla(${hue},50%,40%,${cfg.opacity*0.5})`);
+        ng.addColorStop(1,'rgba(0,0,0,0)');
+        nctx.fillStyle=ng; nctx.fillRect(0,0,128,128);
+        const nTex=new THREE.CanvasTexture(nc);
+        const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:nTex,transparent:true,opacity:0.7,depthWrite:false}));
+        const sc=cfg.scale[0]+Math.random()*(cfg.scale[1]-cfg.scale[0]);
+        sp.scale.set(sc,sc,1);
+        sp.position.set((Math.random()-0.5)*55,(Math.random()-0.5)*35,cfg.depth[0]+Math.random()*(cfg.depth[1]-cfg.depth[0]));
+        sp.userData.vx=(Math.random()-0.5)*cfg.speed;
+        sp.userData.vy=(Math.random()-0.5)*cfg.speed*0.5;
+        sprites.push(sp);
+        grp.add(sp);
+    }
+    grp.visible=false;
+    scene.add(grp);
+    nebulaLayers.push({grp,sprites,cfg});
+});
+
+// ── Mode 3 : Poussière cosmique — 3 couches ──
+const dustLayers = [];
+const DUST_CONFIGS = [
+    {count:60,  depth:[-3,-15],  size:0.08, opacity:0.40, driftSpeed:0.08, spread:35},
+    {count:100, depth:[-15,-35], size:0.05, opacity:0.25, driftSpeed:0.04, spread:45},
+    {count:150, depth:[-35,-60], size:0.03, opacity:0.12, driftSpeed:0.02, spread:60},
+];
+DUST_CONFIGS.forEach(cfg=>{
+    const geo=new THREE.BufferGeometry();
+    const pos=new Float32Array(cfg.count*3);
+    const vel=[];
+    for(let i=0;i<cfg.count;i++){
+        pos[i*3]=(Math.random()-0.5)*cfg.spread;
+        pos[i*3+1]=(Math.random()-0.5)*cfg.spread*0.7;
+        pos[i*3+2]=cfg.depth[0]+Math.random()*(cfg.depth[1]-cfg.depth[0]);
+        vel.push({x:(Math.random()-0.5)*cfg.driftSpeed, y:(Math.random()-0.5)*cfg.driftSpeed*0.6, z:(Math.random()-0.5)*cfg.driftSpeed*0.3});
+    }
+    geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+    const mat=new THREE.PointsMaterial({color:0x7ec8e3,size:cfg.size,transparent:true,opacity:cfg.opacity,depthWrite:false});
+    const pts=new THREE.Points(geo,mat);
+    pts.visible=false;
+    scene.add(pts);
+    dustLayers.push({pts,geo,vel,cfg});
+});
+
+// ── Visibility ──
+function updateBgVisibility(){
+    starLayers.forEach(l=>l.pts.visible=(bgMode===0));
+    gridLayers.forEach(l=>l.grp.visible=(bgMode===1));
+    nebulaLayers.forEach(l=>l.grp.visible=(bgMode===2));
+    dustLayers.forEach(l=>l.pts.visible=(bgMode===3));
+}
+updateBgVisibility();
+
+// ── Tick ──
+function tickBg(t, dt){
+    // Étoiles multi-couches — chaque couche scroll à sa vitesse
+    if(bgMode===0){
+        starLayers.forEach(layer=>{
+            const p=layer.geo.attributes.position.array;
+            const n=layer.cfg.count;
+            for(let i=0;i<n;i++){
+                p[i*3+2]+=layer.speeds[i]*dt;
+                if(p[i*3+2]>layer.cfg.depth[0]+5){
+                    p[i*3+2]=layer.cfg.depth[1];
+                    p[i*3]=(Math.random()-0.5)*layer.cfg.spread;
+                    p[i*3+1]=(Math.random()-0.5)*layer.cfg.spread*0.7;
+                }
+            }
+            layer.geo.attributes.position.needsUpdate=true;
+        });
+    }
+    // Grille multi-couches — chaque couche scroll Y à sa vitesse
+    if(bgMode===1){
+        gridLayers.forEach(layer=>{
+            layer.grp.position.y=-((t*layer.cfg.scrollSpeed)%layer.cfg.step);
+        });
+    }
+    // Nebula multi-couches — drift lent par couche
+    if(bgMode===2){
+        nebulaLayers.forEach(layer=>{
+            layer.sprites.forEach(s=>{
+                s.position.x+=s.userData.vx*dt;
+                s.position.y+=s.userData.vy*dt;
+                if(s.position.x>30)s.position.x=-30;
+                if(s.position.x<-30)s.position.x=30;
+                if(s.position.y>20)s.position.y=-20;
+                if(s.position.y<-20)s.position.y=20;
+            });
+        });
+    }
+    // Poussière multi-couches — drift organique
+    if(bgMode===3){
+        dustLayers.forEach(layer=>{
+            const p=layer.geo.attributes.position.array;
+            const hl=layer.cfg.spread/2;
+            for(let i=0;i<layer.cfg.count;i++){
+                p[i*3]+=layer.vel[i].x*dt;
+                p[i*3+1]+=layer.vel[i].y*dt;
+                p[i*3+2]+=layer.vel[i].z*dt;
+                if(Math.abs(p[i*3])>hl)layer.vel[i].x*=-1;
+                if(Math.abs(p[i*3+1])>hl*0.7)layer.vel[i].y*=-1;
+                if(p[i*3+2]>layer.cfg.depth[0])layer.vel[i].z*=-1;
+                if(p[i*3+2]<layer.cfg.depth[1])layer.vel[i].z*=-1;
+            }
+            layer.geo.attributes.position.needsUpdate=true;
+        });
+    }
+}
+
+// ── Bouton switcher ──
+document.getElementById('btnBg').addEventListener('click',()=>{
+    bgMode=(bgMode+1)%BG_MODES.length;
+    updateBgVisibility();
+    document.getElementById('btnBg').textContent='fond: '+BG_LABELS[bgMode];
+});
+
 // ═══ RENDER ═══
 
 const clock=new THREE.Clock();
@@ -695,6 +901,10 @@ function animate(){
     if(isAnimating){cubeGroup.quaternion.slerp(targetQuat,0.12);
         if(1-Math.abs(cubeGroup.quaternion.dot(targetQuat))<0.0001){cubeGroup.quaternion.copy(targetQuat);onRotationComplete();}}
     tickSwapAnim(dt);
+    tickBg(t, dt);
+    // Halo ice pulse
+    const hp=0.5+0.5*Math.sin(t*1.8);
+    haloSpriteMat.opacity=0.4+hp*0.35;
     camera.position.x+=(targetCamX-camera.position.x)*0.08;
     camera.position.z+=(targetCamZ-camera.position.z)*0.08;
     camera.lookAt(camera.position.x, 0, 0);
@@ -712,10 +922,19 @@ function animate(){
         });
         hoveredSat=bestS;
     }
-    sats.forEach(sat=>{const ud=sat.mesh.userData;
+    sats.forEach((sat,si)=>{const ud=sat.mesh.userData;
+        // ── Micro-tilt respiration (chaque domino a un offset unique) ──
+        if(sat.mesh.visible && !sat.locked && !isAnimating && !swapAnim && sat.baseQuat){
+            const phase = t*1.2 + si*1.7;
+            const tiltX = Math.sin(phase) * 0.012;
+            const tiltY = Math.cos(phase*0.7) * 0.008;
+            const breathQ = new THREE.Quaternion().setFromEuler(new THREE.Euler(tiltX, 0, tiltY));
+            sat.mesh.quaternion.copy(sat.baseQuat).multiply(breathQ);
+        }
         if(sat.locked){sat.mesh.visible=true;const p=0.5+0.5*Math.sin(t*3.5);
             ud.glowMesh.material.opacity=0.2+p*0.35;ud.haloMesh.material.opacity=0.05+p*0.1;
             ud.numMesh.material.map=getDominoTex(sat.value[0],sat.value[1],'cyan');
+            ud.edgeLines.material.color.set(0x5eefff);ud.edgeLines.material.opacity=0.35;
         } else {
             // Masquer si position source OU si sous le flottant
             if(isHiddenBySrc(sat)||sat===hoveredSat){sat.mesh.visible=false;}
@@ -724,6 +943,10 @@ function animate(){
             const st=sat.state||'white';
             let tint=(st!=='white'?st:'normal');
             ud.numMesh.material.map=getDominoTex(sat.value[0],sat.value[1],tint);
+            // Edge color matches state
+            const eCol = st==='silver'?0x22d3ee : st==='gold'?0xffd700 : st==='emerald'?0x34d399 : 0x7ec8e3;
+            ud.edgeLines.material.color.set(eCol);
+            ud.edgeLines.material.opacity=0.18;
         }
     });
     renderer.render(scene,camera);
