@@ -22,8 +22,13 @@
         .nav-dots { display:flex;gap:6px;margin-top:4px; }
         .nav-dot { width:7px;height:7px;border-radius:50%;background:rgba(126,200,227,0.12);transition:all 0.4s; }
         .nav-dot.active { background:rgba(126,200,227,0.6);box-shadow:0 0 7px rgba(126,200,227,0.4); }
-        .dbtn { background:transparent;border:1px solid rgba(126,200,227,0.25);color:rgba(126,200,227,0.4);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:0.6rem;font-family:inherit;margin-top:8px; }
+        .ctrl-row { display:flex;gap:8px;justify-content:center;margin-top:6px; }
+        .dbtn { background:transparent;border:1px solid rgba(126,200,227,0.25);color:rgba(126,200,227,0.4);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:0.6rem;font-family:inherit; }
         .dbtn:hover { border-color:rgba(126,200,227,0.5);color:rgba(126,200,227,0.7); }
+        .slider-row { display:flex;align-items:center;gap:6px;margin-top:6px;color:rgba(126,200,227,0.4);font-size:0.55rem; }
+        .slider-row input[type=range] { -webkit-appearance:none;appearance:none;width:100px;height:3px;background:rgba(126,200,227,0.15);border-radius:2px;outline:none;cursor:pointer; }
+        .slider-row input[type=range]::-webkit-slider-thumb { -webkit-appearance:none;width:10px;height:10px;border-radius:50%;background:rgba(126,200,227,0.5);border:1px solid rgba(126,200,227,0.3); }
+        .slider-row input[type=range]::-moz-range-thumb { width:10px;height:10px;border-radius:50%;background:rgba(126,200,227,0.5);border:1px solid rgba(126,200,227,0.3); }
     </style>
 </head>
 <body>
@@ -33,10 +38,19 @@
         <div class="nav-dots" id="navDots"></div>
         <div class="info-line" id="infoLine"></div>
         <div class="hint">← → naviguer · tap bloquer · re-tap ancrer</div>
-        <button class="dbtn" id="btnReset">reset</button>
-        <button class="dbtn" id="btnExport">export JSON</button>
-        <button class="dbtn" id="btnCenter">axe ∣</button>
-        <button class="dbtn" id="btnBg">fond: étoiles ✦</button>
+        <div class="ctrl-row">
+            <button class="dbtn" id="btnReset">reset</button>
+            <button class="dbtn" id="btnExport">export JSON</button>
+        </div>
+        <div class="ctrl-row">
+            <button class="dbtn" id="btnCenter">axe ∣</button>
+            <button class="dbtn" id="btnBg">fond: étoiles ✦</button>
+        </div>
+        <div class="slider-row">
+            <span>◇</span>
+            <input type="range" id="sliderAlpha" min="10" max="100" value="100">
+            <span id="alphaVal">100%</span>
+        </div>
     </div>
     <div id="centerLine" style="display:none;position:fixed;top:0;left:50%;width:1px;height:100vh;background:rgba(255,0,0,0.4);pointer-events:none;z-index:999;"></div>
 
@@ -326,9 +340,9 @@ function createSatMesh(value,tint){
 
     // ── Corps 3D (épaisseur) — semi-transparent ──
     const boxGeo = new THREE.BoxGeometry(SZ, SZ, SAT_DEPTH);
-    const sideMat = new THREE.MeshBasicMaterial({color:0x141520, transparent:true, opacity:0.45});
-    const edgeMat = new THREE.MeshBasicMaterial({color:0x7ec8e3, transparent:true, opacity:0.08});
-    const backMat = new THREE.MeshBasicMaterial({color:0x0a0b12, transparent:true, opacity:0.35});
+    const sideMat = new THREE.MeshBasicMaterial({color:0x141520, transparent:true, opacity:0.45});sideMat._baseOp=0.45;
+    const edgeMat = new THREE.MeshBasicMaterial({color:0x7ec8e3, transparent:true, opacity:0.08});edgeMat._baseOp=0.08;
+    const backMat = new THREE.MeshBasicMaterial({color:0x0a0b12, transparent:true, opacity:0.35});backMat._baseOp=0.35;
     // BoxGeometry faces: +x, -x, +y, -y, +z (front), -z (back)
     const boxMats = [sideMat, sideMat, sideMat, sideMat, edgeMat, backMat];
     const boxMesh = new THREE.Mesh(boxGeo, boxMats);
@@ -502,6 +516,10 @@ function dragPorte(dirX, dirY){
     ghostMesh.position.set(0,0,HALF+0.02);
     cubeGroup.add(ghostMesh);
     
+    // Masquer la face avant du cube pendant le swap
+    cubeMats[4].opacity=0;
+    haloSprite.visible=false;
+    
     // Stocker les valeurs pour le swap final
     swapAnim={
         pairs:[{mesh:target.mesh, from:{x:target.lx,y:target.ly}, to:{x:0,y:0}}],
@@ -540,6 +558,9 @@ function tickSwapAnim(dt){
             cubeGroup.remove(swapAnim.ghost);
             swapAnim.ghost.geometry.dispose();
             swapAnim.ghost.material.dispose();
+            // Restaurer la face avant du cube
+            cubeMats[4].opacity=1;
+            haloSprite.visible=true;
             // Replacer le satellite
             placeSat(target,FACE_ROT[0]);
             assignFaces();swapAnim=null;refreshZoom();updateUI();
@@ -890,6 +911,22 @@ document.getElementById('btnBg').addEventListener('click',()=>{
     bgMode=(bgMode+1)%BG_MODES.length;
     updateBgVisibility();
     document.getElementById('btnBg').textContent='fond: '+BG_LABELS[bgMode];
+});
+
+// ═══ TRANSPARENCE DOMINOS ═══
+let domAlpha = 1.0;
+document.getElementById('sliderAlpha').addEventListener('input',(e)=>{
+    domAlpha = parseInt(e.target.value)/100;
+    document.getElementById('alphaVal').textContent=e.target.value+'%';
+    sats.forEach(sat=>{
+        const ud=sat.mesh.userData;
+        if(ud.numMesh) ud.numMesh.material.opacity=domAlpha;
+        if(ud.boxMesh){
+            ud.boxMesh.material.forEach(m=>{ m.opacity=m._baseOp*domAlpha; });
+        }
+        if(ud.edgeLines) ud.edgeLines.material.opacity=0.18*domAlpha;
+        if(ud.shadowMesh) ud.shadowMesh.material.opacity=0.6*domAlpha;
+    });
 });
 
 // ═══ RENDER ═══
