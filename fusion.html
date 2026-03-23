@@ -37,7 +37,6 @@
         <div class="face-label" id="faceLabel">1 / 3</div>
         <div class="nav-dots" id="navDots"></div>
         <div class="info-line" id="infoLine"></div>
-        <div class="hint">← → naviguer · tap bloquer · re-tap ancrer</div>
         <div class="ctrl-row">
             <button class="dbtn" id="btnReset">reset</button>
             <button class="dbtn" id="btnExport">export JSON</button>
@@ -125,6 +124,32 @@ function drawIcon(ctx, iconIdx, cx, cy, sz, color) {
 // ═══ DOMINO TEXTURE — médiane verticale, néon, tout Canvas2D ═══
 
 const _dtc = {};
+const _bgc = {};
+
+function getDominoBgTex(tint){
+    if(_bgc[tint]) return _bgc[tint];
+    const S=512, cv=document.createElement('canvas'); cv.width=S; cv.height=S;
+    const ctx=cv.getContext('2d');
+    const C={
+        normal:{glow:'rgba(126,200,227,0.12)'},ice:{glow:'rgba(220,235,248,0.1)'},
+        cyan:{glow:'rgba(94,239,255,0.3)'},pink:{glow:'rgba(255,120,180,0.15)'},
+        silver:{glow:'rgba(34,211,238,0.15)'},gold:{glow:'rgba(255,215,0,0.15)'},
+        emerald:{glow:'rgba(52,211,153,0.15)'},
+    };
+    const glow=(C[tint]||C.normal).glow;
+    const r=36, m=8;
+    ctx.fillStyle='rgba(14,15,24,0.92)';
+    ctx.beginPath();
+    ctx.moveTo(m+r,m);ctx.lineTo(S-m-r,m);ctx.quadraticCurveTo(S-m,m,S-m,m+r);
+    ctx.lineTo(S-m,S-m-r);ctx.quadraticCurveTo(S-m,S-m,S-m-r,S-m);
+    ctx.lineTo(m+r,S-m);ctx.quadraticCurveTo(m,S-m,m,S-m-r);
+    ctx.lineTo(m,m+r);ctx.quadraticCurveTo(m,m,m+r,m);
+    ctx.closePath();ctx.fill();
+    ctx.shadowColor=glow;ctx.shadowBlur=30;ctx.fill();ctx.shadowBlur=0;
+    const tex=new THREE.CanvasTexture(cv);
+    _bgc[tint]=tex; return tex;
+}
+
 function getDominoTex(leftIdx, rightIdx, tint) {
     const k = leftIdx+'|'+rightIdx+'|'+tint;
     if (_dtc[k]) return _dtc[k];
@@ -146,22 +171,16 @@ function getDominoTex(leftIdx, rightIdx, tint) {
     const c=C[tint]||C.normal;
     const border=c.border, sep=c.sep, iconC=c.icon, glow=c.glow;
 
-    // Fond arrondi — semi-transparent
+    // Fond retiré — géré par bgMesh séparé
     const r = 36, m = 8;
-    ctx.fillStyle = 'rgba(14,15,24,0.55)';
+
+    // Bordure néon
     ctx.beginPath();
     ctx.moveTo(m+r, m); ctx.lineTo(S-m-r, m); ctx.quadraticCurveTo(S-m, m, S-m, m+r);
     ctx.lineTo(S-m, S-m-r); ctx.quadraticCurveTo(S-m, S-m, S-m-r, S-m);
     ctx.lineTo(m+r, S-m); ctx.quadraticCurveTo(m, S-m, m, S-m-r);
     ctx.lineTo(m, m+r); ctx.quadraticCurveTo(m, m, m+r, m);
-    ctx.closePath(); ctx.fill();
-
-    // Glow interne
-    ctx.shadowColor = glow; ctx.shadowBlur = 30;
-    ctx.fill();
-    ctx.shadowBlur = 0;
-
-    // Bordure néon
+    ctx.closePath();
     ctx.strokeStyle = border; ctx.lineWidth = 3;
     ctx.shadowColor = border; ctx.shadowBlur = 15;
     ctx.stroke();
@@ -330,20 +349,27 @@ const SAT_LIFT = 0.08;   // hauteur de flottement au-dessus de la face
 function createSatMesh(value,tint){
     const grp=new THREE.Group(), SZ=1.0, R=0.12;
 
-    // ── Face avant (texture domino) ──
+    // ── Face avant (texture domino — sans fond, icônes+contours+médiane) ──
     const nMesh=new THREE.Mesh(
         new THREE.PlaneGeometry(SZ, SZ),
-        new THREE.MeshBasicMaterial({map:getDominoTex(value[0],value[1],tint||'normal'),transparent:true})
+        new THREE.MeshBasicMaterial({map:getDominoTex(value[0],value[1],tint||'normal'),transparent:true,side:THREE.DoubleSide})
     );
-    nMesh.position.z = SAT_DEPTH/2 + 0.001; // devant la box
+    nMesh.position.z = SAT_DEPTH/2 + 0.001;
     grp.add(nMesh);
+
+    // ── Fond arrondi séparé (contrôlé par le variateur) ──
+    const bgMesh=new THREE.Mesh(
+        new THREE.PlaneGeometry(SZ, SZ),
+        new THREE.MeshBasicMaterial({map:getDominoBgTex(tint||'normal'),transparent:true,opacity:1.0,side:THREE.DoubleSide})
+    );
+    bgMesh.position.z = SAT_DEPTH/2 + 0.0005;
+    grp.add(bgMesh);
 
     // ── Corps 3D (épaisseur) — semi-transparent ──
     const boxGeo = new THREE.BoxGeometry(SZ, SZ, SAT_DEPTH);
     const sideMat = new THREE.MeshBasicMaterial({color:0x141520, transparent:true, opacity:0.45});sideMat._baseOp=0.45;
     const edgeMat = new THREE.MeshBasicMaterial({color:0x7ec8e3, transparent:true, opacity:0.08});edgeMat._baseOp=0.08;
     const backMat = new THREE.MeshBasicMaterial({color:0x0a0b12, transparent:true, opacity:0.35});backMat._baseOp=0.35;
-    // BoxGeometry faces: +x, -x, +y, -y, +z (front), -z (back)
     const boxMats = [sideMat, sideMat, sideMat, sideMat, edgeMat, backMat];
     const boxMesh = new THREE.Mesh(boxGeo, boxMats);
     grp.add(boxMesh);
@@ -353,7 +379,7 @@ function createSatMesh(value,tint){
     const edgeLines = new THREE.LineSegments(edgesGeo, new THREE.LineBasicMaterial({color:0x7ec8e3, transparent:true, opacity:0.18}));
     grp.add(edgeLines);
 
-    // ── Ombre portée (plan sombre flou derrière) ──
+    // ── Ombre portée ──
     const shadowCanvas = document.createElement('canvas'); shadowCanvas.width=128; shadowCanvas.height=128;
     const sctx = shadowCanvas.getContext('2d');
     const sg = sctx.createRadialGradient(64,64,10,64,64,60);
@@ -366,7 +392,7 @@ function createSatMesh(value,tint){
         new THREE.PlaneGeometry(SZ*1.25, SZ*1.25),
         new THREE.MeshBasicMaterial({map:shadowTex, transparent:true, opacity:0.6, depthWrite:false})
     );
-    shadowMesh.position.z = -SAT_DEPTH/2 - SAT_LIFT + 0.005; // collée sur la face du cube
+    shadowMesh.position.z = -SAT_DEPTH/2 - SAT_LIFT + 0.005;
     grp.add(shadowMesh);
 
     // ── Glow (derrière, pour état locked) ──
@@ -377,7 +403,7 @@ function createSatMesh(value,tint){
     const hMesh=new THREE.Mesh(new THREE.ShapeGeometry(rrShape(SZ+0.2,SZ+0.2,R+0.08)),new THREE.MeshBasicMaterial({color:0x7ec8e3,transparent:true,opacity:0}));
     hMesh.position.z=-SAT_DEPTH/2-0.01;grp.add(hMesh);
 
-    grp.userData={numMesh:nMesh,glowMesh:gMesh,haloMesh:hMesh,boxMesh:boxMesh,edgeLines:edgeLines,shadowMesh:shadowMesh,isSat:true};
+    grp.userData={numMesh:nMesh,bgMesh:bgMesh,glowMesh:gMesh,haloMesh:hMesh,boxMesh:boxMesh,edgeLines:edgeLines,shadowMesh:shadowMesh,isSat:true};
     return grp;
 }
 
@@ -390,6 +416,7 @@ TABLEAUX.forEach((tab,tIdx)=>{tab.sats.forEach((sd,sIdx)=>{
 // ═══ STATE ═══
 
 let lockedSat=null,currentIdx=0,busy=false,isAnimating=false,navDir=0;
+let isFlipped=false, flipDir=0;
 let targetCamZ=camTargetForStatic(0).z;
 const targetQuat=new THREE.Quaternion();
 function mod(n){return((n%TOTAL)+TOTAL)%TOTAL;}
@@ -413,7 +440,7 @@ function isHiddenBySrc(s){
 }
 
 function navRight(){
-    if(busy||isAnimating)return;busy=true;isAnimating=true;navDir=1;
+    if(busy||isAnimating)return;busy=true;isAnimating=true;navDir=1;flipDir=0;
     targetQuat.setFromAxisAngle(new THREE.Vector3(0,1,0),-Math.PI/2);
     const nextIdx=mod(currentIdx+1);
     const t=camTargetFor(nextIdx, nextIdx);targetCamX=t.x;targetCamZ=t.z;
@@ -421,16 +448,42 @@ function navRight(){
     sats.forEach(s=>{if(!s.locked&&show.includes(s.tableau))s.mesh.visible=!isHiddenBySrc(s);});
 }
 function navLeft(){
-    if(busy||isAnimating)return;busy=true;isAnimating=true;navDir=-1;
+    if(busy||isAnimating)return;busy=true;isAnimating=true;navDir=-1;flipDir=0;
     targetQuat.setFromAxisAngle(new THREE.Vector3(0,1,0),Math.PI/2);
     const nextIdx=mod(currentIdx-1);
     const t=camTargetFor(nextIdx, nextIdx);targetCamX=t.x;targetCamZ=t.z;
     const show=[mod(currentIdx),nextIdx];
     sats.forEach(s=>{if(!s.locked&&show.includes(s.tableau))s.mesh.visible=!isHiddenBySrc(s);});
 }
+
+function flipUp(){
+    if(busy||isAnimating)return;busy=true;isAnimating=true;navDir=0;flipDir=1;
+    targetQuat.setFromAxisAngle(new THREE.Vector3(1,0,0), Math.PI);
+    isFlipped=!isFlipped;
+}
+function flipDown(){
+    if(busy||isAnimating)return;busy=true;isAnimating=true;navDir=0;flipDir=-1;
+    targetQuat.setFromAxisAngle(new THREE.Vector3(1,0,0), -Math.PI);
+    isFlipped=!isFlipped;
+}
+
 function onRotationComplete(){
-    currentIdx=mod(currentIdx+navDir);cubeGroup.quaternion.identity();targetQuat.identity();navDir=0;
-    assignFaces();isAnimating=false;busy=false;updateUI();
+    if(flipDir!==0){
+        cubeGroup.quaternion.identity();targetQuat.identity();flipDir=0;
+        const fIdx=mod(currentIdx);
+        sats.forEach(s=>{
+            if(s.tableau===fIdx&&!s.locked&&s.tableau>=0){
+                s.ly=-s.ly;
+                // Effet calque : inverser visuellement le domino (miroir Y)
+                s.mesh.scale.y *= -1;
+            }
+        });
+        updatePorte([porteValue[1],porteValue[0]]);
+        assignFaces();isAnimating=false;busy=false;refreshZoom();updateUI();
+    } else {
+        currentIdx=mod(currentIdx+navDir);cubeGroup.quaternion.identity();targetQuat.identity();navDir=0;
+        assignFaces();isAnimating=false;busy=false;updateUI();
+    }
 }
 
 // ═══ TAP ═══
@@ -645,6 +698,7 @@ canvas.addEventListener('pointerup',e=>{
             if(dragSwap(pSat,dirX,dirY)){pStart=null;pSat=null;pCube=false;return;}
         }
         if(Math.abs(dx)>=Math.abs(dy)){dx>0?navRight():navLeft();}
+        else{dy<0?flipUp():flipDown();}
     }
     pStart=null;pSat=null;pCube=false;
 });
@@ -652,29 +706,34 @@ canvas.addEventListener('pointercancel',()=>{pStart=null;pSat=null;pCube=false;}
 
 // ═══ WHEEL + KEY ═══
 
-let wx=0,wcd=false,wt=null;
+let wx=0,wy=0,wcd=false,wt=null;
 canvas.addEventListener('wheel',e=>{
     e.preventDefault();
     if(wcd||busy||isAnimating)return;
-    const d=Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY;
-    wx+=d;
-    clearTimeout(wt);wt=setTimeout(()=>{wx=0;},100);
+    if(Math.abs(e.deltaX)>Math.abs(e.deltaY)){wx+=e.deltaX;}else{wy+=e.deltaY;}
+    clearTimeout(wt);wt=setTimeout(()=>{wx=0;wy=0;},100);
     if(Math.abs(wx)>50){
         wx>0?navRight():navLeft();
-        wx=0;wcd=true;setTimeout(()=>{wcd=false;},600);
+        wx=0;wy=0;wcd=true;setTimeout(()=>{wcd=false;},600);
+    } else if(Math.abs(wy)>50){
+        wy>0?flipDown():flipUp();
+        wx=0;wy=0;wcd=true;setTimeout(()=>{wcd=false;},600);
     }
 },{passive:false});
-document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'){navRight();e.preventDefault();}else if(e.key==='ArrowLeft'){navLeft();e.preventDefault();}});
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'){navRight();e.preventDefault();}else if(e.key==='ArrowLeft'){navLeft();e.preventDefault();}else if(e.key==='ArrowUp'){flipUp();e.preventDefault();}else if(e.key==='ArrowDown'){flipDown();e.preventDefault();}});
 
 // ═══ UI ═══
 
 const dotsEl=document.getElementById('navDots');
 for(let i=0;i<TOTAL;i++){const d=document.createElement('div');d.className='nav-dot'+(i===0?' active':'');dotsEl.appendChild(d);}
 function updateUI(){
-    const idx=mod(currentIdx);document.getElementById('faceLabel').textContent=`${idx+1} / ${TOTAL}`;
+    const idx=mod(currentIdx);
+    const flipTag=isFlipped?' ⟳':'';
+    document.getElementById('faceLabel').textContent=`${idx+1} / ${TOTAL}${flipTag}`;
     dotsEl.querySelectorAll('.nav-dot').forEach((d,i)=>d.classList.toggle('active',i===idx));
     const c=sats.filter(s=>s.tableau===idx&&!s.locked).length;
     let t=`T${idx+1} [porte] · ${c} sat${c>1?'s':''}`;if(lockedSat)t+=` · ⟐ flotte`;
+    if(isFlipped)t+=` · retourné`;
     document.getElementById('infoLine').textContent=t;
 }
 
@@ -690,7 +749,7 @@ document.getElementById('btnReset').addEventListener('click',()=>{
         ud.numMesh.material.map=getDominoTex(sd.v[0],sd.v[1],'normal');
     });});
     updatePorte([4,2]);cubeGroup.quaternion.identity();targetQuat.identity();
-    currentIdx=0;isAnimating=false;busy=false;navDir=0;
+    currentIdx=0;isAnimating=false;busy=false;navDir=0;flipDir=0;isFlipped=false;
     refreshZoom();camera.position.set(targetCamX,0,targetCamZ);assignFaces();updateUI();
 });
 
@@ -920,11 +979,10 @@ document.getElementById('sliderAlpha').addEventListener('input',(e)=>{
     document.getElementById('alphaVal').textContent=e.target.value+'%';
     sats.forEach(sat=>{
         const ud=sat.mesh.userData;
-        if(ud.numMesh) ud.numMesh.material.opacity=domAlpha;
+        if(ud.bgMesh) ud.bgMesh.material.opacity=domAlpha;
         if(ud.boxMesh){
-            ud.boxMesh.material.forEach(m=>{ m.opacity=m._baseOp*domAlpha; });
+            [0,1,2,3,5].forEach(i=>{ ud.boxMesh.material[i].opacity=ud.boxMesh.material[i]._baseOp*domAlpha; });
         }
-        if(ud.edgeLines) ud.edgeLines.material.opacity=0.18*domAlpha;
         if(ud.shadowMesh) ud.shadowMesh.material.opacity=0.6*domAlpha;
     });
 });
@@ -933,10 +991,21 @@ document.getElementById('sliderAlpha').addEventListener('input',(e)=>{
 
 const clock=new THREE.Clock();
 let lastTime=0;
+let flipProgress=0;
 function animate(){
     requestAnimationFrame(animate);const t=clock.getElapsedTime();const dt=t-lastTime;lastTime=t;
-    if(isAnimating){cubeGroup.quaternion.slerp(targetQuat,0.12);
-        if(1-Math.abs(cubeGroup.quaternion.dot(targetQuat))<0.0001){cubeGroup.quaternion.copy(targetQuat);onRotationComplete();}}
+    if(isAnimating){
+        if(flipDir!==0){
+            flipProgress=Math.min(1, flipProgress+dt*1.8);
+            const ease=flipProgress<0.5?2*flipProgress*flipProgress:(1-Math.pow(-2*flipProgress+2,2)/2);
+            const angle=ease*Math.PI*flipDir;
+            cubeGroup.quaternion.setFromAxisAngle(new THREE.Vector3(1,0,0), angle);
+            if(flipProgress>=1){cubeGroup.quaternion.copy(targetQuat);flipProgress=0;onRotationComplete();}
+        } else {
+            cubeGroup.quaternion.slerp(targetQuat,0.12);
+            if(1-Math.abs(cubeGroup.quaternion.dot(targetQuat))<0.0001){cubeGroup.quaternion.copy(targetQuat);onRotationComplete();}
+        }
+    }
     tickSwapAnim(dt);
     tickBg(t, dt);
     // Halo ice pulse
