@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADAM Cube — K5 v18 · Three.js</title>
+    <title>ADAM Cube — K5 v35 · Three.js</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -18,7 +18,6 @@
         .hud { display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:12px; }
         .face-label { color:rgba(126,200,227,0.25);font-size:0.7rem;letter-spacing:0.2em; }
         .info-line { color:rgba(180,180,190,0.3);font-size:0.6rem;min-height:1.2em; }
-        .hint { color:rgba(180,180,190,0.15);font-size:0.55rem; }
         .nav-dots { display:flex;gap:6px;margin-top:4px; }
         .nav-dot { width:7px;height:7px;border-radius:50%;background:rgba(126,200,227,0.12);transition:all 0.4s; }
         .nav-dot.active { background:rgba(126,200,227,0.6);box-shadow:0 0 7px rgba(126,200,227,0.4); }
@@ -117,6 +116,38 @@ function drawIcon(ctx, iconIdx, cx, cy, sz, color) {
             ctx.quadraticCurveTo(cx-w*0.3, cy+h, cx, cy);
             ctx.quadraticCurveTo(cx+w*0.3, cy-h, cx+w, cy+h*0.3);
             ctx.stroke(); break;
+        case 10: // twoL
+            ctx.beginPath(); ctx.moveTo(cx-w*0.6, cy-h*0.7); ctx.lineTo(cx-w*0.6, cy+h*0.4); ctx.lineTo(cx+w*0.1, cy+h*0.4); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(cx+w*0.6, cy-h*0.7); ctx.lineTo(cx+w*0.6, cy+h*0.4); ctx.lineTo(cx-w*0.1, cy+h*0.4); ctx.stroke();
+            break;
+        case 11: // arc
+            ctx.beginPath();
+            ctx.moveTo(cx-w*0.8, cy+h*0.3);
+            ctx.quadraticCurveTo(cx, cy-h*0.9, cx+w*0.8, cy+h*0.3);
+            ctx.stroke(); break;
+        case 12: // twoSquares
+            ctx.strokeRect(cx-w*0.7, cy-h*0.35, sz*0.22, sz*0.22);
+            ctx.strokeRect(cx+w*0.15, cy-h*0.35, sz*0.22, sz*0.22);
+            break;
+        case 13: // target
+            ctx.beginPath(); ctx.arc(cx, cy, sz*0.28, 0, Math.PI*2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(cx, cy, sz*0.1, 0, Math.PI*2); ctx.fill();
+            break;
+        case 14: // dumbbell
+            ctx.beginPath(); ctx.arc(cx-w*0.55, cy, sz*0.12, 0, Math.PI*2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(cx+w*0.55, cy, sz*0.12, 0, Math.PI*2); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(cx-w*0.43, cy); ctx.lineTo(cx+w*0.43, cy); ctx.stroke();
+            break;
+        case 15: // singleLine (vertical)
+            ctx.beginPath(); ctx.moveTo(cx, cy-h*0.8); ctx.lineTo(cx, cy+h*0.8);
+            ctx.stroke(); break;
+        case 16: // singlePoint
+            ctx.beginPath(); ctx.arc(cx, cy, sz*0.12, 0, Math.PI*2); ctx.fill();
+            break;
+        case 17: // diamond
+            ctx.beginPath();
+            ctx.moveTo(cx, cy-h*0.7); ctx.lineTo(cx+w*0.5, cy); ctx.lineTo(cx, cy+h*0.7); ctx.lineTo(cx-w*0.5, cy);
+            ctx.closePath(); ctx.stroke(); break;
     }
     ctx.restore();
 }
@@ -135,6 +166,8 @@ function getDominoBgTex(tint){
         cyan:{glow:'rgba(94,239,255,0.3)'},pink:{glow:'rgba(255,120,180,0.15)'},
         silver:{glow:'rgba(34,211,238,0.15)'},gold:{glow:'rgba(255,215,0,0.15)'},
         emerald:{glow:'rgba(52,211,153,0.15)'},
+        cosmic:{glow:'rgba(131,56,236,0.2)'},
+        supernovae:{glow:'rgba(255,140,0,0.2)'},
     };
     const glow=(C[tint]||C.normal).glow;
     const r=36, m=8;
@@ -167,6 +200,8 @@ function getDominoTex(leftIdx, rightIdx, tint) {
         silver:  {border:'rgba(34,211,238,0.6)',sep:'rgba(34,211,238,0.35)',icon:'#22d3ee',glow:'rgba(34,211,238,0.15)'},
         gold:    {border:'rgba(255,215,0,0.6)',sep:'rgba(255,215,0,0.35)',icon:'#ffd700',glow:'rgba(255,215,0,0.15)'},
         emerald: {border:'rgba(52,211,153,0.6)',sep:'rgba(52,211,153,0.35)',icon:'#34d399',glow:'rgba(52,211,153,0.15)'},
+        cosmic:  {border:'rgba(131,56,236,0.7)',sep:'rgba(196,181,253,0.4)',icon:'#c4b5fd',glow:'rgba(131,56,236,0.2)'},
+        supernovae:{border:'rgba(255,140,0,0.7)',sep:'rgba(255,235,59,0.4)',icon:'#ffeb3b',glow:'rgba(255,140,0,0.2)'},
     };
     const c=C[tint]||C.normal;
     const border=c.border, sep=c.sep, iconC=c.icon, glow=c.glow;
@@ -186,16 +221,24 @@ function getDominoTex(leftIdx, rightIdx, tint) {
     ctx.stroke();
     ctx.shadowBlur = 0;
 
-    // Séparateur horizontal (médiane)
-    ctx.strokeStyle = sep; ctx.lineWidth = 2.5;
-    ctx.shadowColor = sep; ctx.shadowBlur = 8;
-    ctx.beginPath(); ctx.moveTo(m+16, S/2); ctx.lineTo(S-m-16, S/2); ctx.stroke();
-    ctx.shadowBlur = 0;
+    // ═══ SUPERPOSITION — deux icônes plein carré empilées ═══
+    const iconSz = S * 0.55;
 
-    // Icônes — haut et bas
-    const iconSz = S * 0.42;
-    drawIcon(ctx, leftIdx,  S*0.5, S*0.25, iconSz, iconC);
-    drawIcon(ctx, rightIdx, S*0.5, S*0.75, iconSz, iconC);
+    // Couche arrière (face2 / rightIdx) — plus discrète
+    ctx.globalAlpha = 0.35;
+    drawIcon(ctx, rightIdx, S*0.5, S*0.5, iconSz, iconC);
+    ctx.globalAlpha = 1.0;
+
+    // Couche avant (face1 / leftIdx) — pleine intensité
+    drawIcon(ctx, leftIdx, S*0.5, S*0.5, iconSz, iconC);
+
+    // Médiane subtile par-dessus (séparateur visuel)
+    ctx.strokeStyle = sep; ctx.lineWidth = 1.5;
+    ctx.globalAlpha = 0.4;
+    ctx.shadowColor = sep; ctx.shadowBlur = 6;
+    ctx.beginPath(); ctx.moveTo(m+20, S/2); ctx.lineTo(S-m-20, S/2); ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1.0;
 
     const tex = new THREE.CanvasTexture(cv);
     _dtc[k] = tex;
@@ -206,16 +249,20 @@ function getDominoTex(leftIdx, rightIdx, tint) {
 
 const GAP = 1.15;
 const TABLEAUX = [
-    { name:'T1', sats:[ {x:GAP, y:0, v:[0,2]}, {x:-GAP, y:0, v:[8,7], state:'emerald'} ] },
-    { name:'T2', sats:[ {x:0, y:-GAP, v:[3,4], state:'silver'}, {x:0, y:GAP, v:[1,6]} ] },
+    { name:'T1', sats:[
+        {x:GAP, y:0, v:[11,13]}, {x:-GAP, y:0, v:[17,10], state:'cosmic'}
+    ] },
+    { name:'T2', sats:[
+        {x:0, y:-GAP, v:[14,12], state:'supernovae'}, {x:0, y:GAP, v:[16,11]}
+    ] },
     { name:'T3', sats:[
-        {x:-GAP, y:-GAP, v:[9,0]}, {x:-GAP, y:GAP, v:[5,2]},
-        {x:GAP, y:2*GAP, v:[7,3]}, {x:0, y:2*GAP, v:[6,8]}, {x:-GAP, y:2*GAP, v:[4,1]}
+        {x:-GAP, y:-GAP, v:[13,15], state:'emerald'}, {x:GAP, y:-GAP, v:[10,17], state:'cosmic'},
+        {x:-GAP, y:GAP, v:[12,14]}, {x:GAP, y:GAP, v:[11,16], state:'silver'}
     ] },
     { name:'T4', sats:[
-        {x:GAP, y:-2*GAP, v:[2,9]}, {x:0, y:-2*GAP, v:[8,4], state:'gold'},
-        {x:GAP, y:-GAP, v:[0,5]}, {x:GAP, y:GAP, v:[6,1]},
-        {x:-GAP, y:-GAP, v:[3,7]}, {x:-GAP, y:GAP, v:[9,2]}
+        {x:GAP, y:-2*GAP, v:[0,11]}, {x:0, y:-2*GAP, v:[17,13], state:'supernovae'},
+        {x:GAP, y:-GAP, v:[15,10], state:'gold'}, {x:GAP, y:GAP, v:[12,8]},
+        {x:-GAP, y:-GAP, v:[14,2], state:'cosmic'}, {x:-GAP, y:GAP, v:[16,5]}
     ] },
 ];
 const TOTAL = TABLEAUX.length;
@@ -229,21 +276,17 @@ const CAM_Z_MIN = 8;    // zoom max (caméra au plus près)
 const CAM_Z_MAX = 18;   // zoom min (caméra au plus loin)
 
 function camTargetFor(tIdx, viewIdx){
-    // viewIdx = le tableau qu'on est en train de viser (peut différer de currentIdx pendant nav)
     if(viewIdx===undefined) viewIdx=mod(currentIdx);
-    // Collecter les positions de tous les sats du tableau (non locked)
-    // Toujours inclure le cube central (porte) à (0,0) car il est toujours visible
     const pts=[{x:0, y:0}];
     sats.forEach(s=>{
         if(s.tableau===tIdx&&!s.locked) pts.push({x:s.lx, y:s.ly});
     });
-    // Inclure la position physique du flottant si on calcule pour le tableau visé
+    // Inclure la position physique du flottant
     if(lockedSat && tIdx===viewIdx){
         const wp=new THREE.Vector3();lockedSat.mesh.getWorldPosition(wp);
         const lp=cubeGroup.worldToLocal(wp.clone());
         pts.push({x:lp.x, y:lp.y});
     }
-    // Boîte englobante
     let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
     pts.forEach(p=>{
         minX=Math.min(minX,p.x);maxX=Math.max(maxX,p.x);
@@ -317,7 +360,7 @@ function placeSat(sat,faceRotY){
 
 // ═══ PORTE ═══
 
-let porteValue=[4,2];
+let porteValue=[13,11];
 const cubeGroup=new THREE.Group();scene.add(cubeGroup);
 
 function makePorteTex(val){ return getDominoTex(val[0], val[1], 'ice'); }
@@ -365,17 +408,18 @@ function createSatMesh(value,tint){
     bgMesh.position.z = SAT_DEPTH/2 + 0.0005;
     grp.add(bgMesh);
 
-    // ── Corps 3D (épaisseur) — semi-transparent ──
-    const boxGeo = new THREE.BoxGeometry(SZ, SZ, SAT_DEPTH);
+    // ── Corps 3D (épaisseur) — arrondi, semi-transparent ──
+    const bodyShape = rrShape(SZ, SZ, R);
+    const extrudeSettings = {depth: SAT_DEPTH, bevelEnabled: false};
+    const bodyGeo = new THREE.ExtrudeGeometry(bodyShape, extrudeSettings);
+    bodyGeo.translate(0, 0, -SAT_DEPTH/2);
     const sideMat = new THREE.MeshBasicMaterial({color:0x141520, transparent:true, opacity:0.45});sideMat._baseOp=0.45;
-    const edgeMat = new THREE.MeshBasicMaterial({color:0x7ec8e3, transparent:true, opacity:0.08});edgeMat._baseOp=0.08;
-    const backMat = new THREE.MeshBasicMaterial({color:0x0a0b12, transparent:true, opacity:0.35});backMat._baseOp=0.35;
-    const boxMats = [sideMat, sideMat, sideMat, sideMat, edgeMat, backMat];
-    const boxMesh = new THREE.Mesh(boxGeo, boxMats);
+    const faceMat = new THREE.MeshBasicMaterial({color:0x0a0b12, transparent:true, opacity:0.25});faceMat._baseOp=0.25;
+    const boxMesh = new THREE.Mesh(bodyGeo, [faceMat, sideMat]);
     grp.add(boxMesh);
 
     // ── Liseré néon sur les arêtes ──
-    const edgesGeo = new THREE.EdgesGeometry(boxGeo);
+    const edgesGeo = new THREE.EdgesGeometry(bodyGeo, 15);
     const edgeLines = new THREE.LineSegments(edgesGeo, new THREE.LineBasicMaterial({color:0x7ec8e3, transparent:true, opacity:0.18}));
     grp.add(edgeLines);
 
@@ -470,15 +514,15 @@ function flipDown(){
 function onRotationComplete(){
     if(flipDir!==0){
         cubeGroup.quaternion.identity();targetQuat.identity();flipDir=0;
+        // Porte : re-swap pour annuler le swap mi-course (la porte résiste au flip)
+        updatePorte([porteValue[1],porteValue[0]]);
         const fIdx=mod(currentIdx);
         sats.forEach(s=>{
             if(s.tableau===fIdx&&!s.locked&&s.tableau>=0){
                 s.ly=-s.ly;
-                // Effet calque : inverser visuellement le domino (miroir Y)
                 s.mesh.scale.y *= -1;
             }
         });
-        updatePorte([porteValue[1],porteValue[0]]);
         assignFaces();isAnimating=false;busy=false;refreshZoom();updateUI();
     } else {
         currentIdx=mod(currentIdx+navDir);cubeGroup.quaternion.identity();targetQuat.identity();navDir=0;
@@ -491,6 +535,7 @@ function onRotationComplete(){
 function tapLock(sat){
     if(busy||isAnimating)return;if(lockedSat)tapRelease(lockedSat);
     sat.locked=true;lockedSat=sat;sat.srcTableau=sat.tableau;sat.srcLx=sat.lx;sat.srcLy=sat.ly;
+    sat.savedScaleY=sat.mesh.scale.y; // préserver l'orientation flip
     // Masquer tout satellite à la même position source (évite superposition pendant navigation)
     sats.forEach(s=>{
         if(s!==sat&&!s.locked&&s.tableau===sat.srcTableau&&Math.abs(s.lx-sat.srcLx)<0.2&&Math.abs(s.ly-sat.srcLy)<0.2)
@@ -508,20 +553,22 @@ function tapRelease(sat){
     const lx=lp.x,ly=lp.y;
     let closest=null,cd=Infinity;
     for(const o of sats){if(o===sat||o.locked||o.tableau!==fIdx)continue;const d=Math.hypot(o.lx-lx,o.ly-ly);if(d<cd){cd=d;closest=o;}}
+    const savedSY=sat.savedScaleY||1;
     if(closest&&cd<GAP*0.9){
         const cT=closest.tableau,cX=closest.lx,cY=closest.ly;
-        // Le satellite flottant prend la place du closest (sur le tableau courant)
-        sat.tableau=cT;sat.lx=cX;sat.ly=cY;placeSat(sat,FACE_ROT[0]);sat.mesh.scale.set(1,1,1);
+        const closestScaleY=closest.mesh.scale.y;
+        // Le satellite flottant prend la place du closest
+        sat.tableau=cT;sat.lx=cX;sat.ly=cY;placeSat(sat,FACE_ROT[0]);sat.mesh.scale.set(1,savedSY,1);
         // Le closest prend la place source (peut être un autre tableau)
         closest.tableau=sat.srcTableau;closest.lx=sat.srcLx;closest.ly=sat.srcLy;
-        // Restaurer visibilité du closest (il était peut-être masqué)
+        closest.mesh.scale.set(1,closestScaleY,1);
         closest.mesh.visible=true;
     } else {
-        sat.tableau=fIdx;sat.lx=lx;sat.ly=ly;placeSat(sat,FACE_ROT[0]);sat.mesh.scale.set(1,1,1);
+        sat.tableau=fIdx;sat.lx=lx;sat.ly=ly;placeSat(sat,FACE_ROT[0]);sat.mesh.scale.set(1,savedSY,1);
     }
-    sat.locked=false;lockedSat=null;assignFaces();
-    // Un seul mouvement de zoom : on calcule directement la cible finale (sans flottant)
-    refreshZoom();updateUI();
+    sat.locked=false;lockedSat=null;
+    assignFaces();
+    updateUI();
 }
 
 // ═══ DRAG SWAP ═══
@@ -602,11 +649,17 @@ function tickSwapAnim(dt){
         g.position.z=HALF+0.02;
         
         if(p>=1){
-            // Swap effectif
             const target=swapAnim.target;
-            updatePorte(swapAnim.oldSat);
-            target.value=swapAnim.oldPorte;
-            target.mesh.userData.numMesh.material.map=getDominoTex(target.value[0],target.value[1],'normal');
+            const flipped=target.mesh.scale.y<0;
+            // Porte reçoit les valeurs du sat — si le sat était flippé, ses valeurs visuelles sont inversées
+            if(flipped) updatePorte([swapAnim.oldSat[1],swapAnim.oldSat[0]]);
+            else updatePorte(swapAnim.oldSat);
+            // Sat reçoit les valeurs de la porte — si le sat est flippé, inverser pour compenser le scale.y
+            if(flipped) target.value=[swapAnim.oldPorte[1],swapAnim.oldPorte[0]];
+            else target.value=swapAnim.oldPorte;
+            const st=target.state||'white';
+            const tint=st!=='white'?st:'normal';
+            target.mesh.userData.numMesh.material.map=getDominoTex(target.value[0],target.value[1],tint);
             // Nettoyer le ghost
             cubeGroup.remove(swapAnim.ghost);
             swapAnim.ghost.geometry.dispose();
@@ -616,20 +669,6 @@ function tickSwapAnim(dt){
             haloSprite.visible=true;
             // Replacer le satellite
             placeSat(target,FACE_ROT[0]);
-            assignFaces();swapAnim=null;refreshZoom();updateUI();
-        }
-    } else if(swapAnim.isPorte){
-        const pp=p<0.5?p*2:(2-p*2);
-        const ep=pp<0.5?2*pp*pp:(1-Math.pow(-2*pp+2,2)/2);
-        swapAnim.pairs.forEach(pair=>{
-            pair.mesh.position.x=pair.from.x+(0-pair.from.x)*ep;
-            pair.mesh.position.y=pair.from.y+(0-pair.from.y)*ep;
-        });
-        if(p>=1){
-            swapAnim.pairs.forEach(pair=>{
-                const sat=sats.find(s=>s.mesh===pair.mesh);
-                if(sat&&!sat.locked) placeSat(sat,FACE_ROT[0]);
-            });
             assignFaces();swapAnim=null;refreshZoom();updateUI();
         }
     } else {
@@ -698,7 +737,13 @@ canvas.addEventListener('pointerup',e=>{
             if(dragSwap(pSat,dirX,dirY)){pStart=null;pSat=null;pCube=false;return;}
         }
         if(Math.abs(dx)>=Math.abs(dy)){dx>0?navRight():navLeft();}
-        else{dy<0?flipUp():flipDown();}
+        else{
+            // Swipe vertical : tilt d'abord, flip si rien ne bouge
+            const tiltDir = dy>0 ? 1 : -1;
+            if(!tiltGravity(tiltDir)){
+                dy<0?flipUp():flipDown();
+            }
+        }
     }
     pStart=null;pSat=null;pCube=false;
 });
@@ -709,7 +754,7 @@ canvas.addEventListener('pointercancel',()=>{pStart=null;pSat=null;pCube=false;}
 let wx=0,wy=0,wcd=false,wt=null;
 canvas.addEventListener('wheel',e=>{
     e.preventDefault();
-    if(wcd||busy||isAnimating)return;
+    if(wcd||busy||isAnimating||tiltAnim)return;
     if(Math.abs(e.deltaX)>Math.abs(e.deltaY)){wx+=e.deltaX;}else{wy+=e.deltaY;}
     clearTimeout(wt);wt=setTimeout(()=>{wx=0;wy=0;},100);
     if(Math.abs(wx)>50){
@@ -720,7 +765,7 @@ canvas.addEventListener('wheel',e=>{
         wx=0;wy=0;wcd=true;setTimeout(()=>{wcd=false;},600);
     }
 },{passive:false});
-document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'){navRight();e.preventDefault();}else if(e.key==='ArrowLeft'){navLeft();e.preventDefault();}else if(e.key==='ArrowUp'){flipUp();e.preventDefault();}else if(e.key==='ArrowDown'){flipDown();e.preventDefault();}});
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'){navRight();e.preventDefault();}else if(e.key==='ArrowLeft'){navLeft();e.preventDefault();}else if(e.key==='ArrowUp'){if(e.shiftKey)flipUp();else if(!tiltGravity(-1))flipUp();e.preventDefault();}else if(e.key==='ArrowDown'){if(e.shiftKey)flipDown();else if(!tiltGravity(1))flipDown();e.preventDefault();}});
 
 // ═══ UI ═══
 
@@ -742,13 +787,14 @@ function updateUI(){
 document.getElementById('btnReset').addEventListener('click',()=>{
     if(lockedSat){cubeGroup.attach(lockedSat.mesh);lockedSat.locked=false;}lockedSat=null;
     let si=0;TABLEAUX.forEach((tab,tIdx)=>{tab.sats.forEach(sd=>{
-        const sat=sats[si++];sat.value=sd.v;sat.tableau=tIdx;sat.origTableau=tIdx;
+        const sat=sats[si++];sat.value=sd.v;sat.state=sd.state||'white';sat.tableau=tIdx;sat.origTableau=tIdx;
         sat.lx=sd.x;sat.ly=sd.y;sat.origLx=sd.x;sat.origLy=sd.y;sat.locked=false;
         if(sat.mesh.parent!==cubeGroup)cubeGroup.attach(sat.mesh);sat.mesh.scale.set(1,1,1);
         const ud=sat.mesh.userData;ud.glowMesh.material.opacity=0;ud.haloMesh.material.opacity=0;
-        ud.numMesh.material.map=getDominoTex(sd.v[0],sd.v[1],'normal');
+        const tint=sat.state!=='white'?sat.state:'normal';
+        ud.numMesh.material.map=getDominoTex(sd.v[0],sd.v[1],tint);
     });});
-    updatePorte([4,2]);cubeGroup.quaternion.identity();targetQuat.identity();
+    updatePorte([13,11]);cubeGroup.quaternion.identity();targetQuat.identity();
     currentIdx=0;isAnimating=false;busy=false;navDir=0;flipDir=0;isFlipped=false;
     refreshZoom();camera.position.set(targetCamX,0,targetCamZ);assignFaces();updateUI();
 });
@@ -981,17 +1027,100 @@ document.getElementById('sliderAlpha').addEventListener('input',(e)=>{
         const ud=sat.mesh.userData;
         if(ud.bgMesh) ud.bgMesh.material.opacity=domAlpha;
         if(ud.boxMesh){
-            [0,1,2,3,5].forEach(i=>{ ud.boxMesh.material[i].opacity=ud.boxMesh.material[i]._baseOp*domAlpha; });
+            if(Array.isArray(ud.boxMesh.material)){
+                ud.boxMesh.material.forEach(m=>{ m.opacity=m._baseOp*domAlpha; });
+            } else { ud.boxMesh.material.opacity=ud.boxMesh.material._baseOp*domAlpha; }
         }
         if(ud.shadowMesh) ud.shadowMesh.material.opacity=0.6*domAlpha;
     });
 });
+
+// ═══ TILT (gravité par inclinaison) ═══
+
+let tiltAnim = null;
+
+function tiltGravity(dirY){
+    if(busy||isAnimating||swapAnim||tiltAnim) return false;
+    const fIdx = mod(currentIdx);
+    const faceSats = sats.filter(s => s.tableau === fIdx && !s.locked);
+    if(faceSats.length === 0) return false;
+    
+    const gravity = -dirY;
+    faceSats.sort((a,b) => gravity > 0 ? b.ly - a.ly : a.ly - b.ly);
+    
+    const occupied = new Set();
+    occupied.add('0|0');
+    sats.forEach(s => {
+        if(s.tableau === fIdx && s.locked) occupied.add(Math.round(s.lx*100)+'|'+Math.round(s.ly*100));
+    });
+    
+    const moves = [];
+    faceSats.forEach(s => {
+        const key = () => Math.round(s.lx*100)+'|'+Math.round(s.ly*100);
+        occupied.delete(key());
+        let newY = s.ly;
+        const targetY = s.ly + gravity * GAP;
+        const targetKey = Math.round(s.lx*100)+'|'+Math.round(targetY*100);
+        if(!occupied.has(targetKey)) newY = targetY;
+        if(newY !== s.ly) moves.push({sat: s, fromX: s.lx, fromY: s.ly, toX: s.lx, toY: newY});
+        s.ly = newY;
+        occupied.add(Math.round(s.lx*100)+'|'+Math.round(s.ly*100));
+    });
+    
+    if(moves.length === 0) return false;
+    
+    tiltAnim = {
+        moves, gravity, t: 0, phase: 'tilt',
+        tiltAngle: gravity > 0 ? -0.22 : 0.22,
+        origQuat: cubeGroup.quaternion.clone(),
+    };
+    return true;
+}
+
+function tickTiltAnim(dt){
+    if(!tiltAnim) return;
+    const ta = tiltAnim;
+    ta.t += dt;
+    
+    if(ta.phase === 'tilt'){
+        const p = Math.min(1, ta.t / 0.2);
+        const ease = p < 0.5 ? 2*p*p : 1 - Math.pow(-2*p+2,2)/2;
+        const angle = ta.tiltAngle * ease;
+        const tiltQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0), angle);
+        cubeGroup.quaternion.copy(ta.origQuat).multiply(tiltQ);
+        if(p >= 1){ ta.phase = 'slide'; ta.t = 0; }
+    }
+    else if(ta.phase === 'slide'){
+        const p = Math.min(1, ta.t / 0.3);
+        const ease = p < 0.5 ? 2*p*p : 1 - Math.pow(-2*p+2,2)/2;
+        ta.moves.forEach(m => {
+            m.sat.mesh.position.y = m.fromY + (m.toY - m.fromY) * ease;
+        });
+        if(p >= 1){
+            ta.moves.forEach(m => { placeSat(m.sat, FACE_ROT[0]); });
+            ta.phase = 'recover'; ta.t = 0;
+        }
+    }
+    else if(ta.phase === 'recover'){
+        const p = Math.min(1, ta.t / 0.3);
+        const ease = 1 - Math.pow(1 - p, 3);
+        const angle = ta.tiltAngle * (1 - ease);
+        const tiltQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0), angle);
+        cubeGroup.quaternion.copy(ta.origQuat).multiply(tiltQ);
+        if(p >= 1){
+            cubeGroup.quaternion.copy(ta.origQuat);
+            tiltAnim = null;
+            assignFaces(); refreshZoom(); updateUI();
+        }
+    }
+}
 
 // ═══ RENDER ═══
 
 const clock=new THREE.Clock();
 let lastTime=0;
 let flipProgress=0;
+let flipMidSwapped=false;
 function animate(){
     requestAnimationFrame(animate);const t=clock.getElapsedTime();const dt=t-lastTime;lastTime=t;
     if(isAnimating){
@@ -1000,13 +1129,22 @@ function animate(){
             const ease=flipProgress<0.5?2*flipProgress*flipProgress:(1-Math.pow(-2*flipProgress+2,2)/2);
             const angle=ease*Math.PI*flipDir;
             cubeGroup.quaternion.setFromAxisAngle(new THREE.Vector3(1,0,0), angle);
-            if(flipProgress>=1){cubeGroup.quaternion.copy(targetQuat);flipProgress=0;onRotationComplete();}
+            // À 90° (invisible) : swap texture porte pour que l'arrivée à 180° = visuellement identique
+            if(!flipMidSwapped && ease>=0.5){
+                flipMidSwapped=true;
+                updatePorte([porteValue[1],porteValue[0]]);
+            }
+            if(flipProgress>=1){
+                cubeGroup.quaternion.identity();targetQuat.identity();
+                flipProgress=0;flipMidSwapped=false;onRotationComplete();
+            }
         } else {
             cubeGroup.quaternion.slerp(targetQuat,0.12);
             if(1-Math.abs(cubeGroup.quaternion.dot(targetQuat))<0.0001){cubeGroup.quaternion.copy(targetQuat);onRotationComplete();}
         }
     }
     tickSwapAnim(dt);
+    tickTiltAnim(dt);
     tickBg(t, dt);
     // Halo ice pulse
     const hp=0.5+0.5*Math.sin(t*1.8);
@@ -1049,10 +1187,30 @@ function animate(){
             const st=sat.state||'white';
             let tint=(st!=='white'?st:'normal');
             ud.numMesh.material.map=getDominoTex(sat.value[0],sat.value[1],tint);
-            // Edge color matches state
-            const eCol = st==='silver'?0x22d3ee : st==='gold'?0xffd700 : st==='emerald'?0x34d399 : 0x7ec8e3;
-            ud.edgeLines.material.color.set(eCol);
-            ud.edgeLines.material.opacity=0.18;
+            // Edge + glow selon state
+            if(st==='cosmic'){
+                // Cosmic : bordure cycle violet→cyan→rose, halo pulsant violet
+                const cPhase=t*1.5+si;
+                const cr=Math.sin(cPhase)*0.5+0.5, cg=Math.sin(cPhase+2.1)*0.5+0.5, cb=Math.sin(cPhase+4.2)*0.5+0.5;
+                ud.edgeLines.material.color.setRGB(0.5+cr*0.5, cg*0.5, 0.5+cb*0.5);
+                ud.edgeLines.material.opacity=0.35+Math.sin(t*2)*0.1;
+                const cp=0.3+0.2*Math.sin(t*2+si);
+                ud.glowMesh.material.color.set(0x8338ec);ud.glowMesh.material.opacity=cp;
+                ud.haloMesh.material.color.set(0x8338ec);ud.haloMesh.material.opacity=cp*0.4;
+            } else if(st==='supernovae'){
+                // Supernovae : bordure cycle orange→doré→jaune, halo pulsant intense
+                const sPhase=t*2+si;
+                const sr=1, sg=0.4+Math.sin(sPhase)*0.35, sb=Math.sin(sPhase*0.7)*0.15;
+                ud.edgeLines.material.color.setRGB(sr, sg, sb);
+                ud.edgeLines.material.opacity=0.4+Math.sin(t*2.5)*0.15;
+                const sp=0.4+0.25*Math.sin(t*2.5+si);
+                ud.glowMesh.material.color.set(0xff8c00);ud.glowMesh.material.opacity=sp;
+                ud.haloMesh.material.color.set(0xffd700);ud.haloMesh.material.opacity=sp*0.5;
+            } else {
+                const eCol = st==='silver'?0x22d3ee : st==='gold'?0xffd700 : st==='emerald'?0x34d399 : 0x7ec8e3;
+                ud.edgeLines.material.color.set(eCol);
+                ud.edgeLines.material.opacity=0.18;
+            }
         }
     });
     renderer.render(scene,camera);
